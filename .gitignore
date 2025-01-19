@@ -1,3 +1,7 @@
+# macOS
 .DS_Store
-*.xcuserstate
 
+# Xcode
+*.xcuserstate
+*.xcworkspace
+*.log
