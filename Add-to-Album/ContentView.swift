@@ -7,50 +7,45 @@ struct SelectedImage: Identifiable {
 }
 
 struct ContentView: View {
-    @State private var images: [UIImage] = [] {
-        didSet {
-            print("UI should update with \(images.count) images") // Debugging UI updates
-        }
-    }
+    @State private var images: [UIImage] = []
     @State private var photoAccessStatus: PHAuthorizationStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
     @State private var showAlert = false
     @State private var alertMessage = ""
-    @State private var photoAssets: [PHAsset] = [] // Store PHAssets instead of UIImages
+    @State private var photoAssets: [PHAsset] = []
     @State private var selectedImage: SelectedImage? = nil
+    @State private var currentPage = 0
+    @State private var isLoadingMore = false
+    private let batchSize = 50
 
     var body: some View {
         NavigationView {
             VStack {
                 switch photoAccessStatus {
                 case .authorized:
-                    if images.isEmpty {
-                        Text("Loading your gallery...")
-                            .font(.headline)
-                            .foregroundColor(.gray)
-                            .onAppear {
-                                print("🔄 onAppear triggered at:", Date())
-                                print("🔍 photoAssets count: \(photoAssets.count)")
-                                requestPhotoLibraryAccess()
-                            }
-                    } else {
-                        ScrollView {
-                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 10) {
-                                if images.isEmpty {
-                                    Text("No images available.")
-                                        .font(.headline)
-                                        .foregroundColor(.gray)
-                                } else {
-
-                                    ForEach(Array(photoAssets.enumerated()), id: \.offset) { index, asset in
-                                        ImageThumbnailView(asset: asset)
-                                            .onTapGesture {
-                                                selectedImage = SelectedImage(index: index) // ✅ Track which image was clicked
-                                            }
+                    ScrollView {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 10) {
+                            ForEach(Array(photoAssets.enumerated()), id: \.offset) { index, asset in
+                                ImageThumbnailView(asset: asset)
+                                    .onTapGesture {
+                                        selectedImage = SelectedImage(index: index)
                                     }
-
-                                }
+                                    // Load more when reaching near the end
+                                    .onAppear {
+                                        if index == photoAssets.count - 10 && !isLoadingMore {
+                                            loadNextBatch()
+                                        }
+                                    }
                             }
-
+                        }
+                        
+                        if isLoadingMore {
+                            ProgressView()
+                                .padding()
+                        }
+                    }
+                    .onAppear {
+                        if photoAssets.isEmpty {
+                            requestPhotoLibraryAccess()
                         }
                     }
                 case .limited:
@@ -100,20 +95,51 @@ struct ContentView: View {
                         .padding()
                 }
             }
-            .onChange(of: images) {
-                print("🔄 Images updated, UI should refresh")
-            }
             .padding()
             .navigationTitle("Photo Gallery")
             .alert(isPresented: $showAlert) {
                 Alert(title: Text("Error"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
             }
             .fullScreenCover(item: $selectedImage) { selected in
-                FullScreenImageView(assets: photoAssets, selectedIndex: selected.index) {
+                FullScreenImageView(
+                    assets: photoAssets,
+                    selectedIndex: selected.index,
+                    loadMoreAssets: loadNextBatch
+                ) {
                     selectedImage = nil
                 }
             }
-
+        }
+    }
+    
+    func loadNextBatch() {
+        guard !isLoadingMore else { return }
+        isLoadingMore = true
+        
+        DispatchQueue.global(qos: .userInitiated).async {
+            let fetchOptions = PHFetchOptions()
+            fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+            fetchOptions.fetchLimit = batchSize * (currentPage + 1)
+            
+            let fetchResult = PHAsset.fetchAssets(with: .image, options: fetchOptions)
+            let startIndex = currentPage * batchSize
+            let endIndex = min(startIndex + batchSize, fetchResult.count)
+            
+            // If we've fetched all available photos, don't continue
+            guard startIndex < fetchResult.count else {
+                DispatchQueue.main.async {
+                    isLoadingMore = false
+                }
+                return
+            }
+            
+            let newAssets = fetchResult.objects(at: IndexSet(startIndex..<endIndex))
+            
+            DispatchQueue.main.async {
+                photoAssets.append(contentsOf: newAssets)
+                currentPage += 1
+                isLoadingMore = false
+            }
         }
     }
 
@@ -260,6 +286,7 @@ struct FullScreenImageView: View {
     @State private var highResImages: [Int: UIImage] = [:]
     @State private var offset: CGFloat = 0
     @State private var dragging = false
+    let loadMoreAssets: () -> Void
     let onDismiss: () -> Void
     
     var body: some View {
@@ -267,82 +294,86 @@ struct FullScreenImageView: View {
             Color.black.edgesIgnoringSafeArea(.all)
             
             // Main content
-            GeometryReader { geometry in
-                HStack(spacing: 0) {
-                    ForEach(0..<assets.count, id: \.self) { index in
-                        ZStack {
-                            if let image = highResImages[index] {
-                                Image(uiImage: image)
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: geometry.size.width)
-                            } else {
-                                ProgressView("Loading...")
-                                    .onAppear {
-                                        loadHighResImage(asset: assets[index], index: index)
-                                    }
-                            }
-                        }
-                        .frame(width: geometry.size.width)
-                    }
-                }
-                .offset(x: -CGFloat(selectedIndex) * geometry.size.width + offset)
-                .animation(dragging ? nil : .interactiveSpring(), value: selectedIndex)
-                .gesture(
-                    DragGesture()
-                        .onChanged { value in
-                            dragging = true
-                            offset = value.translation.width
-                        }
-                        .onEnded { value in
-                            dragging = false
-                            let width = geometry.size.width
-                            let predictedEndOffset = value.predictedEndTranslation.width
-                            let threshold: CGFloat = 100
-                            
-                            withAnimation(.interactiveSpring()) {
-                                if predictedEndOffset > threshold && selectedIndex > 0 {
-                                    selectedIndex -= 1
-                                } else if predictedEndOffset < -threshold && selectedIndex < assets.count - 1 {
-                                    selectedIndex += 1
-                                }
-                                offset = 0
-                            }
-                        }
-                )
-            }
+                       GeometryReader { geometry in
+                           HStack(spacing: 0) {
+                               ForEach(0..<assets.count, id: \.self) { index in
+                                   ZStack {
+                                       if let image = highResImages[index] {
+                                           Image(uiImage: image)
+                                               .resizable()
+                                               .scaledToFit()
+                                               .frame(width: geometry.size.width)
+                                       } else {
+                                           ProgressView("Loading...")
+                                               .onAppear {
+                                                   loadHighResImage(asset: assets[index], index: index)
+                                               }
+                                       }
+                                   }
+                                   .frame(width: geometry.size.width)
+                                   // Load more images when approaching the end
+                                   .onAppear {
+                                       if index == assets.count - 5 {
+                                           loadMoreAssets()
+                                       }
+                                   }
+                               }
+                           }
+                           .offset(x: -CGFloat(selectedIndex) * geometry.size.width + offset)
+                           .animation(dragging ? nil : .interactiveSpring(), value: selectedIndex)
+                           .gesture(
+                               DragGesture()
+                                   .onChanged { value in
+                                       dragging = true
+                                       offset = value.translation.width
+                                   }
+                                   .onEnded { value in
+                                       dragging = false
+                                       let predictedEndOffset = value.predictedEndTranslation.width
+                                       let threshold: CGFloat = 100
+                                       
+                                       withAnimation(.interactiveSpring()) {
+                                           if predictedEndOffset > threshold && selectedIndex > 0 {
+                                               selectedIndex -= 1
+                                           } else if predictedEndOffset < -threshold && selectedIndex < assets.count - 1 {
+                                               selectedIndex += 1
+                                           }
+                                           offset = 0
+                                       }
+                                   }
+                           )
+                       }
             
             // Back button overlay
-            VStack {
-                HStack {
-                    Button(action: {
-                        onDismiss()
-                    }) {
-                        Image(systemName: "chevron.left")
-                            .font(.title2)
-                            .foregroundColor(.white)
-                            .padding()
-                            .background(
-                                Circle()
-                                    .fill(Color.black.opacity(0.5))
-                            )
-                    }
-                    .padding(.top, 50)
-                    .padding(.leading, 20)
-                    Spacer()
-                }
-                Spacer()
-            }
-        }
-        .ignoresSafeArea()
-        .onAppear {
-            // Load initial images
-            loadVisibleImages()
-        }
-        .onChange(of: selectedIndex) { oldIndex, newIndex in
-            loadVisibleImages()
-        }
-    }
+                       VStack {
+                           HStack {
+                               Button(action: {
+                                   onDismiss()
+                               }) {
+                                   Image(systemName: "chevron.left")
+                                       .font(.title2)
+                                       .foregroundColor(.white)
+                                       .padding()
+                                       .background(
+                                           Circle()
+                                               .fill(Color.black.opacity(0.5))
+                                       )
+                               }
+                               .padding(.top, 50)
+                               .padding(.leading, 20)
+                               Spacer()
+                           }
+                           Spacer()
+                       }
+                   }
+                   .ignoresSafeArea()
+                   .onAppear {
+                       loadVisibleImages()
+                   }
+                   .onChange(of: selectedIndex) { oldIndex, newIndex in
+                       loadVisibleImages()
+                   }
+               }
     
     private func loadVisibleImages() {
         // Load current image
