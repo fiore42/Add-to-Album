@@ -393,24 +393,24 @@ struct FullScreenImageView: View {
                             dragging = false
                             let predictedEndOffset = value.predictedEndTranslation.width
                             let threshold: CGFloat = 100
-
+                            
                             print("🛑 Swipe Ended - selectedIndex: \(selectedIndex), offset: \(offset), predicted: \(predictedEndOffset)")
 
-                            // Prevent double swipe issue
-                            if abs(predictedEndOffset) > threshold {
-                                let newIndex = selectedIndex + (predictedEndOffset < 0 ? 1 : -1)
+                            let newIndex = selectedIndex + (predictedEndOffset < 0 ? 1 : -1)
+                            
+                            // Ensure within valid bounds
+                            let finalIndex = min(max(0, newIndex), assets.count - 1)
+
+                            // 🛑 **Prevent unwanted extra updates**
+                            if finalIndex != selectedIndex {
                                 print("🟡 Evaluated newIndex: \(newIndex) (before applying limits)")
-
-                                // Ensure within bounds
-                                let finalIndex = min(max(0, newIndex), assets.count - 1)
                                 print("🟠 Final selectedIndex: \(finalIndex) (after limits)")
-
-                                // Check if we're accidentally triggering an extra swipe
-                                if finalIndex != selectedIndex {
-                                    withAnimation(.interactiveSpring()) {
-                                        selectedIndex = finalIndex
-                                    }
+                                
+                                withAnimation(.interactiveSpring()) {
+                                    selectedIndex = finalIndex
                                 }
+                            } else {
+                                print("⚠️ Ignoring duplicate swipe update.")
                             }
 
                             offset = 0
@@ -449,7 +449,7 @@ struct FullScreenImageView: View {
         .onChange(of: selectedIndex) { oldIndex, newIndex in
             print("🔄 onChange - selectedIndex changed from \(oldIndex) to \(newIndex) at \(Date())")
 
-            // Prevent duplicate triggers
+            // 🛑 Prevent duplicate triggering
             if oldIndex == newIndex {
                 print("⚠️ Duplicate onChange detected! Ignoring duplicate call.")
                 return
