@@ -349,35 +349,39 @@ struct FullScreenImageView: View {
     let onDismiss: () -> Void
 
     var body: some View {
-        TabView(selection: $selectedIndex) {
-            ForEach(visibleAssets(), id: \.index) { item in
-                ZStack {
-                    if let image = highResImages[item.index] {
-                        Image(uiImage: image)
-                            .resizable()
-                            .scaledToFit()
-                            .transition(.opacity) // Smooth transition
-                    } else {
-                        ProgressView("Loading...")
-                            .onAppear {
-                                if highResImages[item.index] == nil {
-                                    loadHighResImage(asset: item.asset, index: item.index)
+        ScrollViewReader { proxy in
+            TabView(selection: $selectedIndex) {
+                ForEach(visibleAssets(), id: \.index) { item in
+                    ZStack {
+                        if let image = highResImages[item.index] {
+                            Image(uiImage: image)
+                                .resizable()
+                                .scaledToFit()
+                                .transition(.opacity) // Smooth transition
+                        } else {
+                            ProgressView("Loading...")
+                                .onAppear {
+                                    if highResImages[item.index] == nil {
+                                        loadHighResImage(asset: item.asset, index: item.index)
+                                    }
                                 }
-                            }
+                        }
                     }
+                    .tag(item.index)
                 }
-                .tag(item.index)
             }
-        }
-//        .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
-        .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-        .background(Color.black.edgesIgnoringSafeArea(.all))
-        .onAppear {
-            loadHighResImage(asset: assets[selectedIndex], index: selectedIndex) // Preload selected image
-        }
-        .onChange(of: selectedIndex) { oldIndex, newIndex in
-            if highResImages[newIndex] == nil {
-                loadHighResImage(asset: assets[newIndex], index: newIndex)
+            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+            .background(Color.black.edgesIgnoringSafeArea(.all))
+            .onAppear {
+                loadHighResImage(asset: assets[selectedIndex], index: selectedIndex) // Preload selected image
+            }
+            .onChange(of: selectedIndex) { oldIndex, newIndex in
+                withAnimation {
+                    proxy.scrollTo(newIndex, anchor: .center) // Ensures full image is snapped
+                }
+                if highResImages[newIndex] == nil {
+                    loadHighResImage(asset: assets[newIndex], index: newIndex)
+                }
             }
         }
     }
