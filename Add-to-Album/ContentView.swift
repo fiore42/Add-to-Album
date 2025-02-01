@@ -257,44 +257,70 @@ struct ContentView: View {
 struct FullScreenImageView: View {
     let assets: [PHAsset]
     @State var selectedIndex: Int
-    @State private var highResImages: [Int: UIImage] = [:] // Store images per index
-    @Environment(\.dismiss) private var dismiss // For dismissing the view
+    @State private var highResImages: [Int: UIImage] = [:]
+    @State private var offset: CGFloat = 0
+    @State private var dragging = false
     let onDismiss: () -> Void
     
     var body: some View {
         ZStack {
+            Color.black.edgesIgnoringSafeArea(.all)
+            
             // Main content
-            TabView(selection: $selectedIndex) {
-                ForEach(visibleAssets(), id: \.index) { item in
-                    ZStack {
-                        if let image = highResImages[item.index] {
-                            Image(uiImage: image)
-                                .resizable()
-                                .scaledToFit()
-                                .transition(.opacity)
-                        } else {
-                            ProgressView("Loading...")
-                                .onAppear {
-                                    if highResImages[item.index] == nil {
-                                        loadHighResImage(asset: item.asset, index: item.index)
+            GeometryReader { geometry in
+                HStack(spacing: 0) {
+                    ForEach(visibleAssets(), id: \.index) { item in
+                        ZStack {
+                            if let image = highResImages[item.index] {
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: geometry.size.width)
+                            } else {
+                                ProgressView("Loading...")
+                                    .onAppear {
+                                        if highResImages[item.index] == nil {
+                                            loadHighResImage(asset: item.asset, index: item.index)
+                                        }
                                     }
-                                }
+                            }
                         }
+                        .frame(width: geometry.size.width)
                     }
-                    .tag(item.index)
                 }
+                .offset(x: -CGFloat(selectedIndex) * geometry.size.width + offset)
+                .animation(dragging ? nil : .interactiveSpring(), value: selectedIndex)
+                .gesture(
+                    DragGesture()
+                        .onChanged { value in
+                            dragging = true
+                            offset = value.translation.width
+                        }
+                        .onEnded { value in
+                            dragging = false
+                            let width = geometry.size.width
+                            let predictedEndOffset = value.predictedEndTranslation.width
+                            let threshold: CGFloat = 100
+                            
+                            withAnimation(.interactiveSpring()) {
+                                if predictedEndOffset > threshold && selectedIndex > 0 {
+                                    selectedIndex -= 1
+                                } else if predictedEndOffset < -threshold && selectedIndex < assets.count - 1 {
+                                    selectedIndex += 1
+                                }
+                                offset = 0
+                            }
+                        }
+                )
             }
-            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-            .background(Color.black.edgesIgnoringSafeArea(.all))
             
             // Back button overlay
             VStack {
                 HStack {
-                    Spacer()
                     Button(action: {
                         onDismiss()
                     }) {
-                        Image(systemName: "xmark")
+                        Image(systemName: "chevron.left")
                             .font(.title2)
                             .foregroundColor(.white)
                             .padding()
@@ -303,8 +329,9 @@ struct FullScreenImageView: View {
                                     .fill(Color.black.opacity(0.5))
                             )
                     }
-                    .padding(.top, 50) // Adjust for safe area
-                    .padding(.trailing, 20)
+                    .padding(.top, 50)
+                    .padding(.leading, 20)
+                    Spacer()
                 }
                 Spacer()
             }
@@ -312,24 +339,31 @@ struct FullScreenImageView: View {
         .ignoresSafeArea()
         .onAppear {
             loadHighResImage(asset: assets[selectedIndex], index: selectedIndex)
+            // Preload adjacent images
+            if selectedIndex > 0 {
+                loadHighResImage(asset: assets[selectedIndex - 1], index: selectedIndex - 1)
+            }
+            if selectedIndex < assets.count - 1 {
+                loadHighResImage(asset: assets[selectedIndex + 1], index: selectedIndex + 1)
+            }
         }
         .onChange(of: selectedIndex) { oldIndex, newIndex in
             if highResImages[newIndex] == nil {
                 loadHighResImage(asset: assets[newIndex], index: newIndex)
             }
             // Preload next and previous images
-            if newIndex + 1 < assets.count && highResImages[newIndex + 1] == nil {
+            if newIndex + 1 < assets.count {
                 loadHighResImage(asset: assets[newIndex + 1], index: newIndex + 1)
             }
-            if newIndex - 1 >= 0 && highResImages[newIndex - 1] == nil {
+            if newIndex - 1 >= 0 {
                 loadHighResImage(asset: assets[newIndex - 1], index: newIndex - 1)
             }
         }
     }
     
     func visibleAssets() -> [(index: Int, asset: PHAsset)] {
-        let start = max(0, selectedIndex - 2)
-        let end = min(assets.count - 1, selectedIndex + 2)
+        let start = max(0, selectedIndex - 1)
+        let end = min(assets.count - 1, selectedIndex + 1)
         return assets[start...end].enumerated().map { offset, asset in
             let actualIndex = start + offset
             return (index: actualIndex, asset: asset)
