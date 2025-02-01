@@ -192,6 +192,7 @@ struct ContentView: View {
                 } else {
                     Color.gray
                         .frame(width: 100, height: 100)
+                        .overlay(ProgressView()) // Show progress indicator
                         .onAppear {
                             loadThumbnail()
                         }
@@ -256,69 +257,95 @@ struct ContentView: View {
     
     
     // MARK: - Fetch All Photos
+//    func fetchAllPhotos() {
+//        let startTime = Date()
+//        print("⏳ fetchAllPhotos() started at \(startTime)")
+//        
+//        //        logMemoryUsage() // ✅ Log memory before loading images
+//        
+//        DispatchQueue.global(qos: .userInitiated).async {
+//            print("📸 Fetching photos on background thread at \(Date())")
+//            
+//            let fetchOptions = PHFetchOptions()
+//            fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+//            fetchOptions.fetchLimit = 100 // ✅ Only fetch the 500 most recent photos
+//            
+//            let fetchResult = PHAsset.fetchAssets(with: .image, options: fetchOptions)
+//            print("✅ Fetch completed. Found \(fetchResult.count) assets at \(Date())")
+//            
+//            var fetchedImages: [UIImage] = []
+//            let imageManager = PHImageManager.default()
+//            let requestOptions = PHImageRequestOptions()
+//            requestOptions.isSynchronous = false
+//            requestOptions.deliveryMode = .fastFormat // ✅ Fast-loading thumbnails
+//            requestOptions.resizeMode = .fast
+//            requestOptions.isNetworkAccessAllowed = true
+//            
+//            let batchSize = 20 // ✅ Process in batches of 20
+//            for batchStart in stride(from: 0, to: fetchResult.count, by: batchSize) {
+//                let batchEnd = min(batchStart + batchSize, fetchResult.count)
+//                let batchAssets = fetchResult.objects(at: IndexSet(batchStart..<batchEnd))
+//                
+//                for asset in batchAssets {
+//                    let targetSize = CGSize(width: 200, height: 200)
+//                    imageManager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFill, options: requestOptions) { image, _ in
+//                        if let image = image {
+//                            DispatchQueue.main.async {
+//                                fetchedImages.append(image)
+//                                
+//                                // ✅ Only print every 100 images
+//                                if fetchedImages.count % 100 == 0 {
+//                                    print("Loaded image \(fetchedImages.count)/\(fetchResult.count)")
+//                                }
+//                            }
+//                        } else {
+//                            print("Skipping missing or iCloud-only image at index \(fetchedImages.count + 1)")
+//                        }
+//                    }
+//                }
+//                
+//                usleep(200_000) // ✅ Small delay to prevent UI freeze
+//            }
+//            
+//            DispatchQueue.main.async {
+//                let mainThreadStartTime = Date()
+//                self.photoAssets.append(contentsOf: fetchResult.objects(at: IndexSet(0..<fetchResult.count)))
+//                let mainThreadEndTime = Date()
+//                print("✅ Updated photoAssets. Time taken: \(mainThreadEndTime.timeIntervalSince(mainThreadStartTime)) seconds")
+//                
+//                let endTime = Date()
+//                print("⏳ fetchAllPhotos() completed in \(endTime.timeIntervalSince(startTime)) seconds")
+//            }
+//            
+//        }
+//    }
+
+    // New Code (Efficient - Updating photoAssets directly)
     func fetchAllPhotos() {
         let startTime = Date()
         print("⏳ fetchAllPhotos() started at \(startTime)")
-        
-        //        logMemoryUsage() // ✅ Log memory before loading images
-        
+
         DispatchQueue.global(qos: .userInitiated).async {
             print("📸 Fetching photos on background thread at \(Date())")
-            
+
             let fetchOptions = PHFetchOptions()
             fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
-            fetchOptions.fetchLimit = 100 // ✅ Only fetch the 500 most recent photos
-            
+            fetchOptions.fetchLimit = 100
+
             let fetchResult = PHAsset.fetchAssets(with: .image, options: fetchOptions)
             print("✅ Fetch completed. Found \(fetchResult.count) assets at \(Date())")
-            
-            var fetchedImages: [UIImage] = []
-            let imageManager = PHImageManager.default()
-            let requestOptions = PHImageRequestOptions()
-            requestOptions.isSynchronous = false
-            requestOptions.deliveryMode = .fastFormat // ✅ Fast-loading thumbnails
-            requestOptions.resizeMode = .fast
-            requestOptions.isNetworkAccessAllowed = true
-            
-            let batchSize = 20 // ✅ Process in batches of 20
-            for batchStart in stride(from: 0, to: fetchResult.count, by: batchSize) {
-                let batchEnd = min(batchStart + batchSize, fetchResult.count)
-                let batchAssets = fetchResult.objects(at: IndexSet(batchStart..<batchEnd))
-                
-                for asset in batchAssets {
-                    let targetSize = CGSize(width: 200, height: 200)
-                    imageManager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFill, options: requestOptions) { image, _ in
-                        if let image = image {
-                            DispatchQueue.main.async {
-                                fetchedImages.append(image)
-                                
-                                // ✅ Only print every 100 images
-                                if fetchedImages.count % 100 == 0 {
-                                    print("Loaded image \(fetchedImages.count)/\(fetchResult.count)")
-                                }
-                            }
-                        } else {
-                            print("Skipping missing or iCloud-only image at index \(fetchedImages.count + 1)")
-                        }
-                    }
-                }
-                
-                usleep(200_000) // ✅ Small delay to prevent UI freeze
-            }
-            
-            DispatchQueue.main.async {
+
+            DispatchQueue.main.async { // Update UI on main thread
                 let mainThreadStartTime = Date()
-                self.photoAssets.append(contentsOf: fetchResult.objects(at: IndexSet(0..<fetchResult.count)))
+                self.photoAssets = fetchResult.objects(at: IndexSet(0..<fetchResult.count)) // Direct assignment!
                 let mainThreadEndTime = Date()
                 print("✅ Updated photoAssets. Time taken: \(mainThreadEndTime.timeIntervalSince(mainThreadStartTime)) seconds")
-                
+
                 let endTime = Date()
                 print("⏳ fetchAllPhotos() completed in \(endTime.timeIntervalSince(startTime)) seconds")
             }
-            
         }
     }
-    
     
     // MARK: - Open App Settings
     func openSettings() {
