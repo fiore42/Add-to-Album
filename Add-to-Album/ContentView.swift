@@ -1,24 +1,5 @@
 import SwiftUI
 import PhotosUI
-//import os.log
-
-//func logMemoryUsage() {
-//    var info = task_vm_info()
-//    var count = mach_msg_type_number_t(MemoryLayout<task_vm_info>.size) / 4
-//
-//    let kerr = withUnsafeMutablePointer(to: &info) {
-//        $0.withMemoryRebound(to: integer_t.self, capacity: 1) {
-//            task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), $0, &count)
-//        }
-//    }
-//
-//    if kerr == KERN_SUCCESS {
-//        let memoryUsedMB = info.phys_footprint / (1024 * 1024)
-//        os_log("🧠 Memory usage: %u MB", memoryUsedMB)
-//    } else {
-//        os_log("❌ Memory usage query failed.")
-//    }
-//}
 
 struct SelectedImage: Identifiable {
     let id = UUID() // Unique identifier required for Identifiable
@@ -272,85 +253,17 @@ struct ContentView: View {
     }
 }
 
-//struct FullScreenImageView: View {
-//    let assets: [PHAsset] // Store assets instead of UIImages
-//    @State var selectedIndex: Int
-//    @State private var highResImage: UIImage?
-//    let onDismiss: () -> Void
-//
-//    var body: some View {
-//
-//        TabView(selection: $selectedIndex) {
-//            ForEach(visibleAssets(), id: \.index) { item in
-//                ZStack {
-//                    if let image = item.image {
-//                        Image(uiImage: image)
-//                            .resizable()
-//                            .scaledToFit()
-//                    } else {
-//                        ProgressView("Loading...")
-//                            .onAppear {
-//                                loadHighResImage(asset: item.asset)
-//                            }
-//                    }
-//                }
-//                .tag(item.index)
-//            }
-//        }
-//
-//        .tabViewStyle(PageTabViewStyle(indexDisplayMode: .automatic))
-//        .background(Color.black.edgesIgnoringSafeArea(.all))
-//        .onTapGesture {
-//            self.highResImage = nil // Release memory
-//            onDismiss()
-//        }
-//    }
-//
-//    func visibleAssets() -> [(index: Int, asset: PHAsset, image: UIImage?)] {
-//        let start = max(0, selectedIndex - 2)
-//        let end = min(assets.count - 1, selectedIndex + 2)
-//        
-//        return Array(assets[start...end].enumerated()).map { offset, asset in
-//            let actualIndex = start + offset
-//            return (index: actualIndex, asset: asset, image: actualIndex == selectedIndex ? highResImage : nil)
-//        }
-//    }
-//
-//    
-//    func loadHighResImage(asset: PHAsset) {
-//        DispatchQueue.main.async {
-//            self.highResImage = nil // ✅ Clear previous image to free memory
-//        }
-//
-//        let imageManager = PHImageManager.default()
-//        let requestOptions = PHImageRequestOptions()
-//        requestOptions.isSynchronous = false
-//        requestOptions.deliveryMode = .highQualityFormat
-//        requestOptions.isNetworkAccessAllowed = true
-//
-////        let targetSize = CGSize(width: UIScreen.main.bounds.width * 2, height: UIScreen.main.bounds.height * 2)
-//        let targetSize = CGSize(width: 1200, height: 1200) // Reduce size to lower memory usage
-//
-//        imageManager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFit, options: requestOptions) { image, _ in
-//            DispatchQueue.main.async {
-//                self.highResImage = image
-//            }
-//        }
-//    }
-//
-//    
-//}
-//
 
 struct FullScreenImageView: View {
     let assets: [PHAsset]
     @State var selectedIndex: Int
     @State private var highResImages: [Int: UIImage] = [:] // Store images per index
-    @State private var dragOffset: CGFloat = 0 // Track drag gesture
+    @Environment(\.dismiss) private var dismiss // For dismissing the view
     let onDismiss: () -> Void
     
     var body: some View {
-        ScrollViewReader { proxy in
+        ZStack {
+            // Main content
             TabView(selection: $selectedIndex) {
                 ForEach(visibleAssets(), id: \.index) { item in
                     ZStack {
@@ -359,30 +272,6 @@ struct FullScreenImageView: View {
                                 .resizable()
                                 .scaledToFit()
                                 .transition(.opacity)
-                                // Add gesture handling
-                                .gesture(
-                                    DragGesture()
-                                        .onChanged { value in
-                                            dragOffset = value.translation.width
-                                        }
-                                        .onEnded { value in
-                                            let threshold: CGFloat = 50
-                                            let velocity = value.predictedEndTranslation.width - value.translation.width
-                                            
-                                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                                if value.translation.width > threshold || velocity > 500 {
-                                                    if selectedIndex > 0 {
-                                                        selectedIndex -= 1
-                                                    }
-                                                } else if value.translation.width < -threshold || velocity < -500 {
-                                                    if selectedIndex < assets.count - 1 {
-                                                        selectedIndex += 1
-                                                    }
-                                                }
-                                                dragOffset = 0
-                                            }
-                                        }
-                                )
                         } else {
                             ProgressView("Loading...")
                                 .onAppear {
@@ -397,18 +286,43 @@ struct FullScreenImageView: View {
             }
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
             .background(Color.black.edgesIgnoringSafeArea(.all))
-            // Disable default TabView paging
-            .gesture(DragGesture())
-            .onAppear {
-                loadHighResImage(asset: assets[selectedIndex], index: selectedIndex)
+            
+            // Back button overlay
+            VStack {
+                HStack {
+                    Spacer()
+                    Button(action: {
+                        onDismiss()
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.title2)
+                            .foregroundColor(.white)
+                            .padding()
+                            .background(
+                                Circle()
+                                    .fill(Color.black.opacity(0.5))
+                            )
+                    }
+                    .padding(.top, 50) // Adjust for safe area
+                    .padding(.trailing, 20)
+                }
+                Spacer()
             }
-            .onChange(of: selectedIndex) { oldIndex, newIndex in
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                    proxy.scrollTo(newIndex, anchor: .center)
-                }
-                if highResImages[newIndex] == nil {
-                    loadHighResImage(asset: assets[newIndex], index: newIndex)
-                }
+        }
+        .ignoresSafeArea()
+        .onAppear {
+            loadHighResImage(asset: assets[selectedIndex], index: selectedIndex)
+        }
+        .onChange(of: selectedIndex) { oldIndex, newIndex in
+            if highResImages[newIndex] == nil {
+                loadHighResImage(asset: assets[newIndex], index: newIndex)
+            }
+            // Preload next and previous images
+            if newIndex + 1 < assets.count && highResImages[newIndex + 1] == nil {
+                loadHighResImage(asset: assets[newIndex + 1], index: newIndex + 1)
+            }
+            if newIndex - 1 >= 0 && highResImages[newIndex - 1] == nil {
+                loadHighResImage(asset: assets[newIndex - 1], index: newIndex - 1)
             }
         }
     }
