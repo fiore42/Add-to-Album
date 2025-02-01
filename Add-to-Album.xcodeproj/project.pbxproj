@@ -248,7 +248,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\n#!/bin/sh\n\n# Define your repository path\nREPO_PATH=\"$SRCROOT\"\n\necho \"REPO_PATH: $REPO_PATH\"\n\n# Define commit message\nCOMMIT_MSG=\"Auto-commit: $(date +'%Y-%m-%d %H:%M:%S')\"\n\n# Navigate to repo\ncd \"$REPO_PATH\" || exit 1\n\necho \"📢 Current Directory: $(pwd)\"\nls -la\n\nwhoami\n\n# Debugging Git Config\necho \"📢 Checking Git Configuration in Xcode\"\n\necho \"Git User Name: $(git config --global user.name)\"\necho \"Git User Email: $(git config --global user.email)\"\n\necho \"📢 Current Directory: $(pwd)\"\n\n/opt/homebrew/bin/git rev-parse --is-inside-work-tree\n\n/opt/homebrew/bin/git status\n\n# Check for changes\nif [[ $(/opt/homebrew/bin/git status --porcelain) ]]; then\n    echo \"🔄 Changes detected, committing...\"\n    \n    # Add all changes\n    git add .\n\n    # Commit the changes\n    git commit -m \"$COMMIT_MSG\"\n\n    # Push to GitHub\n    git push origin main # Change 'main' to your default branch if needed\n\n    echo \"✅ Code successfully pushed to GitHub.\"\nelse\n    echo \"✅ No changes detected. Nothing to commit.\"\nfi\n";
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\n\n#!/bin/sh\n\n# Define your repository path\nREPO_PATH=\"$SRCROOT\"\n\n# Define commit message\nCOMMIT_MSG=\"Auto-commit: $(date +'%Y-%m-%d %H:%M:%S')\"\n\n# Navigate to repo\ncd \"$REPO_PATH\" || exit 1\n\n# Check for changes\nif [[ $(/opt/homebrew/bin/git status --porcelain) ]]; then\n    echo \"🔄 Changes detected, committing...\"\n    # Add all changes\n    git add .\n    # Commit the changes\n    git commit -m \"$COMMIT_MSG\"\n    # Push to GitHub\n    git push origin main # Change 'main' to your default branch if needed\n    echo \"✅ Code successfully pushed to GitHub.\"\nelse\n    echo \"✅ No changes detected. Nothing to commit.\"\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -419,6 +419,7 @@
 				DEVELOPMENT_ASSET_PATHS = "\"Add-to-Album/Preview Content\"";
 				DEVELOPMENT_TEAM = Z7RXQ3VS54;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "My app uses photos to add them to folders";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -449,6 +450,7 @@
 				DEVELOPMENT_ASSET_PATHS = "\"Add-to-Album/Preview Content\"";
 				DEVELOPMENT_TEAM = Z7RXQ3VS54;
 				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "My app uses photos to add them to folders";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
