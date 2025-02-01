@@ -14,6 +14,7 @@ struct ContentView: View {
     @State private var selectedImage: SelectedImage? = nil
     @State private var currentPage = 0
     @State private var isLoadingMore = false
+    @State private var maxPhotosLoaded = 300 // Limit the number of loaded photos
     private let batchSize = 30  // Reduced batch size for smoother loading
     
     
@@ -115,8 +116,9 @@ struct ContentView: View {
     }
     
     func loadNextBatch() {
-        guard !isLoadingMore else { return }
-        
+//        guard !isLoadingMore else { return }
+        guard !isLoadingMore && photoAssets.count < maxPhotosLoaded else { return } // Check max limit
+
         isLoadingMore = true
         let startTime = Date()
         let currentCount = photoAssets.count
@@ -419,7 +421,7 @@ struct FullScreenImageView: View {
                         .onEnded { value in
                             dragging = false
                             let predictedEndOffset = value.predictedEndTranslation.width
-                            let threshold: CGFloat = 100
+//                            let threshold: CGFloat = 100
                             
                             print("🛑 Swipe Ended - selectedIndex: \(selectedIndex), offset: \(offset), predicted: \(predictedEndOffset)")
 
@@ -546,7 +548,7 @@ struct FullScreenImageView: View {
 
 
             DispatchQueue.main.async {
-                // 3. Remove pending request
+                // 3. Remove pending request *always* (Crucial fix)
                 self.imageLoadRequests.remove(index)
 
                 if let image = image {
@@ -571,6 +573,12 @@ struct FullScreenImageView: View {
 //            }
         }
     }
+
+//    private func visibleImageIndexes() -> [Int] {
+//        let minIndex = max(0, selectedIndex - 1)
+//        let maxIndex = min(assets.count - 1, selectedIndex + 1)
+//        return Array(minIndex...maxIndex) // Create an array of visible indexes
+//    }
     
     func visibleImageIndexes() -> [Int] {
         let start = max(0, selectedIndex - 1)  // Load previous image
