@@ -346,7 +346,7 @@ struct FullScreenImageView: View {
             // Main content
                        GeometryReader { geometry in
                            HStack(spacing: 0) {
-                               ForEach(0..<assets.count, id: \.self) { index in
+                               ForEach(visibleImageIndexes(), id: \.self) { index in
                                    ZStack {
                                        if let image = highResImages[index] {
                                            Image(uiImage: image)
@@ -474,4 +474,14 @@ struct FullScreenImageView: View {
             }
         }
     }
+    
+    func visibleImageIndexes() -> [Int] {
+        let start = max(0, selectedIndex - 1)  // Load previous image
+        let end = min(assets.count - 1, selectedIndex + 1)  // Load next image
+
+        print("📌 Visible image indexes: \(start) to \(end)")
+        
+        return Array(start...end)
+    }
+
 }
