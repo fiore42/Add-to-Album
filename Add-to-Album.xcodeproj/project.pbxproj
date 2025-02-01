@@ -102,6 +102,7 @@
 				0518062C2D3D77D20082983A /* Sources */,
 				0518062D2D3D77D20082983A /* Frameworks */,
 				0518062E2D3D77D20082983A /* Resources */,
+				05A1BC1F2D4E8F3F0068ADF7 /* ShellScript */,
 			);
 			buildRules = (
 			);
@@ -230,6 +231,26 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		05A1BC1F2D4E8F3F0068ADF7 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\n#!/bin/sh\n\n# Define your repository path\nREPO_PATH=\"$SRCROOT\"\n\n# Define commit message\nCOMMIT_MSG=\"Auto-commit: $(date +'%Y-%m-%d %H:%M:%S')\"\n\n# Navigate to repo\ncd \"$REPO_PATH\" || exit 1\n\n# Check for changes\nif [[ $(git status --porcelain) ]]; then\n    echo \"🔄 Changes detected, committing...\"\n    \n    # Add all changes\n    git add .\n\n    # Commit the changes\n    git commit -m \"$COMMIT_MSG\"\n\n    # Push to GitHub\n    git push origin main # Change 'main' to your default branch if needed\n\n    echo \"✅ Code successfully pushed to GitHub.\"\nelse\n    echo \"✅ No changes detected. Nothing to commit.\"\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		0518062C2D3D77D20082983A /* Sources */ = {
@@ -399,6 +420,7 @@
 				DEVELOPMENT_TEAM = Z7RXQ3VS54;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "My app uses photos to add them to folders";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -428,6 +450,7 @@
 				DEVELOPMENT_TEAM = Z7RXQ3VS54;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "My app uses photos to add them to folders";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
