@@ -29,7 +29,10 @@ struct ContentView: View {
                             ForEach(Array(photoAssets.enumerated()), id: \.offset) { index, asset in
                                 ImageThumbnailView(asset: asset)
                                     .onTapGesture {
-                                        selectedImage = SelectedImage(index: index)
+                                        DispatchQueue.main.async {
+                                            selectedImage = SelectedImage(index: index)
+                                        }
+//                                        selectedImage = SelectedImage(index: index)
                                     }
                                     .onAppear {
                                         // Load more when reaching 15 items before the end
@@ -347,6 +350,7 @@ struct FullScreenImageView: View {
                        GeometryReader { geometry in
                            HStack(spacing: 0) {
                                ForEach(visibleImageIndexes(), id: \.self) { index in
+                                   let asset = assets[index]  // Ensure correct mapping
                                    ZStack {
                                        if let image = highResImages[index] {
                                            Image(uiImage: image)
@@ -356,7 +360,8 @@ struct FullScreenImageView: View {
                                        } else {
                                            ProgressView("Loading...")
                                                .onAppear {
-                                                   loadHighResImage(asset: assets[index], index: index)
+                                                   loadHighResImage(asset: asset, index: index)
+//                                                   loadHighResImage(asset: assets[index], index: index)
                                                }
                                        }
                                    }
@@ -479,9 +484,11 @@ struct FullScreenImageView: View {
         let start = max(0, selectedIndex - 1)  // Load previous image
         let end = min(assets.count - 1, selectedIndex + 1)  // Load next image
 
-        print("📌 Visible image indexes: \(start) to \(end)")
+        let indexes = Array(start...end)
+
+        print("📌 Corrected Visible image indexes: \(indexes)")
         
-        return Array(start...end)
+        return indexes
     }
 
 }
