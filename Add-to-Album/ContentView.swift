@@ -387,11 +387,14 @@ struct FullScreenImageView: View {
                         .onChanged { value in
                             dragging = true
                             offset = value.translation.width
+                            print("🟠 Dragging - selectedIndex: \(selectedIndex), offset: \(offset), translation: \(value.translation.width)")
                         }
                         .onEnded { value in
                             dragging = false
                             let predictedEndOffset = value.predictedEndTranslation.width
                             let threshold: CGFloat = 100
+
+                            print("🛑 Swipe Ended - selectedIndex: \(selectedIndex), offset: \(offset), predicted: \(predictedEndOffset)")
 
                             let previousIndex = selectedIndex  // Debugging
 
@@ -434,13 +437,16 @@ struct FullScreenImageView: View {
         }
         .ignoresSafeArea()
         .onAppear {
-            print("🟢 onAppear - FullScreenImageView appeared with selectedIndex: \(selectedIndex) at \(Date())")
+            print("🟢 FullScreenImageView appeared - selectedIndex: \(selectedIndex), offset: \(offset)")
+//            print("🟢 onAppear - FullScreenImageView appeared with selectedIndex: \(selectedIndex) at \(Date())")
             loadVisibleImages()
         }
         .onChange(of: selectedIndex) { oldIndex, newIndex in
             print("🔄 onChange - selectedIndex changed from \(oldIndex) to \(newIndex) at \(Date())")
-            loadVisibleImages()
-        }
+            DispatchQueue.main.async {
+                print("🟡 Confirmed UI update for new selectedIndex: \(selectedIndex)")
+                loadVisibleImages()
+            }        }
     }
     
     //    private func loadVisibleImages() {
