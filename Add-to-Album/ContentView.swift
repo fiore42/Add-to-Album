@@ -396,19 +396,24 @@ struct FullScreenImageView: View {
 
                             print("🛑 Swipe Ended - selectedIndex: \(selectedIndex), offset: \(offset), predicted: \(predictedEndOffset)")
 
-                            let previousIndex = selectedIndex  // Debugging
+                            // Prevent double swipe issue
+                            if abs(predictedEndOffset) > threshold {
+                                let newIndex = selectedIndex + (predictedEndOffset < 0 ? 1 : -1)
+                                print("🟡 Evaluated newIndex: \(newIndex) (before applying limits)")
 
-                            withAnimation(.interactiveSpring()) {
-                                if predictedEndOffset > threshold && selectedIndex > 0 {
-                                    selectedIndex -= 1
-                                } else if predictedEndOffset < -threshold && selectedIndex < assets.count - 1 {
-                                    selectedIndex += 1
+                                // Ensure within bounds
+                                let finalIndex = min(max(0, newIndex), assets.count - 1)
+                                print("🟠 Final selectedIndex: \(finalIndex) (after limits)")
+
+                                // Check if we're accidentally triggering an extra swipe
+                                if finalIndex != selectedIndex {
+                                    withAnimation(.interactiveSpring()) {
+                                        selectedIndex = finalIndex
+                                    }
                                 }
-                                offset = 0
                             }
-                            print("🛑 SWIPE DEBUG: Previous Index = \(previousIndex), New Index = \(selectedIndex), Offset = \(offset)")
 
-//                            print("🛑 Swipe Debug: Previous Index = \(previousIndex), New Index = \(selectedIndex) at \(Date())")
+                            offset = 0
                         }
                 )
             }
@@ -443,10 +448,18 @@ struct FullScreenImageView: View {
         }
         .onChange(of: selectedIndex) { oldIndex, newIndex in
             print("🔄 onChange - selectedIndex changed from \(oldIndex) to \(newIndex) at \(Date())")
+
+            // Prevent duplicate triggers
+            if oldIndex == newIndex {
+                print("⚠️ Duplicate onChange detected! Ignoring duplicate call.")
+                return
+            }
+
             DispatchQueue.main.async {
                 print("🟡 Confirmed UI update for new selectedIndex: \(selectedIndex)")
                 loadVisibleImages()
-            }        }
+            }
+        }
     }
     
     //    private func loadVisibleImages() {
