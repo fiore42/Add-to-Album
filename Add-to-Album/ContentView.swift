@@ -118,8 +118,11 @@ struct ContentView: View {
             guard !isLoadingMore else { return }
             
             isLoadingMore = true
+            let startTime = Date()
             let currentCount = photoAssets.count
             
+            print("🔄 Loading next batch of images at \(startTime) (current count: \(currentCount))")
+
             DispatchQueue.global(qos: .userInitiated).async {
                 let fetchOptions = PHFetchOptions()
                 fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
@@ -128,6 +131,9 @@ struct ContentView: View {
                 fetchOptions.fetchLimit = currentCount + batchSize
                 
                 let fetchResult = PHAsset.fetchAssets(with: .image, options: fetchOptions)
+                let fetchEndTime = Date()
+                print("✅ Fetch batch completed. Time taken: \(fetchEndTime.timeIntervalSince(startTime)) seconds")
+
                 
                 // Calculate the range for new assets
                 let startIndex = currentCount
@@ -138,6 +144,7 @@ struct ContentView: View {
                     DispatchQueue.main.async {
                         isLoadingMore = false
                     }
+                    print("⚠️ No new assets found to load")
                     return
                 }
                 
@@ -146,6 +153,8 @@ struct ContentView: View {
                 let newAssets = fetchResult.objects(at: indexSet)
                 
                 DispatchQueue.main.async {
+                    let mainThreadStart = Date()
+
                     // Append new assets in chunks to prevent UI freezes
                     let chunkSize = 10
                     for chunk in stride(from: 0, to: newAssets.count, by: chunkSize) {
@@ -160,6 +169,10 @@ struct ContentView: View {
                     
                     currentPage += 1
                     isLoadingMore = false
+                    let mainThreadEnd = Date()
+                    print("✅ Updated photoAssets. UI update time: \(mainThreadEnd.timeIntervalSince(mainThreadStart)) seconds")
+                    print("🔄 Batch load complete. Total duration: \(mainThreadEnd.timeIntervalSince(startTime)) seconds")
+
                 }
             }
         }
@@ -244,19 +257,20 @@ struct ContentView: View {
     
     // MARK: - Fetch All Photos
     func fetchAllPhotos() {
-        print("Starting fetchAllPhotos()") // Debugging Step 1
-        
+        let startTime = Date()
+        print("⏳ fetchAllPhotos() started at \(startTime)")
+
 //        logMemoryUsage() // ✅ Log memory before loading images
 
         DispatchQueue.global(qos: .userInitiated).async {
-            print("Fetching photos on background thread") // Debugging Step 2
+            print("📸 Fetching photos on background thread at \(Date())")
 
             let fetchOptions = PHFetchOptions()
             fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
             fetchOptions.fetchLimit = 100 // ✅ Only fetch the 500 most recent photos
 
             let fetchResult = PHAsset.fetchAssets(with: .image, options: fetchOptions)
-            print("Fetched \(fetchResult.count) photos") // Debugging Step 3
+            print("✅ Fetch completed. Found \(fetchResult.count) assets at \(Date())")
 
             var fetchedImages: [UIImage] = []
             let imageManager = PHImageManager.default()
@@ -293,11 +307,13 @@ struct ContentView: View {
             }
 
             DispatchQueue.main.async {
-  //              self.photoAssets = Array(fetchResult.objects(at: IndexSet(0..<fetchResult.count))) // ✅ Update photoAssets
-//                self.images = fetchedImages
+                let mainThreadStartTime = Date()
                 self.photoAssets.append(contentsOf: fetchResult.objects(at: IndexSet(0..<fetchResult.count)))
+                let mainThreadEndTime = Date()
+                print("✅ Updated photoAssets. Time taken: \(mainThreadEndTime.timeIntervalSince(mainThreadStartTime)) seconds")
 
-                print("✅ Updated photoAssets with \(self.photoAssets.count) assets") // Debugging Step 5
+                let endTime = Date()
+                print("⏳ fetchAllPhotos() completed in \(endTime.timeIntervalSince(startTime)) seconds")
             }
 
         }
@@ -427,9 +443,13 @@ struct FullScreenImageView: View {
     func loadHighResImage(asset: PHAsset, index: Int) {
         // Skip if already loaded
         if highResImages[index] != nil {
+            print("✅ Image at index \(index) already loaded. Skipping.")
             return
         }
         
+        let startTime = Date()
+        print("🔍 Starting high-res image load for index \(index) at \(startTime)")
+
         let imageManager = PHImageManager.default()
         let requestOptions = PHImageRequestOptions()
         requestOptions.isSynchronous = false
@@ -438,10 +458,19 @@ struct FullScreenImageView: View {
         
         let targetSize = CGSize(width: UIScreen.main.bounds.width * 2, height: UIScreen.main.bounds.height * 2)
         imageManager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFit, options: requestOptions) { image, _ in
+            let endTime = Date()
+
             if let image = image {
                 DispatchQueue.main.async {
-                    highResImages[index] = image
+//                    highResImages[index] = image
+                    self.highResImages[index] = image
+                    print("✅ High-res image for index \(index) loaded in \(endTime.timeIntervalSince(startTime)) seconds")
+
                 }
+            }
+            else {
+                print("❌ Failed to load high-res image for index \(index)")
+
             }
         }
     }
