@@ -346,8 +346,9 @@ struct FullScreenImageView: View {
     let assets: [PHAsset]
     @State var selectedIndex: Int
     @State private var highResImages: [Int: UIImage] = [:] // Store images per index
+    @State private var dragOffset: CGFloat = 0 // Track drag gesture
     let onDismiss: () -> Void
-
+    
     var body: some View {
         ScrollViewReader { proxy in
             TabView(selection: $selectedIndex) {
@@ -357,7 +358,31 @@ struct FullScreenImageView: View {
                             Image(uiImage: image)
                                 .resizable()
                                 .scaledToFit()
-                                .transition(.opacity) // Smooth transition
+                                .transition(.opacity)
+                                // Add gesture handling
+                                .gesture(
+                                    DragGesture()
+                                        .onChanged { value in
+                                            dragOffset = value.translation.width
+                                        }
+                                        .onEnded { value in
+                                            let threshold: CGFloat = 50
+                                            let velocity = value.predictedEndTranslation.width - value.translation.width
+                                            
+                                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                                if value.translation.width > threshold || velocity > 500 {
+                                                    if selectedIndex > 0 {
+                                                        selectedIndex -= 1
+                                                    }
+                                                } else if value.translation.width < -threshold || velocity < -500 {
+                                                    if selectedIndex < assets.count - 1 {
+                                                        selectedIndex += 1
+                                                    }
+                                                }
+                                                dragOffset = 0
+                                            }
+                                        }
+                                )
                         } else {
                             ProgressView("Loading...")
                                 .onAppear {
@@ -372,12 +397,14 @@ struct FullScreenImageView: View {
             }
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
             .background(Color.black.edgesIgnoringSafeArea(.all))
+            // Disable default TabView paging
+            .gesture(DragGesture())
             .onAppear {
-                loadHighResImage(asset: assets[selectedIndex], index: selectedIndex) // Preload selected image
+                loadHighResImage(asset: assets[selectedIndex], index: selectedIndex)
             }
             .onChange(of: selectedIndex) { oldIndex, newIndex in
-                withAnimation {
-                    proxy.scrollTo(newIndex, anchor: .center) // Ensures full image is snapped
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    proxy.scrollTo(newIndex, anchor: .center)
                 }
                 if highResImages[newIndex] == nil {
                     loadHighResImage(asset: assets[newIndex], index: newIndex)
@@ -385,7 +412,7 @@ struct FullScreenImageView: View {
             }
         }
     }
-
+    
     func visibleAssets() -> [(index: Int, asset: PHAsset)] {
         let start = max(0, selectedIndex - 2)
         let end = min(assets.count - 1, selectedIndex + 2)
@@ -394,14 +421,14 @@ struct FullScreenImageView: View {
             return (index: actualIndex, asset: asset)
         }
     }
-
+    
     func loadHighResImage(asset: PHAsset, index: Int) {
         let imageManager = PHImageManager.default()
         let requestOptions = PHImageRequestOptions()
         requestOptions.isSynchronous = false
         requestOptions.deliveryMode = .highQualityFormat
         requestOptions.isNetworkAccessAllowed = true
-
+        
         let targetSize = CGSize(width: UIScreen.main.bounds.width * 2, height: UIScreen.main.bounds.height * 2)
         imageManager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFit, options: requestOptions) { image, _ in
             if let image = image {
