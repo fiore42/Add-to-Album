@@ -7,15 +7,15 @@ struct SelectedImage: Identifiable {
 }
 
 struct ContentView: View {
-    @State private var images: [UIImage] = []
+    @State private var photoAssets: [PHAsset] = []
     @State private var photoAccessStatus: PHAuthorizationStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
     @State private var showAlert = false
     @State private var alertMessage = ""
-    @State private var photoAssets: [PHAsset] = []
     @State private var selectedImage: SelectedImage? = nil
     @State private var currentPage = 0
     @State private var isLoadingMore = false
-    private let batchSize = 50
+    private let batchSize = 30  // Reduced batch size for smoother loading
+
 
     var body: some View {
         NavigationView {
@@ -23,15 +23,17 @@ struct ContentView: View {
                 switch photoAccessStatus {
                 case .authorized:
                     ScrollView {
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 10) {
+                        LazyVGrid(columns: [
+                            GridItem(.adaptive(minimum: 100), spacing: 2)
+                        ], spacing: 2) {
                             ForEach(Array(photoAssets.enumerated()), id: \.offset) { index, asset in
                                 ImageThumbnailView(asset: asset)
                                     .onTapGesture {
                                         selectedImage = SelectedImage(index: index)
                                     }
-                                    // Load more when reaching near the end
                                     .onAppear {
-                                        if index == photoAssets.count - 10 && !isLoadingMore {
+                                        // Load more when reaching 15 items before the end
+                                        if index == photoAssets.count - 15 && !isLoadingMore {
                                             loadNextBatch()
                                         }
                                     }
@@ -113,71 +115,100 @@ struct ContentView: View {
     }
     
     func loadNextBatch() {
-        guard !isLoadingMore else { return }
-        isLoadingMore = true
-        
-        DispatchQueue.global(qos: .userInitiated).async {
-            let fetchOptions = PHFetchOptions()
-            fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
-            fetchOptions.fetchLimit = batchSize * (currentPage + 1)
+            guard !isLoadingMore else { return }
             
-            let fetchResult = PHAsset.fetchAssets(with: .image, options: fetchOptions)
-            let startIndex = currentPage * batchSize
-            let endIndex = min(startIndex + batchSize, fetchResult.count)
+            isLoadingMore = true
+            let currentCount = photoAssets.count
             
-            // If we've fetched all available photos, don't continue
-            guard startIndex < fetchResult.count else {
+            DispatchQueue.global(qos: .userInitiated).async {
+                let fetchOptions = PHFetchOptions()
+                fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+                
+                // Use fetchLimit to get only what we need
+                fetchOptions.fetchLimit = currentCount + batchSize
+                
+                let fetchResult = PHAsset.fetchAssets(with: .image, options: fetchOptions)
+                
+                // Calculate the range for new assets
+                let startIndex = currentCount
+                let endIndex = min(startIndex + batchSize, fetchResult.count)
+                
+                // Check if we have new assets to load
+                guard startIndex < fetchResult.count else {
+                    DispatchQueue.main.async {
+                        isLoadingMore = false
+                    }
+                    return
+                }
+                
+                // Use sparse array to fetch only the new assets
+                let indexSet = IndexSet(startIndex..<endIndex)
+                let newAssets = fetchResult.objects(at: indexSet)
+                
                 DispatchQueue.main.async {
+                    // Append new assets in chunks to prevent UI freezes
+                    let chunkSize = 10
+                    for chunk in stride(from: 0, to: newAssets.count, by: chunkSize) {
+                        let endChunk = min(chunk + chunkSize, newAssets.count)
+                        let assetsChunk = Array(newAssets[chunk..<endChunk])
+                        
+                        // Add small delay between chunks
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1 * Double(chunk/chunkSize)) {
+                            photoAssets.append(contentsOf: assetsChunk)
+                        }
+                    }
+                    
+                    currentPage += 1
                     isLoadingMore = false
                 }
-                return
-            }
-            
-            let newAssets = fetchResult.objects(at: IndexSet(startIndex..<endIndex))
-            
-            DispatchQueue.main.async {
-                photoAssets.append(contentsOf: newAssets)
-                currentPage += 1
-                isLoadingMore = false
             }
         }
-    }
 
     struct ImageThumbnailView: View {
         let asset: PHAsset
         @State private var thumbnail: UIImage?
-
+        
         var body: some View {
-            if let image = thumbnail {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 100, height: 100)
-                    .clipped()
-            } else {
-                Color.gray
-                    .frame(width: 100, height: 100)
-                    .onAppear {
-                        loadThumbnail()
-                    }
+            Group {
+                if let image = thumbnail {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 100, height: 100)
+                        .clipped()
+                } else {
+                    Color.gray
+                        .frame(width: 100, height: 100)
+                        .onAppear {
+                            loadThumbnail()
+                        }
+                }
             }
         }
-
+        
         func loadThumbnail() {
             let imageManager = PHImageManager.default()
             let requestOptions = PHImageRequestOptions()
             requestOptions.isSynchronous = false
-            requestOptions.deliveryMode = .fastFormat
-
-            let targetSize = CGSize(width: 100, height: 100) // Small size for speed
-            imageManager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFill, options: requestOptions) { image, _ in
-                DispatchQueue.main.async {
-                    self.thumbnail = image
+            requestOptions.deliveryMode = .opportunistic  // Changed to opportunistic for better performance
+            requestOptions.resizeMode = .exact  // Changed to exact for better quality/performance ratio
+            
+            let targetSize = CGSize(width: 200, height: 200)  // Increased size for better quality
+            imageManager.requestImage(
+                for: asset,
+                targetSize: targetSize,
+                contentMode: .aspectFill,
+                options: requestOptions
+            ) { image, _ in
+                if let image = image {
+                    DispatchQueue.main.async {
+                        self.thumbnail = image
+                    }
                 }
             }
         }
     }
-
+        
     
     // MARK: - Request Photo Library Access
     func requestPhotoLibraryAccess() {
@@ -246,6 +277,7 @@ struct ContentView: View {
                         if let image = image {
                             DispatchQueue.main.async {
                                 fetchedImages.append(image)
+                                
                                 // ✅ Only print every 100 images
                                 if fetchedImages.count % 100 == 0 {
                                     print("Loaded image \(fetchedImages.count)/\(fetchResult.count)")
@@ -261,8 +293,10 @@ struct ContentView: View {
             }
 
             DispatchQueue.main.async {
-                self.photoAssets = Array(fetchResult.objects(at: IndexSet(0..<fetchResult.count))) // ✅ Update photoAssets
-                self.images = fetchedImages
+  //              self.photoAssets = Array(fetchResult.objects(at: IndexSet(0..<fetchResult.count))) // ✅ Update photoAssets
+//                self.images = fetchedImages
+                self.photoAssets.append(contentsOf: fetchResult.objects(at: IndexSet(0..<fetchResult.count)))
+
                 print("✅ Updated photoAssets with \(self.photoAssets.count) assets") // Debugging Step 5
             }
 
