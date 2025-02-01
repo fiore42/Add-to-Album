@@ -196,7 +196,7 @@ struct ContentView: View {
 
             let fetchOptions = PHFetchOptions()
             fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
-            fetchOptions.fetchLimit = 500 // ✅ Only fetch the 500 most recent photos
+            fetchOptions.fetchLimit = 100 // ✅ Only fetch the 500 most recent photos
 
             let fetchResult = PHAsset.fetchAssets(with: .image, options: fetchOptions)
             print("Fetched \(fetchResult.count) photos") // Debugging Step 3
@@ -269,9 +269,9 @@ struct FullScreenImageView: View {
             // Main content
             GeometryReader { geometry in
                 HStack(spacing: 0) {
-                    ForEach(visibleAssets(), id: \.index) { item in
+                    ForEach(0..<assets.count, id: \.self) { index in
                         ZStack {
-                            if let image = highResImages[item.index] {
+                            if let image = highResImages[index] {
                                 Image(uiImage: image)
                                     .resizable()
                                     .scaledToFit()
@@ -279,9 +279,7 @@ struct FullScreenImageView: View {
                             } else {
                                 ProgressView("Loading...")
                                     .onAppear {
-                                        if highResImages[item.index] == nil {
-                                            loadHighResImage(asset: item.asset, index: item.index)
-                                        }
+                                        loadHighResImage(asset: assets[index], index: index)
                                     }
                             }
                         }
@@ -338,39 +336,35 @@ struct FullScreenImageView: View {
         }
         .ignoresSafeArea()
         .onAppear {
-            loadHighResImage(asset: assets[selectedIndex], index: selectedIndex)
-            // Preload adjacent images
-            if selectedIndex > 0 {
-                loadHighResImage(asset: assets[selectedIndex - 1], index: selectedIndex - 1)
-            }
-            if selectedIndex < assets.count - 1 {
-                loadHighResImage(asset: assets[selectedIndex + 1], index: selectedIndex + 1)
-            }
+            // Load initial images
+            loadVisibleImages()
         }
         .onChange(of: selectedIndex) { oldIndex, newIndex in
-            if highResImages[newIndex] == nil {
-                loadHighResImage(asset: assets[newIndex], index: newIndex)
-            }
-            // Preload next and previous images
-            if newIndex + 1 < assets.count {
-                loadHighResImage(asset: assets[newIndex + 1], index: newIndex + 1)
-            }
-            if newIndex - 1 >= 0 {
-                loadHighResImage(asset: assets[newIndex - 1], index: newIndex - 1)
-            }
+            loadVisibleImages()
         }
     }
     
-    func visibleAssets() -> [(index: Int, asset: PHAsset)] {
-        let start = max(0, selectedIndex - 1)
-        let end = min(assets.count - 1, selectedIndex + 1)
-        return assets[start...end].enumerated().map { offset, asset in
-            let actualIndex = start + offset
-            return (index: actualIndex, asset: asset)
+    private func loadVisibleImages() {
+        // Load current image
+        loadHighResImage(asset: assets[selectedIndex], index: selectedIndex)
+        
+        // Load previous image if exists
+        if selectedIndex > 0 {
+            loadHighResImage(asset: assets[selectedIndex - 1], index: selectedIndex - 1)
+        }
+        
+        // Load next image if exists
+        if selectedIndex < assets.count - 1 {
+            loadHighResImage(asset: assets[selectedIndex + 1], index: selectedIndex + 1)
         }
     }
     
     func loadHighResImage(asset: PHAsset, index: Int) {
+        // Skip if already loaded
+        if highResImages[index] != nil {
+            return
+        }
+        
         let imageManager = PHImageManager.default()
         let requestOptions = PHImageRequestOptions()
         requestOptions.isSynchronous = false
