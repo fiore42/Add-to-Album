@@ -257,70 +257,6 @@ struct ContentView: View {
     }
     
     
-    
-    // MARK: - Fetch All Photos
-//    func fetchAllPhotos() {
-//        let startTime = Date()
-//        print("⏳ fetchAllPhotos() started at \(startTime)")
-//        
-//        //        logMemoryUsage() // ✅ Log memory before loading images
-//        
-//        DispatchQueue.global(qos: .userInitiated).async {
-//            print("📸 Fetching photos on background thread at \(Date())")
-//            
-//            let fetchOptions = PHFetchOptions()
-//            fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
-//            fetchOptions.fetchLimit = 100 // ✅ Only fetch the 500 most recent photos
-//            
-//            let fetchResult = PHAsset.fetchAssets(with: .image, options: fetchOptions)
-//            print("✅ Fetch completed. Found \(fetchResult.count) assets at \(Date())")
-//            
-//            var fetchedImages: [UIImage] = []
-//            let imageManager = PHImageManager.default()
-//            let requestOptions = PHImageRequestOptions()
-//            requestOptions.isSynchronous = false
-//            requestOptions.deliveryMode = .fastFormat // ✅ Fast-loading thumbnails
-//            requestOptions.resizeMode = .fast
-//            requestOptions.isNetworkAccessAllowed = true
-//            
-//            let batchSize = 20 // ✅ Process in batches of 20
-//            for batchStart in stride(from: 0, to: fetchResult.count, by: batchSize) {
-//                let batchEnd = min(batchStart + batchSize, fetchResult.count)
-//                let batchAssets = fetchResult.objects(at: IndexSet(batchStart..<batchEnd))
-//                
-//                for asset in batchAssets {
-//                    let targetSize = CGSize(width: 200, height: 200)
-//                    imageManager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFill, options: requestOptions) { image, _ in
-//                        if let image = image {
-//                            DispatchQueue.main.async {
-//                                fetchedImages.append(image)
-//                                
-//                                // ✅ Only print every 100 images
-//                                if fetchedImages.count % 100 == 0 {
-//                                    print("Loaded image \(fetchedImages.count)/\(fetchResult.count)")
-//                                }
-//                            }
-//                        } else {
-//                            print("Skipping missing or iCloud-only image at index \(fetchedImages.count + 1)")
-//                        }
-//                    }
-//                }
-//                
-//                usleep(200_000) // ✅ Small delay to prevent UI freeze
-//            }
-//            
-//            DispatchQueue.main.async {
-//                let mainThreadStartTime = Date()
-//                self.photoAssets.append(contentsOf: fetchResult.objects(at: IndexSet(0..<fetchResult.count)))
-//                let mainThreadEndTime = Date()
-//                print("✅ Updated photoAssets. Time taken: \(mainThreadEndTime.timeIntervalSince(mainThreadStartTime)) seconds")
-//                
-//                let endTime = Date()
-//                print("⏳ fetchAllPhotos() completed in \(endTime.timeIntervalSince(startTime)) seconds")
-//            }
-//            
-//        }
-//    }
 
     // New Code (Efficient - Updating photoAssets directly)
     func fetchAllPhotos() {
@@ -390,8 +326,11 @@ struct FullScreenImageView: View {
                                 ProgressView("Loading...")
                                     .onAppear {
                                         print("🟡 Loading requested for index \(index) (selectedIndex: \(selectedIndex))")
-
-                                        loadHighResImage(asset: asset, index: index)
+                                        // Decoupled Loading from onAppear (Important!)
+                                        DispatchQueue.main.async { // Load after view appears
+                                            loadHighResImage(asset: assets[index], index: index)
+                                        }
+//                                        loadHighResImage(asset: asset, index: index)
                                         //                                                   loadHighResImage(asset: assets[index], index: index)
                                     }
                             }
@@ -491,20 +430,7 @@ struct FullScreenImageView: View {
         }
     }
     
-    //    private func loadVisibleImages() {
-    //        // Load current image
-    //        loadHighResImage(asset: assets[selectedIndex], index: selectedIndex)
-    //
-    //        // Load previous image if exists
-    //        if selectedIndex > 0 {
-    //            loadHighResImage(asset: assets[selectedIndex - 1], index: selectedIndex - 1)
-    //        }
-    //
-    //        // Load next image if exists
-    //        if selectedIndex < assets.count - 1 {
-    //            loadHighResImage(asset: assets[selectedIndex + 1], index: selectedIndex + 1)
-    //        }
-    //    }
+
     
     private func loadVisibleImages() {
         let indexes = visibleImageIndexes()
@@ -517,11 +443,7 @@ struct FullScreenImageView: View {
     
     
     func loadHighResImage(asset: PHAsset, index: Int) {
-//        // Skip if already loaded
-//        if highResImages[index] != nil {
-//            print("✅ Image at index \(index) already loaded. Skipping.")
-//            return
-//        }
+
         
         // 1. Check if already loaded *or* a request is pending
         guard highResImages[index] == nil && !imageLoadRequests.contains(index) else {
@@ -558,27 +480,11 @@ struct FullScreenImageView: View {
                     print("❌ Failed to load high-res image for index \(index): Image is nil") // Fixed
                 }
             }
-            
-//            if let image = image {
-//                DispatchQueue.main.async {
-//                    highResImages[index] = image
-////                    self.highResImages[index] = image
-//                    print("✅ High-res image for index \(index) loaded in \(endTime.timeIntervalSince(startTime)) seconds")
-//                    
-//                }
-//            }
-//            else {
-//                print("❌ Failed to load high-res image for index \(index)")
-//                
-//            }
+   
         }
     }
 
-//    private func visibleImageIndexes() -> [Int] {
-//        let minIndex = max(0, selectedIndex - 1)
-//        let maxIndex = min(assets.count - 1, selectedIndex + 1)
-//        return Array(minIndex...maxIndex) // Create an array of visible indexes
-//    }
+
     
     func visibleImageIndexes() -> [Int] {
         let start = max(0, selectedIndex - 1)  // Load previous image
