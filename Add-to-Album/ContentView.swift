@@ -350,6 +350,7 @@ struct FullScreenImageView: View {
                 HStack(spacing: 0) {
                     ForEach(visibleImageIndexes(), id: \.self) { index in
                         let asset = assets[index]  // Ensure correct mapping
+
                         ZStack {
                             if let image = highResImages[index] {
                                 Image(uiImage: image)
@@ -359,6 +360,8 @@ struct FullScreenImageView: View {
                             } else {
                                 ProgressView("Loading...")
                                     .onAppear {
+                                        print("🟡 Loading requested for index \(index) (selectedIndex: \(selectedIndex))")
+
                                         loadHighResImage(asset: asset, index: index)
                                         //                                                   loadHighResImage(asset: assets[index], index: index)
                                     }
@@ -367,6 +370,7 @@ struct FullScreenImageView: View {
                         .frame(width: geometry.size.width)
                         // Load more images when approaching the end
                         .onAppear {
+                            print("🖼 Rendering image at index \(index) (selectedIndex: \(selectedIndex))")
                             if index == assets.count - 5 {
                                 loadMoreAssets()
                             }
@@ -374,6 +378,9 @@ struct FullScreenImageView: View {
                     }
                 }
                 .offset(x: -CGFloat(selectedIndex) * geometry.size.width + offset)
+                .onAppear {
+                    print("📌 Offset Debug - selectedIndex: \(selectedIndex), offset: \(-CGFloat(selectedIndex) * geometry.size.width + offset)")
+                }
                 .animation(dragging ? nil : .interactiveSpring(), value: selectedIndex)
                 .gesture(
                     DragGesture()
@@ -396,7 +403,9 @@ struct FullScreenImageView: View {
                                 }
                                 offset = 0
                             }
-                            print("🛑 Swipe Debug: Previous Index = \(previousIndex), New Index = \(selectedIndex) at \(Date())")
+                            print("🛑 SWIPE DEBUG: Previous Index = \(previousIndex), New Index = \(selectedIndex), Offset = \(offset)")
+
+//                            print("🛑 Swipe Debug: Previous Index = \(previousIndex), New Index = \(selectedIndex) at \(Date())")
                         }
                 )
             }
@@ -523,7 +532,8 @@ struct FullScreenImageView: View {
         
         let indexes = Array(start...end)
         
-        print("📌 Corrected Visible image indexes: \(indexes) for selectedIndex: \(selectedIndex) at \(Date())")
+//        print("📌 Corrected Visible image indexes: \(indexes) for selectedIndex: \(selectedIndex) at \(Date())")
+        print("📌 DEBUG: Calculating visibleImageIndexes() for selectedIndex: \(selectedIndex) → \(indexes)")
 
         return indexes
     }
