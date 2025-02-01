@@ -23,29 +23,24 @@ struct ContentView: View {
                 switch photoAccessStatus {
                 case .authorized:
                     ScrollView {
-                        LazyVGrid(columns: [
-                            GridItem(.adaptive(minimum: 100), spacing: 2)
-                        ], spacing: 2) {
-                            ForEach(Array(photoAssets.enumerated()), id: \.offset) { index, asset in
-                                ImageThumbnailView(asset: asset)
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: 2)], spacing: 2) {
+                            ForEach(photoAssets.indices, id: \.self) { index in // Iterate by index
+                                ImageThumbnailView(asset: photoAssets[index]) // Access asset directly
                                     .onTapGesture {
                                         DispatchQueue.main.async {
                                             selectedImage = SelectedImage(index: index)
                                         }
-                                        //                                        selectedImage = SelectedImage(index: index)
                                     }
                                     .onAppear {
-                                        // Load more when reaching 15 items before the end
                                         if index == photoAssets.count - 15 && !isLoadingMore {
                                             loadNextBatch()
                                         }
                                     }
                             }
                         }
-                        
+
                         if isLoadingMore {
-                            ProgressView()
-                                .padding()
+                            ProgressView().padding()
                         }
                     }
                     .onAppear {
@@ -109,10 +104,12 @@ struct ContentView: View {
                 FullScreenImageView(
                     assets: photoAssets,
                     selectedIndex: selected.index,
-                    loadMoreAssets: loadNextBatch
-                ) {
-                    selectedImage = nil
-                }
+                    loadMoreAssets: loadNextBatch,
+                    onDismiss: { selectedImage = nil }
+                )
+//                {
+//                    selectedImage = nil
+//                }
             }
         }
     }
@@ -479,8 +476,8 @@ struct FullScreenImageView: View {
             
             if let image = image {
                 DispatchQueue.main.async {
-                    //                    highResImages[index] = image
-                    self.highResImages[index] = image
+                    highResImages[index] = image
+//                    self.highResImages[index] = image
                     print("✅ High-res image for index \(index) loaded in \(endTime.timeIntervalSince(startTime)) seconds")
                     
                 }
