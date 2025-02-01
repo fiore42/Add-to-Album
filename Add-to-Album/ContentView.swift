@@ -336,6 +336,8 @@ struct FullScreenImageView: View {
     @State private var highResImages: [Int: UIImage] = [:] // Store images by original index
     @State private var offset: CGFloat = 0
     @State private var dragging = false
+    @State private var imageLoadRequests: Set<Int> = [] // Track pending requests
+
     let loadMoreAssets: () -> Void
     let onDismiss: () -> Void
     
@@ -420,11 +422,11 @@ struct FullScreenImageView: View {
         }
         .ignoresSafeArea()
         .onAppear {
-            print("🟢 FullScreenImageView appeared with selectedIndex: \(selectedIndex) at \(Date())")
+            print("🟢 onAppear - FullScreenImageView appeared with selectedIndex: \(selectedIndex) at \(Date())")
             loadVisibleImages()
         }
         .onChange(of: selectedIndex) { oldIndex, newIndex in
-            print("🔄 selectedIndex changed from \(oldIndex) to \(newIndex) at \(Date())")
+            print("onChange - 🔄 selectedIndex changed from \(oldIndex) to \(newIndex) at \(Date())")
             loadVisibleImages()
         }
     }
@@ -455,12 +457,21 @@ struct FullScreenImageView: View {
     
     
     func loadHighResImage(asset: PHAsset, index: Int) {
-        // Skip if already loaded
-        if highResImages[index] != nil {
-            print("✅ Image at index \(index) already loaded. Skipping.")
+//        // Skip if already loaded
+//        if highResImages[index] != nil {
+//            print("✅ Image at index \(index) already loaded. Skipping.")
+//            return
+//        }
+        
+        // 1. Check if already loaded *or* a request is pending
+        guard highResImages[index] == nil && !imageLoadRequests.contains(index) else {
+            print("✅ Image at index \(index) already loaded or loading. Skipping.")
             return
         }
-        
+
+        // 2. Mark request as pending
+        imageLoadRequests.insert(index)
+
         let startTime = Date()
         print("🔍 Starting high-res image load for index \(index) at \(startTime)")
         
@@ -473,19 +484,32 @@ struct FullScreenImageView: View {
         let targetSize = CGSize(width: UIScreen.main.bounds.width * 2, height: UIScreen.main.bounds.height * 2)
         imageManager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFit, options: requestOptions) { image, _ in
             let endTime = Date()
-            
-            if let image = image {
-                DispatchQueue.main.async {
-                    highResImages[index] = image
-//                    self.highResImages[index] = image
+
+
+            DispatchQueue.main.async {
+                // 3. Remove pending request
+                self.imageLoadRequests.remove(index)
+
+                if let image = image {
+                    self.highResImages[index] = image
                     print("✅ High-res image for index \(index) loaded in \(endTime.timeIntervalSince(startTime)) seconds")
-                    
+                } else {
+                    print("❌ Failed to load high-res image for index \(index): Image is nil") // Fixed
                 }
             }
-            else {
-                print("❌ Failed to load high-res image for index \(index)")
-                
-            }
+            
+//            if let image = image {
+//                DispatchQueue.main.async {
+//                    highResImages[index] = image
+////                    self.highResImages[index] = image
+//                    print("✅ High-res image for index \(index) loaded in \(endTime.timeIntervalSince(startTime)) seconds")
+//                    
+//                }
+//            }
+//            else {
+//                print("❌ Failed to load high-res image for index \(index)")
+//                
+//            }
         }
     }
     
