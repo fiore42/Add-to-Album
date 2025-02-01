@@ -385,7 +385,9 @@ struct FullScreenImageView: View {
                             dragging = false
                             let predictedEndOffset = value.predictedEndTranslation.width
                             let threshold: CGFloat = 100
-                            
+
+                            let previousIndex = selectedIndex  // Debugging
+
                             withAnimation(.interactiveSpring()) {
                                 if predictedEndOffset > threshold && selectedIndex > 0 {
                                     selectedIndex -= 1
@@ -394,6 +396,7 @@ struct FullScreenImageView: View {
                                 }
                                 offset = 0
                             }
+                            print("🛑 Swipe Debug: Previous Index = \(previousIndex), New Index = \(selectedIndex) at \(Date())")
                         }
                 )
             }
@@ -426,7 +429,7 @@ struct FullScreenImageView: View {
             loadVisibleImages()
         }
         .onChange(of: selectedIndex) { oldIndex, newIndex in
-            print("onChange - 🔄 selectedIndex changed from \(oldIndex) to \(newIndex) at \(Date())")
+            print("🔄 onChange - selectedIndex changed from \(oldIndex) to \(newIndex) at \(Date())")
             loadVisibleImages()
         }
     }
@@ -473,7 +476,8 @@ struct FullScreenImageView: View {
         imageLoadRequests.insert(index)
 
         let startTime = Date()
-        print("🔍 Starting high-res image load for index \(index) at \(startTime)")
+        print("🔍 Starting high-res image load for index \(index) at \(startTime) (selectedIndex: \(selectedIndex))")
+
         
         let imageManager = PHImageManager.default()
         let requestOptions = PHImageRequestOptions()
@@ -519,8 +523,8 @@ struct FullScreenImageView: View {
         
         let indexes = Array(start...end)
         
-        print("📌 Corrected Visible image indexes: \(indexes) (called at \(Date()))")
-        
+        print("📌 Corrected Visible image indexes: \(indexes) for selectedIndex: \(selectedIndex) at \(Date())")
+
         return indexes
     }
     
