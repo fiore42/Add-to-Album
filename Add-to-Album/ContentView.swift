@@ -27,6 +27,8 @@ struct ContentView: View {
                             ForEach(photoAssets.indices, id: \.self) { index in
                                 ImageThumbnailView(asset: photoAssets[index])
                                     .onTapGesture {
+                                        print("👆 onTapGesture for image index \(index)")
+
                                         selectedImage = SelectedImage(index: index) // Directly pass the index
                                     }
                                     .onAppear {
