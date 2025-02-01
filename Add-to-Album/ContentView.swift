@@ -24,12 +24,10 @@ struct ContentView: View {
                 case .authorized:
                     ScrollView {
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: 2)], spacing: 2) {
-                            ForEach(photoAssets.indices, id: \.self) { index in // Iterate by index
-                                ImageThumbnailView(asset: photoAssets[index]) // Access asset directly
+                            ForEach(photoAssets.indices, id: \.self) { index in
+                                ImageThumbnailView(asset: photoAssets[index])
                                     .onTapGesture {
-                                        DispatchQueue.main.async {
-                                            selectedImage = SelectedImage(index: index)
-                                        }
+                                        selectedImage = SelectedImage(index: index) // Directly pass the index
                                     }
                                     .onAppear {
                                         if index == photoAssets.count - 15 && !isLoadingMore {
@@ -333,7 +331,7 @@ struct ContentView: View {
 struct FullScreenImageView: View {
     let assets: [PHAsset]
     @State var selectedIndex: Int
-    @State private var highResImages: [Int: UIImage] = [:]
+    @State private var highResImages: [Int: UIImage] = [:] // Store images by original index
     @State private var offset: CGFloat = 0
     @State private var dragging = false
     let loadMoreAssets: () -> Void
