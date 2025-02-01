@@ -423,27 +423,39 @@ struct FullScreenImageView: View {
                    }
                    .ignoresSafeArea()
                    .onAppear {
+                       print("🟢 FullScreenImageView appeared with selectedIndex: \(selectedIndex) at \(Date())")
                        loadVisibleImages()
                    }
                    .onChange(of: selectedIndex) { oldIndex, newIndex in
+                       print("🔄 selectedIndex changed from \(oldIndex) to \(newIndex) at \(Date())")
                        loadVisibleImages()
                    }
                }
     
+//    private func loadVisibleImages() {
+//        // Load current image
+//        loadHighResImage(asset: assets[selectedIndex], index: selectedIndex)
+//        
+//        // Load previous image if exists
+//        if selectedIndex > 0 {
+//            loadHighResImage(asset: assets[selectedIndex - 1], index: selectedIndex - 1)
+//        }
+//        
+//        // Load next image if exists
+//        if selectedIndex < assets.count - 1 {
+//            loadHighResImage(asset: assets[selectedIndex + 1], index: selectedIndex + 1)
+//        }
+//    }
+
     private func loadVisibleImages() {
-        // Load current image
-        loadHighResImage(asset: assets[selectedIndex], index: selectedIndex)
-        
-        // Load previous image if exists
-        if selectedIndex > 0 {
-            loadHighResImage(asset: assets[selectedIndex - 1], index: selectedIndex - 1)
-        }
-        
-        // Load next image if exists
-        if selectedIndex < assets.count - 1 {
-            loadHighResImage(asset: assets[selectedIndex + 1], index: selectedIndex + 1)
+        let indexes = visibleImageIndexes()
+        print("🖼 Loading visible images for indexes: \(indexes) at \(Date())")
+
+        for index in indexes {
+            loadHighResImage(asset: assets[index], index: index)
         }
     }
+    
     
     func loadHighResImage(asset: PHAsset, index: Int) {
         // Skip if already loaded
@@ -486,8 +498,8 @@ struct FullScreenImageView: View {
 
         let indexes = Array(start...end)
 
-        print("📌 Corrected Visible image indexes: \(indexes)")
-        
+        print("📌 Corrected Visible image indexes: \(indexes) (called at \(Date()))")
+
         return indexes
     }
 
