@@ -10,18 +10,18 @@ struct FullScreenImageView: View {
     let assets: [PHAsset]
     let imageManager: PHImageManager
     
-    /// Index of the currently visible image.
+    /// The currently visible index.
     @State private var selectedIndex: Int
-    /// The “drag” offset (in points) applied to the whole paging container.
+    /// The current drag offset.
     @State private var dragOffset: CGFloat = 0
-    /// Stores high resolution images once loaded.
+    /// Cache for already loaded images.
     @State private var highResImages: [Int: UIImage] = [:]
-    /// Tracks in‐flight image requests.
+    /// In-flight image request IDs.
     @State private var imageLoadRequests: [Int: PHImageRequestID] = [:]
     
-    /// A binding to the paired albums dictionary.
+    /// Binding for the paired album dictionary.
     @Binding var pairedAlbums: [String: PHAssetCollection?]
-    /// Called when we need to load another batch.
+    /// Called when a new batch of assets should be loaded.
     let loadMoreAssets: () -> Void
     /// Called to dismiss this view.
     let onDismiss: () -> Void
@@ -56,11 +56,10 @@ struct FullScreenImageView: View {
             ZStack {
                 Color.black.edgesIgnoringSafeArea(.all)
                 
-                // Paging content
+                // MARK: - Paging Content
                 HStack(spacing: 0) {
                     ForEach(assets.indices, id: \.self) { index in
                         ZStack {
-                            // Show the loaded image, or a spinner while loading.
                             if let image = highResImages[index] {
                                 Image(uiImage: image)
                                     .resizable()
@@ -79,24 +78,20 @@ struct FullScreenImageView: View {
                             }
                         }
                         .frame(width: geometry.size.width, height: geometry.size.height)
-                        // As images scroll offscreen, cancel any in‑flight requests.
+                        // Cancel any in‑flight requests when a page goes offscreen.
                         .onDisappear {
                             cancelLoad(for: index)
                         }
                     }
                 }
-                // Calculate the offset:
-                // – Each page is geometry.size.width wide.
-                // – We add dragOffset to the “base” offset for the selected index.
+                // Compute the horizontal offset for paging.
                 .offset(x: -CGFloat(selectedIndex) * geometry.size.width + dragOffset)
                 .animation(.interactiveSpring(), value: dragOffset)
                 .gesture(
                     DragGesture()
                         .onChanged { value in
                             let translation = value.translation.width
-                            
-                            // If at first image dragging right or at last image dragging left,
-                            // apply a damping factor to simulate rubber-banding.
+                            // If at the first image dragging right or at the last dragging left, dampen the movement.
                             if (selectedIndex == 0 && translation > 0) ||
                                 (selectedIndex == assets.count - 1 && translation < 0) {
                                 dragOffset = translation * 0.3
@@ -109,19 +104,18 @@ struct FullScreenImageView: View {
                             let translation = value.translation.width
                             
                             var newIndex = selectedIndex
-                            if translation < -threshold && selectedIndex < assets.count - 1 {
+                            if translation < -threshold, selectedIndex < assets.count - 1 {
                                 newIndex += 1
-                            } else if translation > threshold && selectedIndex > 0 {
+                            } else if translation > threshold, selectedIndex > 0 {
                                 newIndex -= 1
                             }
                             
-                            // Animate snapping to the new index.
                             withAnimation(.interactiveSpring()) {
                                 selectedIndex = newIndex
                                 dragOffset = 0
                             }
                             
-                            // If nearing the end, trigger a new batch load.
+                            // If we are within 5 images of the end, load more.
                             if newIndex > assets.count - 5 {
                                 loadMoreAssets()
                             }
@@ -129,54 +123,58 @@ struct FullScreenImageView: View {
                 )
                 
                 // MARK: - Function Boxes
-                // Overlay the function boxes. (The helper methods are now in FunctionBox.swift.)
+                // The function boxes are now simply overlaid using absolute alignment.
                 if let fu1Album = pairedAlbums["Function 1"] {
                     FunctionBox(
                         title: "Fu 1",
                         album: fu1Album?.localizedTitle,
-                        position: .topLeading,
-                        topOffsetPercentage: 10,
                         isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: fu1Album),
                         onTap: {
                             FunctionBox.togglePairing(asset: assets[selectedIndex], with: fu1Album, for: "Function 1")
                         }
                     )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    .padding(.top, 40)
+                    .padding(.leading, 20)
                 }
                 if let fu2Album = pairedAlbums["Function 2"] {
                     FunctionBox(
                         title: "Fu 2",
                         album: fu2Album?.localizedTitle,
-                        position: .topTrailing,
-                        topOffsetPercentage: 10,
                         isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: fu2Album),
                         onTap: {
                             FunctionBox.togglePairing(asset: assets[selectedIndex], with: fu2Album, for: "Function 2")
                         }
                     )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                    .padding(.top, 40)
+                    .padding(.trailing, 20)
                 }
                 if let fu3Album = pairedAlbums["Function 3"] {
                     FunctionBox(
                         title: "Fu 3",
                         album: fu3Album?.localizedTitle,
-                        position: .bottomLeading,
-                        bottomOffsetPercentage: 27,
                         isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: fu3Album),
                         onTap: {
                             FunctionBox.togglePairing(asset: assets[selectedIndex], with: fu3Album, for: "Function 3")
                         }
                     )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                    .padding(.bottom, 40)
+                    .padding(.leading, 20)
                 }
                 if let fu4Album = pairedAlbums["Function 4"] {
                     FunctionBox(
                         title: "Fu 4",
                         album: fu4Album?.localizedTitle,
-                        position: .bottomTrailing,
-                        bottomOffsetPercentage: 27,
                         isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: fu4Album),
                         onTap: {
                             FunctionBox.togglePairing(asset: assets[selectedIndex], with: fu4Album, for: "Function 4")
                         }
                     )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                    .padding(.bottom, 40)
+                    .padding(.trailing, 20)
                 }
                 
                 // Dismiss/back button.
@@ -189,7 +187,7 @@ struct FullScreenImageView: View {
                 .position(x: 40, y: 60)
             }
             .edgesIgnoringSafeArea(.all)
-            // On appear, ensure the current image is loaded.
+            // Ensure the current image is loaded on appear.
             .onAppear {
                 loadImageIfNeeded(for: selectedIndex, containerWidth: geometry.size.width)
             }
@@ -198,12 +196,11 @@ struct FullScreenImageView: View {
     
     // MARK: - Image Loading Helpers
     
-    /// If the image for the given index is not yet loaded, request it.
+    /// Request the image for the given index if it isn’t already loaded.
     private func loadImageIfNeeded(for index: Int, containerWidth: CGFloat) {
         guard index < assets.count else { return }
         let asset = assets[index]
         
-        // Do nothing if already loaded or loading.
         if highResImages[index] != nil || imageLoadRequests[index] != nil {
             return
         }
@@ -224,8 +221,8 @@ struct FullScreenImageView: View {
                     self.highResImages[index] = image
                     self.imageCache.setObject(image, forKey: asset)
                 } else if let error = info?[PHImageErrorKey] as? NSError,
-                          error.domain == "PHPhotosErrorDomain", error.code == 3300 {
-                    // Request was cancelled.
+                          error.domain == "PHPhotosErrorDomain", error.code == 3072 {
+                    // Cancellation errors are expected when the request is no longer needed.
                 } else {
                     print("Error loading image at index \(index): \(info ?? [:])")
                 }
@@ -235,7 +232,7 @@ struct FullScreenImageView: View {
         imageLoadRequests[index] = requestID
     }
     
-    /// Cancel any in-flight image request for the given index.
+    /// Cancel any in-flight request for the image at the given index.
     private func cancelLoad(for index: Int) {
         if let requestID = imageLoadRequests[index] {
             imageManager.cancelImageRequest(requestID)

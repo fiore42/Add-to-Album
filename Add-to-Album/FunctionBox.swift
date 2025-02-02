@@ -1,70 +1,32 @@
 
+
 import SwiftUI
 import PhotosUI
 
 struct FunctionBox: View {
     let title: String
     let album: String?
-    let position: Alignment
-    let topOffsetPercentage: CGFloat
-    let bottomOffsetPercentage: CGFloat
     let isPaired: Bool
     let onTap: () -> Void
     
-    init(
-        title: String,
-        album: String?,
-        position: Alignment,
-        topOffsetPercentage: CGFloat = 10,
-        bottomOffsetPercentage: CGFloat = 10,
-        isPaired: Bool,
-        onTap: @escaping () -> Void
-    ) {
-        self.title = title
-        self.album = album
-        self.position = position
-        self.topOffsetPercentage = topOffsetPercentage
-        self.bottomOffsetPercentage = bottomOffsetPercentage
-        self.isPaired = isPaired
-        self.onTap = onTap
-    }
-    
     var body: some View {
-        GeometryReader { geometry in
-            let truncatedAlbum = truncateAlbumName(album ?? "Not Set", maxLength: 16)
-            HStack {
-                Text("\(title): \(truncatedAlbum)")
-                    .font(.system(size: 16))
-                Image(systemName: isPaired ? "circle.fill" : "circle")
-                    .foregroundColor(isPaired ? .green : .red)
-                    .imageScale(.small)
-            }
-            .padding(12)
-            .background(Color.black.opacity(0.5))
-            .foregroundColor(.white)
-            .cornerRadius(8)
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: position)
-            .offset(y: {
-                switch position {
-                case .topLeading, .topTrailing:
-                    return geometry.size.height * (topOffsetPercentage / 100)
-                case .bottomLeading, .bottomTrailing:
-                    // Negative offset moves the view up from the bottom.
-                    return -geometry.size.height * (bottomOffsetPercentage / 100)
-                default:
-                    return 0
-                }
-            }())
+        HStack(spacing: 8) {
+            Text("\(title): \(truncateAlbumName(album ?? "Not Set", maxLength: 16))")
+                .font(.system(size: 16))
+            Image(systemName: isPaired ? "circle.fill" : "circle")
+                .foregroundColor(isPaired ? .green : .red)
+                .imageScale(.small)
         }
-        .frame(maxWidth: .infinity)
+        .padding(12)
+        .background(Color.black.opacity(0.5))
+        .foregroundColor(.white)
+        .cornerRadius(8)
         .onTapGesture { onTap() }
     }
 }
 
-
 extension FunctionBox {
-    /// Check if a given asset is present in the provided album.
+    /// Check if the asset is already present in the given album.
     static func isImagePaired(asset: PHAsset, with album: PHAssetCollection?) -> Bool {
         guard let album = album else { return false }
         let fetchOptions = PHFetchOptions()
@@ -73,7 +35,7 @@ extension FunctionBox {
         return fetchResult.count > 0
     }
     
-    /// Toggle pairing for the given asset in the provided album.
+    /// Toggle pairing for the given asset in the given album.
     static func togglePairing(asset: PHAsset, with album: PHAssetCollection?, for function: String) {
         guard let album = album else { return }
         PHPhotoLibrary.shared().performChanges({
@@ -81,12 +43,10 @@ extension FunctionBox {
             fetchOptions.predicate = NSPredicate(format: "localIdentifier == %@", asset.localIdentifier)
             let fetchResult = PHAsset.fetchAssets(in: album, options: fetchOptions)
             if fetchResult.count > 0 {
-                // Remove the asset.
                 let changeRequest = PHAssetCollectionChangeRequest(for: album)
                 changeRequest?.removeAssets([asset] as NSArray)
                 print("Removed asset from \(function)")
             } else {
-                // Add the asset.
                 let changeRequest = PHAssetCollectionChangeRequest(for: album)
                 changeRequest?.addAssets([asset] as NSArray)
                 print("Added asset to \(function)")
