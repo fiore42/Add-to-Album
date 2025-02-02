@@ -19,6 +19,7 @@ struct FullScreenImageView: View {
     let onDismiss: () -> Void
     let imageCache = NSCache<PHAsset, UIImage>() // Image cache
     @State private var imageLoadRequests: [Int: PHImageRequestID] = [:] // Track requests
+    @State private var displayedImageIndices: Set<Int> = [] // Track displayed indices
 
     @AppStorage("functionAlbumAssociations") private var functionAlbumAssociations: Data = Data()
     
@@ -29,8 +30,6 @@ struct FullScreenImageView: View {
         assets: [PHAsset],
         imageManager: PHImageManager,
         selectedIndex: Int,
-//        pairedAlbums: [String: PHAssetCollection],
-//        pairedAlbums: Binding<[String: PHAssetCollection]>, // Note the Binding<> wrapper
         pairedAlbums: Binding<[String: PHAssetCollection?]>, // Binding to optional dictionary
         loadMoreAssets: @escaping () -> Void,
         onDismiss: @escaping () -> Void
@@ -39,12 +38,9 @@ struct FullScreenImageView: View {
         self.assets = assets
         self.imageManager = imageManager
         self._selectedIndex = State(initialValue: selectedIndex)
-//        self.pairedAlbums = pairedAlbums
         self._pairedAlbums = pairedAlbums // Initialize the _pairedAlbums with the binding
         self.loadMoreAssets = loadMoreAssets
         self.onDismiss = onDismiss
-        // highResImages and dragOffset are initialized by default, no need to initialize them here.
-        // functionAlbumAssociations is initialized by @AppStorage
     }
 
     enum DragState {
@@ -73,15 +69,6 @@ struct FullScreenImageView: View {
     var body: some View {
         ZStack {
             Color.black.edgesIgnoringSafeArea(.all)
-//            InteractiveImageGallery(
-//                selectedIndex: $selectedIndex,
-//                assets: assets,
-//                imageManager: imageManager,
-//                highResImages: highResImages,  // ✅ Pass high-res images
-//                loadMoreAssets: { /* Handle loading more assets if needed */ }
-//            )
-////            InteractiveImageGallery(selectedIndex: $selectedIndex, assets: assets, imageManager: imageManager, loadMoreAssets: loadMoreAssets)
-//                .edgesIgnoringSafeArea(.all)
 
             GeometryReader { geometry in
                 HStack(spacing: 0) {
@@ -97,24 +84,22 @@ struct FullScreenImageView: View {
                                     .frame(width: geometry.size.width)
                                     .onAppear {
                                         loadImageIfNecessary(index: index, size: geometry.size.width)
-//                                        loadHighResImage(index: index, size: geometry.size.width) // Pass size
-//                                        loadHighResImage(index: index)
                                     }
                             }
                         }
                         .frame(width: geometry.size.width)
+                        .onAppear {
+                            loadImageIfNecessary(index: index, size: geometry.size.width) // Use index directly
+                        }
+                        .onDisappear {
+                            cancelLoad(for: index) // Use index directly
+                        }
+
                     }
                 }
-                .onAppear {
-                    loadImageIfNecessary(index: selectedIndex, size: UIScreen.main.bounds.width) // Initial load
-                    // No need to call loadFunctionAlbumAssociations or checkAlbumExistence here
-                    // It's already handled in ContentView
-                }
-                //                .offset(x: -CGFloat(selectedIndex) * geometry.size.width)
-//                .offset(x: -CGFloat(selectedIndex) * geometry.size.width + dragOffset)
                 .offset(x: -CGFloat(selectedIndex) * geometry.size.width + dragState.translation.width + rubberBandOffset) // Include rubberBandOffset
                 .animation(.spring(response: 0.5, dampingFraction: 0.7, blendDuration: 0.15), value: selectedIndex) // Smooth snapping *always*
-//                .animation(.easeInOut(duration: 0.3), value: selectedIndex) // ✅ Smooth animation when changing index
+
                 .gesture(
                     DragGesture()
                         .updating($dragState, body: { (value, state, transaction) in
@@ -129,49 +114,7 @@ struct FullScreenImageView: View {
                         .onEnded(onDragEnded)
                 )
 
-//                .gesture(
-//                    DragGesture()
-//                        .onChanged { value in
-//                            // Disable implicit animations when tracking live drag
-//                            withTransaction(Transaction(animation: nil)) {
-//                                dragOffset = value.translation.width
-//                            }
-//                        }
-//                        .onEnded { value in
-//                            let threshold: CGFloat = 50
-//                            
-//                            //                            if value.translation.width > threshold, selectedIndex > 0 {
-//                            //                                selectedIndex -= 1
-//                            if value.translation.width > threshold {
-//                                if selectedIndex > 0 {
-//                                    withAnimation {
-//                                        selectedIndex -= 1
-//                                    }
-//                                } else {
-//                                    // Bounce effect when swiping right on first image
-//                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.5, blendDuration: 0)) {
-//                                        dragOffset = 20
-//                                    }
-//                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-//                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7, blendDuration: 0)) {
-//                                            dragOffset = 0
-//                                        }
-//                                    }
-//                                }
-//                                
-//                            } else if value.translation.width < -threshold, selectedIndex < assets.count - 1 {
-//                                selectedIndex += 1
-//                            }
-//                            // Reset offset after swipe
-//                            withAnimation {
-//                                dragOffset = 0
-//                            }
-//                            // If swiping reaches the last image, load more
-//                            if selectedIndex == assets.count - 1 {
-//                                loadMoreAssets()
-//                            }
-//                        }
-//                )
+
             }
             
             // ✅ Function Boxes (Only if a function is paired)
@@ -227,10 +170,8 @@ struct FullScreenImageView: View {
             .position(x: 40, y: 60) // Adjust position as needed
         }
         .edgesIgnoringSafeArea(.all)
-
         .onAppear {
-            loadHighResImage(index: selectedIndex, size: UIScreen.main.bounds.width) // Initial load
-//            loadHighResImage(index: selectedIndex)
+            loadImageIfNecessary(index: selectedIndex, size: UIScreen.main.bounds.width) // Initial load
         }
     }
 
@@ -297,36 +238,42 @@ struct FullScreenImageView: View {
     }
     
     func loadImageIfNecessary(index: Int, size: CGFloat) {
-         let asset = assets[index]
+            let asset = assets[index]
 
-         // 1. Check if image is already loaded or loading
-         if highResImages[index] != nil || imageLoadRequests[index] != nil {
-             return // Already loaded or loading, do nothing
-         }
+            // 1. Check if already loaded or loading
+            if highResImages[index] != nil || imageLoadRequests[index] != nil {
+                return
+            }
 
-         let targetSize = CGSize(width: size * UIScreen.main.scale, height: size * UIScreen.main.scale)
-         let requestOptions = PHImageRequestOptions()
-         requestOptions.isSynchronous = false
-         requestOptions.deliveryMode = .highQualityFormat
-         requestOptions.isNetworkAccessAllowed = true
+            let targetSize = CGSize(width: size * UIScreen.main.scale, height: size * UIScreen.main.scale)
+            let requestOptions = PHImageRequestOptions()
+            requestOptions.isSynchronous = false
+            requestOptions.deliveryMode = .highQualityFormat
+            requestOptions.isNetworkAccessAllowed = true
 
-         // 2. Store the request ID to cancel later if needed
-         let requestID = imageManager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFit, options: requestOptions) { image, info in
-             DispatchQueue.main.async {
-                 if let image = image {
-                     self.highResImages[index] = image
-                     self.imageCache.setObject(image, forKey: asset)
-                 } else if let error = info?[PHImageErrorKey] as? NSError, error.domain == "PHPhotosErrorDomain" && error.code == 3300 {
-                     // Request was cancelled, do nothing
-                 } else {
-                     print("Error loading image: \(info ?? [:])")
-                 }
-                 self.imageLoadRequests.removeValue(forKey: index) // Remove request ID
-             }
-         }
+            let requestID = imageManager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFit, options: requestOptions) { image, info in
+                DispatchQueue.main.async {
+                    if let image = image {
+                        self.highResImages[index] = image
+                        self.imageCache.setObject(image, forKey: asset)
+                    } else if let error = info?[PHImageErrorKey] as? NSError, error.domain == "PHPhotosErrorDomain" && error.code == 3300 {
+                        // Request was cancelled.
+                    } else {
+                        print("Error loading image: \(info ?? [:])")
+                    }
+                    self.imageLoadRequests.removeValue(forKey: index)
+                }
+            }
 
-         imageLoadRequests[index] = requestID // Store the request ID
-     }
+            imageLoadRequests[index] = requestID
+        }
+
+        func cancelLoad(for index: Int) {
+            if let requestID = imageLoadRequests[index] {
+                imageManager.cancelImageRequest(requestID)
+                imageLoadRequests.removeValue(forKey: index)
+            }
+        }
 
     func loadHighResImage(index: Int, size: CGFloat) { // Added size parameter
         let asset = assets[index]
@@ -358,26 +305,6 @@ struct FullScreenImageView: View {
     }
 }
     
-//    func loadHighResImage(index: Int) {
-//        let asset = assets[index]
-//        let targetSize = PHImageManagerMaximumSize
-//        let requestOptions = PHImageRequestOptions()
-//        requestOptions.isSynchronous = false
-//        requestOptions.deliveryMode = .highQualityFormat
-//        requestOptions.isNetworkAccessAllowed = true
-//
-//        // ✅ Allow image request to proceed, but only update the state if the image is missing.
-//        imageManager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFit, options: requestOptions) { image, _ in
-//            if let image = image {
-//                DispatchQueue.main.async {
-//                    if self.highResImages[index] == nil { // ✅ Only update if missing
-//                        self.highResImages[index] = image
-//                    }
-//                }
-//            }
-//        }
-//    }
-
 
 
 struct FunctionBox: View {
