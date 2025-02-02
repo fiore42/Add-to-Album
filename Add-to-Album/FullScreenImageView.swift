@@ -4,33 +4,35 @@ import Foundation
 
 struct FullScreenImageView: View {
     // MARK: - Properties
-    
+
     @ObservedObject var viewModel: ViewModel
-    /// The array of assets to page through.
+    /// Array of assets to page through.
     let assets: [PHAsset]
     let imageManager: PHImageManager
-    
+
     /// The currently visible index.
     @State private var selectedIndex: Int
-    /// The current drag offset.
+    /// Current drag offset.
     @State private var dragOffset: CGFloat = 0
-    /// Cache for already loaded images.
+    /// Cache of loaded high‑resolution images.
     @State private var highResImages: [Int: UIImage] = [:]
-    /// In-flight image request IDs.
+    /// In‑flight image request IDs.
     @State private var imageLoadRequests: [Int: PHImageRequestID] = [:]
-    
-    /// Binding for the paired album dictionary.
+    /// A dummy state variable to force refresh after toggling pairing.
+    @State private var refreshToggle: Bool = false
+
+    /// Binding for the paired albums dictionary.
     @Binding var pairedAlbums: [String: PHAssetCollection?]
-    /// Called when a new batch of assets should be loaded.
+    /// Closure called when a new batch of assets should be loaded.
     let loadMoreAssets: () -> Void
-    /// Called to dismiss this view.
+    /// Closure called to dismiss this view.
     let onDismiss: () -> Void
-    
+
     /// A simple image cache.
     let imageCache = NSCache<PHAsset, UIImage>()
-    
+
     // MARK: - Initializer
-    
+
     init(
         viewModel: ViewModel,
         assets: [PHAsset],
@@ -48,15 +50,15 @@ struct FullScreenImageView: View {
         self.loadMoreAssets = loadMoreAssets
         self.onDismiss = onDismiss
     }
-    
+
     // MARK: - Body
-    
+
     var body: some View {
         GeometryReader { geometry in
             ZStack {
                 Color.black.edgesIgnoringSafeArea(.all)
-                
-                // MARK: - Paging Content
+
+                // --- Paging Content ---
                 HStack(spacing: 0) {
                     ForEach(assets.indices, id: \.self) { index in
                         ZStack {
@@ -73,17 +75,19 @@ struct FullScreenImageView: View {
                                            height: geometry.size.height)
                                     .background(Color.black)
                                     .onAppear {
-                                        loadImageIfNeeded(for: index, containerWidth: geometry.size.width)
+                                        loadImageIfNeeded(for: index,
+                                                          containerWidth: geometry.size.width)
                                     }
                             }
                         }
-                        .frame(width: geometry.size.width, height: geometry.size.height)
+                        .frame(width: geometry.size.width,
+                               height: geometry.size.height)
                         .onDisappear {
                             cancelLoad(for: index)
                         }
                     }
                 }
-                // Compute the horizontal offset for paging.
+                // Compute horizontal offset for paging.
                 .offset(x: -CGFloat(selectedIndex) * geometry.size.width + dragOffset)
                 .animation(.interactiveSpring(), value: dragOffset)
                 .gesture(
@@ -101,31 +105,27 @@ struct FullScreenImageView: View {
                         .onEnded { value in
                             let threshold: CGFloat = 50
                             let translation = value.translation.width
-                            
                             var newIndex = selectedIndex
                             if translation < -threshold, selectedIndex < assets.count - 1 {
                                 newIndex += 1
                             } else if translation > threshold, selectedIndex > 0 {
                                 newIndex -= 1
                             }
-                            
                             withAnimation(.interactiveSpring()) {
                                 selectedIndex = newIndex
                                 dragOffset = 0
                             }
-                            
-                            // If nearing the end, trigger loading a new batch.
+                            // If near the end, trigger loading more assets.
                             if newIndex > assets.count - 5 {
                                 loadMoreAssets()
                             }
                         }
                 )
-                
-                // MARK: - Function Boxes Overlay
-                // Use an overlay with a VStack and HStacks so that:
-                // - Top row appears at about 20% of the screen height.
-                // - Bottom row appears at about 80% of the screen height.
-                // - Left boxes are aligned to the left and right boxes to the right.
+
+                // --- Function Boxes Overlay ---
+                // The overlay uses a VStack with two HStacks:
+                // Top row is padded to appear at about 20% from the top,
+                // bottom row is padded so it appears at about 80% from the top.
                 VStack {
                     // Top row
                     HStack {
@@ -133,9 +133,12 @@ struct FullScreenImageView: View {
                             FunctionBox(
                                 title: "Fu 1",
                                 album: fu1Album?.localizedTitle,
-                                isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: fu1Album),
+                                isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex],
+                                                                    with: fu1Album),
                                 onTap: {
-                                    FunctionBox.togglePairing(asset: assets[selectedIndex], with: fu1Album, for: "Function 1")
+                                    togglePairing(for: "Function 1",
+                                                  asset: assets[selectedIndex],
+                                                  album: fu1Album)
                                 }
                             )
                         }
@@ -144,16 +147,18 @@ struct FullScreenImageView: View {
                             FunctionBox(
                                 title: "Fu 2",
                                 album: fu2Album?.localizedTitle,
-                                isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: fu2Album),
+                                isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex],
+                                                                    with: fu2Album),
                                 onTap: {
-                                    FunctionBox.togglePairing(asset: assets[selectedIndex], with: fu2Album, for: "Function 2")
+                                    togglePairing(for: "Function 2",
+                                                  asset: assets[selectedIndex],
+                                                  album: fu2Album)
                                 }
                             )
                         }
                     }
                     .padding(.horizontal, 20)
-                    .frame(width: geometry.size.width)
-                    .position(x: geometry.size.width/2, y: geometry.size.height * 0.20)
+                    .padding(.top, geometry.size.height * 0.20)
                     
                     Spacer()
                     
@@ -163,9 +168,12 @@ struct FullScreenImageView: View {
                             FunctionBox(
                                 title: "Fu 3",
                                 album: fu3Album?.localizedTitle,
-                                isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: fu3Album),
+                                isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex],
+                                                                    with: fu3Album),
                                 onTap: {
-                                    FunctionBox.togglePairing(asset: assets[selectedIndex], with: fu3Album, for: "Function 3")
+                                    togglePairing(for: "Function 3",
+                                                  asset: assets[selectedIndex],
+                                                  album: fu3Album)
                                 }
                             )
                         }
@@ -174,19 +182,22 @@ struct FullScreenImageView: View {
                             FunctionBox(
                                 title: "Fu 4",
                                 album: fu4Album?.localizedTitle,
-                                isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: fu4Album),
+                                isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex],
+                                                                    with: fu4Album),
                                 onTap: {
-                                    FunctionBox.togglePairing(asset: assets[selectedIndex], with: fu4Album, for: "Function 4")
+                                    togglePairing(for: "Function 4",
+                                                  asset: assets[selectedIndex],
+                                                  album: fu4Album)
                                 }
                             )
                         }
                     }
                     .padding(.horizontal, 20)
-                    .frame(width: geometry.size.width)
-                    .position(x: geometry.size.width/2, y: geometry.size.height * 0.80)
+                    .padding(.bottom, geometry.size.height * 0.20)
                 }
-                
-                // Dismiss/back button.
+                .id(refreshToggle) // Toggling this forces a re-render.
+
+                // --- Dismiss Button ---
                 Button(action: onDismiss) {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 30, weight: .bold))
@@ -201,22 +212,52 @@ struct FullScreenImageView: View {
             }
         }
     }
-    
+
+    // MARK: - Toggle Pairing
+
+    /// Performs the pairing toggle and then forces a refresh.
+    private func togglePairing(for function: String,
+                                 asset: PHAsset,
+                                 album: PHAssetCollection?) {
+        guard let album = album else { return }
+        PHPhotoLibrary.shared().performChanges({
+            let fetchOptions = PHFetchOptions()
+            fetchOptions.predicate = NSPredicate(format: "localIdentifier == %@", asset.localIdentifier)
+            let fetchResult = PHAsset.fetchAssets(in: album, options: fetchOptions)
+            if fetchResult.count > 0 {
+                let changeRequest = PHAssetCollectionChangeRequest(for: album)
+                changeRequest?.removeAssets([asset] as NSArray)
+                print("Removed asset from \(function)")
+            } else {
+                let changeRequest = PHAssetCollectionChangeRequest(for: album)
+                changeRequest?.addAssets([asset] as NSArray)
+                print("Added asset to \(function)")
+            }
+        }, completionHandler: { success, error in
+            if success {
+                DispatchQueue.main.async {
+                    // Toggle refresh to force a re-render.
+                    refreshToggle.toggle()
+                }
+            } else if let error = error {
+                print("Error toggling pairing for \(function): \(error)")
+            }
+        })
+    }
+
     // MARK: - Image Loading Helpers
-    
+
     private func loadImageIfNeeded(for index: Int, containerWidth: CGFloat) {
         guard index < assets.count else { return }
         let asset = assets[index]
-        
         if highResImages[index] != nil || imageLoadRequests[index] != nil { return }
-        
         let scale = UIScreen.main.scale
         let targetSize = CGSize(width: containerWidth * scale, height: containerWidth * scale)
         let options = PHImageRequestOptions()
         options.isSynchronous = false
         options.deliveryMode = .highQualityFormat
         options.isNetworkAccessAllowed = true
-        
+
         let requestID = imageManager.requestImage(for: asset,
                                                   targetSize: targetSize,
                                                   contentMode: .aspectFit,
@@ -227,7 +268,7 @@ struct FullScreenImageView: View {
                     self.imageCache.setObject(image, forKey: asset)
                 } else if let error = info?[PHImageErrorKey] as? NSError,
                           error.domain == "PHPhotosErrorDomain", error.code == 3072 {
-                    // Request was cancelled; this is expected.
+                    // Request was cancelled (expected when scrolling fast).
                 } else {
                     print("Error loading image at index \(index): \(info ?? [:])")
                 }
@@ -236,7 +277,7 @@ struct FullScreenImageView: View {
         }
         imageLoadRequests[index] = requestID
     }
-    
+
     private func cancelLoad(for index: Int) {
         if let requestID = imageLoadRequests[index] {
             imageManager.cancelImageRequest(requestID)
