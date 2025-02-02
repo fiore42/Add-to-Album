@@ -1,16 +1,16 @@
 
 import SwiftUI
-import Foundation
+import PhotosUI
 
 struct FunctionBox: View {
     let title: String
     let album: String?
     let position: Alignment
-    let topOffsetPercentage: CGFloat // Percentage from the top (0-100)
-    let bottomOffsetPercentage: CGFloat // Percentage from the bottom (0-100)
+    let topOffsetPercentage: CGFloat
+    let bottomOffsetPercentage: CGFloat
     let isPaired: Bool
     let onTap: () -> Void
-
+    
     init(
         title: String,
         album: String?,
@@ -50,16 +50,54 @@ struct FunctionBox: View {
                 case .topLeading, .topTrailing:
                     return geometry.size.height * (topOffsetPercentage / 100)
                 case .bottomLeading, .bottomTrailing:
-                    return geometry.size.height * (1 - (bottomOffsetPercentage / 100))
+                    // Negative offset moves the view up from the bottom.
+                    return -geometry.size.height * (bottomOffsetPercentage / 100)
                 default:
                     return 0
                 }
             }())
         }
         .frame(maxWidth: .infinity)
-        .onTapGesture {
-            onTap()
-        }
+        .onTapGesture { onTap() }
+    }
+}
+
+
+extension FunctionBox {
+    /// Check if a given asset is present in the provided album.
+    static func isImagePaired(asset: PHAsset, with album: PHAssetCollection?) -> Bool {
+        guard let album = album else { return false }
+        let fetchOptions = PHFetchOptions()
+        fetchOptions.predicate = NSPredicate(format: "localIdentifier == %@", asset.localIdentifier)
+        let fetchResult = PHAsset.fetchAssets(in: album, options: fetchOptions)
+        return fetchResult.count > 0
+    }
+    
+    /// Toggle pairing for the given asset in the provided album.
+    static func togglePairing(asset: PHAsset, with album: PHAssetCollection?, for function: String) {
+        guard let album = album else { return }
+        PHPhotoLibrary.shared().performChanges({
+            let fetchOptions = PHFetchOptions()
+            fetchOptions.predicate = NSPredicate(format: "localIdentifier == %@", asset.localIdentifier)
+            let fetchResult = PHAsset.fetchAssets(in: album, options: fetchOptions)
+            if fetchResult.count > 0 {
+                // Remove the asset.
+                let changeRequest = PHAssetCollectionChangeRequest(for: album)
+                changeRequest?.removeAssets([asset] as NSArray)
+                print("Removed asset from \(function)")
+            } else {
+                // Add the asset.
+                let changeRequest = PHAssetCollectionChangeRequest(for: album)
+                changeRequest?.addAssets([asset] as NSArray)
+                print("Added asset to \(function)")
+            }
+        }, completionHandler: { success, error in
+            if success {
+                print("Toggle pairing successful for \(function)")
+            } else if let error = error {
+                print("Error toggling pairing for \(function): \(error)")
+            }
+        })
     }
 }
 
