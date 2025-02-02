@@ -8,9 +8,11 @@ struct FunctionBox: View {
     let onTap: () -> Void
 
     var body: some View {
+        // Use fixedSize to ensure the view occupies only as much space as needed.
         HStack(spacing: 8) {
             Text("\(title): \(truncateAlbumName(album ?? "Not Set", maxLength: 16))")
                 .font(.system(size: 16))
+                .lineLimit(1)
             Image(systemName: isPaired ? "circle.fill" : "circle")
                 .foregroundColor(isPaired ? .green : .red)
                 .imageScale(.small)
@@ -19,6 +21,7 @@ struct FunctionBox: View {
         .background(Color.black.opacity(0.5))
         .foregroundColor(.white)
         .cornerRadius(8)
+        .fixedSize(horizontal: true, vertical: true)
         .onTapGesture { onTap() }
     }
 }
@@ -33,8 +36,6 @@ extension FunctionBox {
         return fetchResult.count > 0
     }
 }
-
-
 
 // ✅ Truncates an album name to a maximum length, ensuring words are not cut off randomly.
 func truncateAlbumName(_ name: String, maxLength: Int) -> String {

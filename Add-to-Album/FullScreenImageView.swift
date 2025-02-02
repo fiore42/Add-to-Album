@@ -6,19 +6,19 @@ struct FullScreenImageView: View {
     // MARK: - Properties
 
     @ObservedObject var viewModel: ViewModel
-    /// Array of assets to page through.
+    /// The array of assets to page through.
     let assets: [PHAsset]
     let imageManager: PHImageManager
 
     /// The currently visible index.
     @State private var selectedIndex: Int
-    /// Current drag offset.
+    /// The current drag offset.
     @State private var dragOffset: CGFloat = 0
     /// Cache of loaded high‑resolution images.
     @State private var highResImages: [Int: UIImage] = [:]
     /// In‑flight image request IDs.
     @State private var imageLoadRequests: [Int: PHImageRequestID] = [:]
-    /// A dummy state variable to force refresh after toggling pairing.
+    /// A dummy state variable to force UI refresh after pairing changes.
     @State private var refreshToggle: Bool = false
 
     /// Binding for the paired albums dictionary.
@@ -87,14 +87,12 @@ struct FullScreenImageView: View {
                         }
                     }
                 }
-                // Compute horizontal offset for paging.
                 .offset(x: -CGFloat(selectedIndex) * geometry.size.width + dragOffset)
                 .animation(.interactiveSpring(), value: dragOffset)
                 .gesture(
                     DragGesture()
                         .onChanged { value in
                             let translation = value.translation.width
-                            // Damp the drag if at the first page (dragging right) or last page (dragging left)
                             if (selectedIndex == 0 && translation > 0) ||
                                 (selectedIndex == assets.count - 1 && translation < 0) {
                                 dragOffset = translation * 0.3
@@ -115,7 +113,6 @@ struct FullScreenImageView: View {
                                 selectedIndex = newIndex
                                 dragOffset = 0
                             }
-                            // If near the end, trigger loading more assets.
                             if newIndex > assets.count - 5 {
                                 loadMoreAssets()
                             }
@@ -123,11 +120,8 @@ struct FullScreenImageView: View {
                 )
 
                 // --- Function Boxes Overlay ---
-                // The overlay uses a VStack with two HStacks:
-                // Top row is padded to appear at about 20% from the top,
-                // bottom row is padded so it appears at about 80% from the top.
                 VStack {
-                    // Top row
+                    // Top row (at ~20% from the top)
                     HStack {
                         if let fu1Album = pairedAlbums["Function 1"] {
                             FunctionBox(
@@ -155,14 +149,16 @@ struct FullScreenImageView: View {
                                                   album: fu2Album)
                                 }
                             )
+                            // Constrain the right box so it doesn’t exceed the screen.
+                            .frame(maxWidth: geometry.size.width * 0.45, alignment: .trailing)
                         }
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, geometry.size.height * 0.20)
-                    
+
                     Spacer()
-                    
-                    // Bottom row
+
+                    // Bottom row (at ~80% from the top)
                     HStack {
                         if let fu3Album = pairedAlbums["Function 3"] {
                             FunctionBox(
@@ -190,12 +186,13 @@ struct FullScreenImageView: View {
                                                   album: fu4Album)
                                 }
                             )
+                            .frame(maxWidth: geometry.size.width * 0.45, alignment: .trailing)
                         }
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, geometry.size.height * 0.20)
                 }
-                .id(refreshToggle) // Toggling this forces a re-render.
+                .id(refreshToggle) // Toggling this forces the overlay to update
 
                 // --- Dismiss Button ---
                 Button(action: onDismiss) {
@@ -215,7 +212,7 @@ struct FullScreenImageView: View {
 
     // MARK: - Toggle Pairing
 
-    /// Performs the pairing toggle and then forces a refresh.
+    /// Toggle pairing and force a refresh so that FunctionBox updates its UI.
     private func togglePairing(for function: String,
                                  asset: PHAsset,
                                  album: PHAssetCollection?) {
@@ -236,7 +233,6 @@ struct FullScreenImageView: View {
         }, completionHandler: { success, error in
             if success {
                 DispatchQueue.main.async {
-                    // Toggle refresh to force a re-render.
                     refreshToggle.toggle()
                 }
             } else if let error = error {
@@ -268,7 +264,7 @@ struct FullScreenImageView: View {
                     self.imageCache.setObject(image, forKey: asset)
                 } else if let error = info?[PHImageErrorKey] as? NSError,
                           error.domain == "PHPhotosErrorDomain", error.code == 3072 {
-                    // Request was cancelled (expected when scrolling fast).
+                    // Request was cancelled (expected when scrolling quickly)
                 } else {
                     print("Error loading image at index \(index): \(info ?? [:])")
                 }
