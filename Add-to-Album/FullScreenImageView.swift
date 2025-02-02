@@ -90,7 +90,7 @@ struct FullScreenImageView: View {
                     DragGesture()
                         .onChanged { value in
                             let translation = value.translation.width
-                            // At the first page dragging right or last page dragging left, dampen the movement.
+                            // Damp the drag if at the first page (dragging right) or last page (dragging left)
                             if (selectedIndex == 0 && translation > 0) ||
                                 (selectedIndex == assets.count - 1 && translation < 0) {
                                 dragOffset = translation * 0.3
@@ -114,59 +114,76 @@ struct FullScreenImageView: View {
                                 dragOffset = 0
                             }
                             
-                            // If we are near the end, trigger loadMoreAssets().
+                            // If nearing the end, trigger loading a new batch.
                             if newIndex > assets.count - 5 {
                                 loadMoreAssets()
                             }
                         }
                 )
                 
-                // MARK: - Function Boxes
-                // Place function boxes in each corner using explicit positions.
-                // Adjust the offsets (here 50 points from the edge) as desired.
-                if let fu1Album = pairedAlbums["Function 1"] {
-                    FunctionBox(
-                        title: "Fu 1",
-                        album: fu1Album?.localizedTitle,
-                        isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: fu1Album),
-                        onTap: {
-                            FunctionBox.togglePairing(asset: assets[selectedIndex], with: fu1Album, for: "Function 1")
+                // MARK: - Function Boxes Overlay
+                // Use an overlay with a VStack and HStacks so that:
+                // - Top row appears at about 20% of the screen height.
+                // - Bottom row appears at about 80% of the screen height.
+                // - Left boxes are aligned to the left and right boxes to the right.
+                VStack {
+                    // Top row
+                    HStack {
+                        if let fu1Album = pairedAlbums["Function 1"] {
+                            FunctionBox(
+                                title: "Fu 1",
+                                album: fu1Album?.localizedTitle,
+                                isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: fu1Album),
+                                onTap: {
+                                    FunctionBox.togglePairing(asset: assets[selectedIndex], with: fu1Album, for: "Function 1")
+                                }
+                            )
                         }
-                    )
-                    .position(x: 50, y: 50)
-                }
-                if let fu2Album = pairedAlbums["Function 2"] {
-                    FunctionBox(
-                        title: "Fu 2",
-                        album: fu2Album?.localizedTitle,
-                        isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: fu2Album),
-                        onTap: {
-                            FunctionBox.togglePairing(asset: assets[selectedIndex], with: fu2Album, for: "Function 2")
+                        Spacer()
+                        if let fu2Album = pairedAlbums["Function 2"] {
+                            FunctionBox(
+                                title: "Fu 2",
+                                album: fu2Album?.localizedTitle,
+                                isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: fu2Album),
+                                onTap: {
+                                    FunctionBox.togglePairing(asset: assets[selectedIndex], with: fu2Album, for: "Function 2")
+                                }
+                            )
                         }
-                    )
-                    .position(x: geometry.size.width - 50, y: 50)
-                }
-                if let fu3Album = pairedAlbums["Function 3"] {
-                    FunctionBox(
-                        title: "Fu 3",
-                        album: fu3Album?.localizedTitle,
-                        isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: fu3Album),
-                        onTap: {
-                            FunctionBox.togglePairing(asset: assets[selectedIndex], with: fu3Album, for: "Function 3")
+                    }
+                    .padding(.horizontal, 20)
+                    .frame(width: geometry.size.width)
+                    .position(x: geometry.size.width/2, y: geometry.size.height * 0.20)
+                    
+                    Spacer()
+                    
+                    // Bottom row
+                    HStack {
+                        if let fu3Album = pairedAlbums["Function 3"] {
+                            FunctionBox(
+                                title: "Fu 3",
+                                album: fu3Album?.localizedTitle,
+                                isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: fu3Album),
+                                onTap: {
+                                    FunctionBox.togglePairing(asset: assets[selectedIndex], with: fu3Album, for: "Function 3")
+                                }
+                            )
                         }
-                    )
-                    .position(x: 50, y: geometry.size.height - 50)
-                }
-                if let fu4Album = pairedAlbums["Function 4"] {
-                    FunctionBox(
-                        title: "Fu 4",
-                        album: fu4Album?.localizedTitle,
-                        isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: fu4Album),
-                        onTap: {
-                            FunctionBox.togglePairing(asset: assets[selectedIndex], with: fu4Album, for: "Function 4")
+                        Spacer()
+                        if let fu4Album = pairedAlbums["Function 4"] {
+                            FunctionBox(
+                                title: "Fu 4",
+                                album: fu4Album?.localizedTitle,
+                                isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: fu4Album),
+                                onTap: {
+                                    FunctionBox.togglePairing(asset: assets[selectedIndex], with: fu4Album, for: "Function 4")
+                                }
+                            )
                         }
-                    )
-                    .position(x: geometry.size.width - 50, y: geometry.size.height - 50)
+                    }
+                    .padding(.horizontal, 20)
+                    .frame(width: geometry.size.width)
+                    .position(x: geometry.size.width/2, y: geometry.size.height * 0.80)
                 }
                 
                 // Dismiss/back button.
@@ -210,7 +227,7 @@ struct FullScreenImageView: View {
                     self.imageCache.setObject(image, forKey: asset)
                 } else if let error = info?[PHImageErrorKey] as? NSError,
                           error.domain == "PHPhotosErrorDomain", error.code == 3072 {
-                    // Cancellation errors are expected when the request is no longer needed.
+                    // Request was cancelled; this is expected.
                 } else {
                     print("Error loading image at index \(index): \(info ?? [:])")
                 }
