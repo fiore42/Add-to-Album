@@ -26,7 +26,6 @@ struct FunctionBox: View {
 }
 
 extension FunctionBox {
-    /// Check if the asset is already present in the given album.
     static func isImagePaired(asset: PHAsset, with album: PHAssetCollection?) -> Bool {
         guard let album = album else { return false }
         let fetchOptions = PHFetchOptions()
@@ -35,7 +34,6 @@ extension FunctionBox {
         return fetchResult.count > 0
     }
     
-    /// Toggle pairing for the given asset in the given album.
     static func togglePairing(asset: PHAsset, with album: PHAssetCollection?, for function: String) {
         guard let album = album else { return }
         PHPhotoLibrary.shared().performChanges({

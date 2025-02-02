@@ -78,7 +78,6 @@ struct FullScreenImageView: View {
                             }
                         }
                         .frame(width: geometry.size.width, height: geometry.size.height)
-                        // Cancel any in‑flight requests when a page goes offscreen.
                         .onDisappear {
                             cancelLoad(for: index)
                         }
@@ -91,7 +90,7 @@ struct FullScreenImageView: View {
                     DragGesture()
                         .onChanged { value in
                             let translation = value.translation.width
-                            // If at the first image dragging right or at the last dragging left, dampen the movement.
+                            // At the first page dragging right or last page dragging left, dampen the movement.
                             if (selectedIndex == 0 && translation > 0) ||
                                 (selectedIndex == assets.count - 1 && translation < 0) {
                                 dragOffset = translation * 0.3
@@ -115,7 +114,7 @@ struct FullScreenImageView: View {
                                 dragOffset = 0
                             }
                             
-                            // If we are within 5 images of the end, load more.
+                            // If we are near the end, trigger loadMoreAssets().
                             if newIndex > assets.count - 5 {
                                 loadMoreAssets()
                             }
@@ -123,7 +122,8 @@ struct FullScreenImageView: View {
                 )
                 
                 // MARK: - Function Boxes
-                // The function boxes are now simply overlaid using absolute alignment.
+                // Place function boxes in each corner using explicit positions.
+                // Adjust the offsets (here 50 points from the edge) as desired.
                 if let fu1Album = pairedAlbums["Function 1"] {
                     FunctionBox(
                         title: "Fu 1",
@@ -133,9 +133,7 @@ struct FullScreenImageView: View {
                             FunctionBox.togglePairing(asset: assets[selectedIndex], with: fu1Album, for: "Function 1")
                         }
                     )
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                    .padding(.top, 40)
-                    .padding(.leading, 20)
+                    .position(x: 50, y: 50)
                 }
                 if let fu2Album = pairedAlbums["Function 2"] {
                     FunctionBox(
@@ -146,9 +144,7 @@ struct FullScreenImageView: View {
                             FunctionBox.togglePairing(asset: assets[selectedIndex], with: fu2Album, for: "Function 2")
                         }
                     )
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                    .padding(.top, 40)
-                    .padding(.trailing, 20)
+                    .position(x: geometry.size.width - 50, y: 50)
                 }
                 if let fu3Album = pairedAlbums["Function 3"] {
                     FunctionBox(
@@ -159,9 +155,7 @@ struct FullScreenImageView: View {
                             FunctionBox.togglePairing(asset: assets[selectedIndex], with: fu3Album, for: "Function 3")
                         }
                     )
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
-                    .padding(.bottom, 40)
-                    .padding(.leading, 20)
+                    .position(x: 50, y: geometry.size.height - 50)
                 }
                 if let fu4Album = pairedAlbums["Function 4"] {
                     FunctionBox(
@@ -172,9 +166,7 @@ struct FullScreenImageView: View {
                             FunctionBox.togglePairing(asset: assets[selectedIndex], with: fu4Album, for: "Function 4")
                         }
                     )
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
-                    .padding(.bottom, 40)
-                    .padding(.trailing, 20)
+                    .position(x: geometry.size.width - 50, y: geometry.size.height - 50)
                 }
                 
                 // Dismiss/back button.
@@ -187,7 +179,6 @@ struct FullScreenImageView: View {
                 .position(x: 40, y: 60)
             }
             .edgesIgnoringSafeArea(.all)
-            // Ensure the current image is loaded on appear.
             .onAppear {
                 loadImageIfNeeded(for: selectedIndex, containerWidth: geometry.size.width)
             }
@@ -196,14 +187,11 @@ struct FullScreenImageView: View {
     
     // MARK: - Image Loading Helpers
     
-    /// Request the image for the given index if it isn’t already loaded.
     private func loadImageIfNeeded(for index: Int, containerWidth: CGFloat) {
         guard index < assets.count else { return }
         let asset = assets[index]
         
-        if highResImages[index] != nil || imageLoadRequests[index] != nil {
-            return
-        }
+        if highResImages[index] != nil || imageLoadRequests[index] != nil { return }
         
         let scale = UIScreen.main.scale
         let targetSize = CGSize(width: containerWidth * scale, height: containerWidth * scale)
@@ -232,7 +220,6 @@ struct FullScreenImageView: View {
         imageLoadRequests[index] = requestID
     }
     
-    /// Cancel any in-flight request for the image at the given index.
     private func cancelLoad(for index: Int) {
         if let requestID = imageLoadRequests[index] {
             imageManager.cancelImageRequest(requestID)
