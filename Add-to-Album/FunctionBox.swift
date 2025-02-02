@@ -8,7 +8,7 @@ struct FunctionBox: View {
     let onTap: () -> Void
 
     var body: some View {
-        // Use fixedSize to ensure the view occupies only as much space as needed.
+        // fixedSize ensures the box only takes as much space as needed.
         HStack(spacing: 8) {
             Text("\(title): \(truncateAlbumName(album ?? "Not Set", maxLength: 16))")
                 .font(.system(size: 16))
