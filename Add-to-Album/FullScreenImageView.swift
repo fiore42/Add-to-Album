@@ -18,6 +18,7 @@ struct FullScreenImageView: View {
     let loadMoreAssets: () -> Void // Trigger batch load if needed
     let onDismiss: () -> Void
     let imageCache = NSCache<PHAsset, UIImage>() // Image cache
+    @State private var imageLoadRequests: [Int: PHImageRequestID] = [:] // Track requests
 
     @AppStorage("functionAlbumAssociations") private var functionAlbumAssociations: Data = Data()
     
@@ -95,7 +96,8 @@ struct FullScreenImageView: View {
                                 ProgressView("Loading...")
                                     .frame(width: geometry.size.width)
                                     .onAppear {
-                                        loadHighResImage(index: index, size: geometry.size.width) // Pass size
+                                        loadImageIfNecessary(index: index, size: geometry.size.width)
+//                                        loadHighResImage(index: index, size: geometry.size.width) // Pass size
 //                                        loadHighResImage(index: index)
                                     }
                             }
@@ -104,6 +106,7 @@ struct FullScreenImageView: View {
                     }
                 }
                 .onAppear {
+                    loadImageIfNecessary(index: selectedIndex, size: UIScreen.main.bounds.width) // Initial load
                     // No need to call loadFunctionAlbumAssociations or checkAlbumExistence here
                     // It's already handled in ContentView
                 }
@@ -292,6 +295,38 @@ struct FullScreenImageView: View {
             }
         }
     }
+    
+    func loadImageIfNecessary(index: Int, size: CGFloat) {
+         let asset = assets[index]
+
+         // 1. Check if image is already loaded or loading
+         if highResImages[index] != nil || imageLoadRequests[index] != nil {
+             return // Already loaded or loading, do nothing
+         }
+
+         let targetSize = CGSize(width: size * UIScreen.main.scale, height: size * UIScreen.main.scale)
+         let requestOptions = PHImageRequestOptions()
+         requestOptions.isSynchronous = false
+         requestOptions.deliveryMode = .highQualityFormat
+         requestOptions.isNetworkAccessAllowed = true
+
+         // 2. Store the request ID to cancel later if needed
+         let requestID = imageManager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFit, options: requestOptions) { image, info in
+             DispatchQueue.main.async {
+                 if let image = image {
+                     self.highResImages[index] = image
+                     self.imageCache.setObject(image, forKey: asset)
+                 } else if let error = info?[PHImageErrorKey] as? NSError, error.domain == "PHPhotosErrorDomain" && error.code == 3300 {
+                     // Request was cancelled, do nothing
+                 } else {
+                     print("Error loading image: \(info ?? [:])")
+                 }
+                 self.imageLoadRequests.removeValue(forKey: index) // Remove request ID
+             }
+         }
+
+         imageLoadRequests[index] = requestID // Store the request ID
+     }
 
     func loadHighResImage(index: Int, size: CGFloat) { // Added size parameter
         let asset = assets[index]
