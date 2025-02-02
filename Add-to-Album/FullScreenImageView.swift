@@ -147,17 +147,19 @@ struct FullScreenImageView: View {
                     }
                     Spacer()
                     if let fu2Album = pairedAlbums["Function 2"] {
-                        FunctionBox(
-                            title: "Fu 2",
-                            album: fu2Album?.localizedTitle,
-                            isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex],
-                                                                with: fu2Album),
-                            onTap: {
-                                togglePairing(for: "Function 2",
-                                              asset: assets[selectedIndex],
-                                              album: fu2Album)
-                            }
-                        )
+                        HStack { // Added HStack for proper right alignment
+                            FunctionBox(
+                                title: "Fu 2",
+                                album: fu2Album?.localizedTitle,
+                                isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex],
+                                                                    with: fu2Album),
+                                onTap: {
+                                    togglePairing(for: "Function 2",
+                                                  asset: assets[selectedIndex],
+                                                  album: fu2Album)
+                                }
+                            )
+                        }
                     }
                 }
                 .padding(.horizontal, 20)
@@ -182,17 +184,19 @@ struct FullScreenImageView: View {
                     }
                     Spacer()
                     if let fu4Album = pairedAlbums["Function 4"] {
-                        FunctionBox(
-                            title: "Fu 4",
-                            album: fu4Album?.localizedTitle,
-                            isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex],
-                                                                with: fu4Album),
-                            onTap: {
-                                togglePairing(for: "Function 4",
-                                              asset: assets[selectedIndex],
-                                              album: fu4Album)
-                            }
-                        )
+                        HStack { // Added HStack for proper right alignment
+                            FunctionBox(
+                                title: "Fu 4",
+                                album: fu4Album?.localizedTitle,
+                                isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex],
+                                                                    with: fu4Album),
+                                onTap: {
+                                    togglePairing(for: "Function 4",
+                                                  asset: assets[selectedIndex],
+                                                  album: fu4Album)
+                                }
+                            )
+                        }
                     }
                 }
                 .padding(.horizontal, 20)
