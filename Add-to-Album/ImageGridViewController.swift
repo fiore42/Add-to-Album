@@ -8,10 +8,10 @@ class ImageGridViewController: UICollectionViewController {
     private let imageCache = NSCache<NSNumber, UIImage>()
     private var isLoadingBatch = false
 
-    private var collectionViewFlowLayout: UICollectionViewFlowLayout! // Declare the layout property
+    private var collectionViewFlowLayout: UICollectionViewFlowLayout!
 
     init() {
-        super.init(collectionViewLayout: UICollectionViewFlowLayout()) // Initialize with a default layout
+        super.init(collectionViewLayout: UICollectionViewFlowLayout()) // Initial layout
     }
 
     required init?(coder aDecoder: NSCoder) {
@@ -23,8 +23,8 @@ class ImageGridViewController: UICollectionViewController {
 
         print("ImageGridViewController loaded")
 
-        collectionViewFlowLayout = createGridLayout() // Create and assign the layout
-        collectionView.collectionViewLayout = collectionViewFlowLayout // Set the collection view's layout
+        collectionViewFlowLayout = UICollectionViewFlowLayout() // Initialize the layout
+        collectionView.collectionViewLayout = collectionViewFlowLayout
 
         collectionView.register(ImageCell.self, forCellWithReuseIdentifier: "ImageCell")
 
@@ -34,12 +34,26 @@ class ImageGridViewController: UICollectionViewController {
                     self?.loadNextBatch()
                 } else {
                     print("Permissions not granted")
-                    let alert = UIAlertController(title: "Permission Denied", message: "Please grant access to your photos in Settings.", preferredStyle: .alert)
-                    alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-                    self?.present(alert, animated: true, completion: nil)
+                    // ... permission alert
                 }
             }
         }
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        updateGridLayout() // Call this method to update the layout
+    }
+
+    private func updateGridLayout() {
+        let spacing: CGFloat = 5
+        let numberOfColumns: CGFloat = 4
+        let itemSize = (view.safeAreaLayoutGuide.layoutFrame.width - (numberOfColumns - 1) * spacing) / numberOfColumns // Use safe area
+        collectionViewFlowLayout.itemSize = CGSize(width: itemSize, height: itemSize)
+        collectionViewFlowLayout.minimumInteritemSpacing = spacing
+        collectionViewFlowLayout.minimumLineSpacing = spacing
+        collectionViewFlowLayout.sectionInset = UIEdgeInsets(top: spacing, left: spacing, bottom: spacing, right: spacing)
+        collectionViewFlowLayout.invalidateLayout() // Very important
     }
 
     private func createGridLayout() -> UICollectionViewFlowLayout {
