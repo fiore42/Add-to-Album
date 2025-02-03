@@ -1,16 +1,18 @@
-import Foundation
-
+// ✅ Truncates an album name to a maximum length, ensuring words are not cut off randomly.
 func truncateAlbumName(_ name: String, maxLength: Int) -> String {
     if name.count <= maxLength {
         return name
     }
+    
     let words = name.split(separator: " ")
-    var truncated = ""
-    for w in words {
-        if truncated.count + w.count + 1 > maxLength {
+    var truncatedName = ""
+
+    for word in words {
+        if (truncatedName.count + word.count + 1) > maxLength {
             break
         }
-        truncated += (truncated.isEmpty ? "" : " ") + w
+        truncatedName += (truncatedName.isEmpty ? "" : " ") + word
     }
-    return truncated
+    
+    return truncatedName
 }
