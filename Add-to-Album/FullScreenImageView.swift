@@ -114,11 +114,10 @@ struct FullScreenImageView: View {
                         isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: album1),
                         onTap: { togglePairing(for: "Function 1", asset: assets[selectedIndex], album: album1) }
                     )
-                    .frame(maxWidth: .infinity, alignment: .leading) // Align to the left
-//                    .position(x: 20 + geometry.safeAreaInsets.leading, y: 20 + geometry.safeAreaInsets.top)
+                    .alignmentGuide(.leading) { _ in 20 } // Align left
                     .position(
                         x: 20 + geometry.safeAreaInsets.leading,
-                        y: geometry.size.height * (10 / 100) // Adjust this percentage
+                        y: geometry.size.height * (10 / 100)
                     )
                 }
                 
