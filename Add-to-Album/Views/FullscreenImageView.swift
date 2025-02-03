@@ -49,10 +49,10 @@ struct FullscreenImageView: View {
                             .clipped()
                     }
                 }
-                .offset(x: -CGFloat(selectedImageIndex) * geometry.size.width + dragTranslation.width)
-                .animation(.interactiveSpring(), value: selectedImageIndex)
-//                .offset(x: dragTranslation.width) // Use dragTranslation directly
-//                .animation(.interactiveSpring(), value: dragTranslation) // Animate with dragTranslation
+//                .offset(x: -CGFloat(selectedImageIndex) * geometry.size.width + dragTranslation.width)
+//                .animation(.interactiveSpring(), value: selectedImageIndex)
+                .offset(x: dragTranslation.width) // Use dragTranslation directly
+                .animation(.interactiveSpring(), value: dragTranslation) // Animate with dragTranslation
                 
                 // Black separator
                 if dragTranslation != .zero { // Only show when dragging
@@ -84,9 +84,22 @@ struct FullscreenImageView: View {
                     .updating($dragTranslation, body: { value, state, _ in
                         state = value.translation
                     })
+//                    .onEnded { value in
+//                        handleSwipe(value: value, screenWidth: geometry.size.width)
+//                    }
                     .onEnded { value in
-                        handleSwipe(value: value, screenWidth: geometry.size.width)
+                        let threshold = geometry.size.width / 3
+                        let dragAmount = value.translation.width
+
+                        withAnimation(.interactiveSpring()) {
+                            if dragAmount > threshold, selectedImageIndex > 0 {
+                                selectedImageIndex -= 1
+                            } else if dragAmount < -threshold, selectedImageIndex < imageAssets.count - 1 {
+                                selectedImageIndex += 1
+                            }
+                        }
                     }
+
             )
             .onAppear {
                 Logger.log("[🟢 onAppear] selectedImageIndex: \(selectedImageIndex)")
