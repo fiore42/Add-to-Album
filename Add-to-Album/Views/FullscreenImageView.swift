@@ -59,7 +59,7 @@ struct FullscreenImageView: View {
                             }
                         }
                         .offset(x: dragState.translation.width)
-                        .animation(.easeInOut(duration: 0.3), value: dragState.isDragging) // Adjust duration
+                        .animation(.interactiveSpring(), value: dragState.isDragging) // Or .easeInOut
                     }
                 } else {
                     ProgressView()
@@ -70,14 +70,14 @@ struct FullscreenImageView: View {
                 if dragState.isDragging {
                     Rectangle()
                         .fill(Color.black)
-                        .frame(width: 20, height: UIScreen.main.bounds.height) // Adjust height as needed
+                        .frame(width: 20, height: UIScreen.main.bounds.height)
                         .offset(x: (dragState.translation.width > 0) ? dragState.translation.width - 20 : dragState.translation.width + 20)
-                        .animation(.easeInOut(duration: 0.3), value: dragState.isDragging) // Adjust duration
+                        .animation(.interactiveSpring(), value: dragState.isDragging)
                 }
 
                 VStack {
                     HStack {
-                        Button(action: { dismiss() }) { // Use dismiss
+                        Button(action: { dismiss() }) {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 24, weight: .bold))
                                 .foregroundColor(.white)
@@ -88,7 +88,7 @@ struct FullscreenImageView: View {
                 }
                 .padding(.top, 20)
                 .padding(.leading, 20)
-                .allowsHitTesting(false) // Prevent interaction with the button while dragging
+                .allowsHitTesting(false)
             }
             .gesture(
                 DragGesture()
@@ -110,9 +110,11 @@ struct FullscreenImageView: View {
         let threshold = screenWidth / 3
 
         if value.translation.width > threshold && selectedImageIndex > 0 {
-            showPreviousImage()
+            withAnimation { selectedImageIndex -= 1 } // Animate index change
+            loadImages() // Load images separately
         } else if value.translation.width < -threshold && selectedImageIndex < imageAssets.count - 1 {
-            showNextImage()
+            withAnimation { selectedImageIndex += 1 } // Animate index change
+            loadImages() // Load images separately
         } else {
             withAnimation(.interactiveSpring(response: 0.3, dampingFraction: 0.6)) {
                 dragOffset = 0
@@ -125,7 +127,6 @@ struct FullscreenImageView: View {
             withAnimation { currentImage = image }
         }
 
-        // Preload left and right images (up to 3 in memory)
         let leftIndex = max(0, selectedImageIndex - 1)
         if leftIndex != selectedImageIndex {
             loadImage(for: imageAssets[leftIndex]) { image in
@@ -136,11 +137,10 @@ struct FullscreenImageView: View {
         let rightIndex = min(imageAssets.count - 1, selectedImageIndex + 1)
         if rightIndex != selectedImageIndex {
             loadImage(for: imageAssets[rightIndex]) { image in
-                nextImage = image // Right image is the next image
+                nextImage = image
             }
         }
     }
-
 
     private func loadImage(for asset: PHAsset, completion: @escaping (UIImage?) -> Void) {
         let targetSize = CGSize(width: UIScreen.main.bounds.width * 2, height: UIScreen.main.bounds.height * 2)
@@ -157,7 +157,7 @@ struct FullscreenImageView: View {
 
     private func showPreviousImage() {
         if selectedImageIndex > 0 {
-            selectedImageIndex -= 1
+            withAnimation { selectedImageIndex -= 1 }
             loadImages()
         } else {
             bounceBack()
@@ -166,7 +166,7 @@ struct FullscreenImageView: View {
 
     private func showNextImage() {
         if selectedImageIndex < imageAssets.count - 1 {
-            selectedImageIndex += 1
+            withAnimation { selectedImageIndex += 1 }
             loadImages()
         } else {
             bounceBack()
