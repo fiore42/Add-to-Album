@@ -51,10 +51,10 @@ struct FullscreenImageView: View {
                             .offset(x: geometry.size.width) // Position off-screen to the right
                     }
                 }
-                .offset(x: CGFloat(-selectedImageIndex) * geometry.size.width + dragTranslation.width) // Key change!
-                .animation(.interactiveSpring(), value: dragTranslation) // Animate dragTranslation
-//                .offset(x: dragTranslation.width) // Use dragTranslation directly
-//                .animation(.interactiveSpring(), value: dragTranslation) // Animate with dragTranslation
+//                .offset(x: CGFloat(-selectedImageIndex) * geometry.size.width + dragTranslation.width) // Key change!
+//                .animation(.interactiveSpring(), value: dragTranslation) // Animate dragTranslation
+                .offset(x: dragTranslation.width) // Use dragTranslation directly
+                .animation(.interactiveSpring(), value: dragTranslation) // Animate with dragTranslation
                 
                 // Black separator
                 if dragTranslation != .zero { // Only show when dragging
