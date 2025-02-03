@@ -29,9 +29,37 @@
 		0518064A2D3D77D30082983A /* Add-to-AlbumUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Add-to-AlbumUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		05595CAC2D50E4A100A562FF /* Exceptions for "Add-to-Album" folder in "Add-to-Album" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Views/FullScreenImageView.txt,
+				Views/FunctionBox.txt,
+				Views/ImageThumbnailView.txt,
+			);
+			target = 0518062F2D3D77D20082983A /* Add-to-Album */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		05595CAD2D50E4A100A562FF /* Exceptions for "Add-to-Album" folder in "Compile Sources" phase from "Add-to-Album" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			buildPhase = 0518062C2D3D77D20082983A /* Sources */;
+			membershipExceptions = (
+				Views/FullScreenImageView.txt,
+				Views/FunctionBox.txt,
+				Views/ImageThumbnailView.txt,
+			);
+		};
+/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		051806322D3D77D20082983A /* Add-to-Album */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				05595CAC2D50E4A100A562FF /* Exceptions for "Add-to-Album" folder in "Add-to-Album" target */,
+				05595CAD2D50E4A100A562FF /* Exceptions for "Add-to-Album" folder in "Compile Sources" phase from "Add-to-Album" target */,
+			);
 			path = "Add-to-Album";
 			sourceTree = "<group>";
 		};
