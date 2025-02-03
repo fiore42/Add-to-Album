@@ -1,7 +1,9 @@
 import SwiftUI
 
 struct ImageGridView: View {
-    @StateObject private var viewModel = ImageGridViewModel() // Make sure you have this
+    @StateObject private var viewModel = ImageGridViewModel() // Make sure this is implemented
+    @State private var isPresented = false
+    @State private var selectedImageIndex = 0
     private let spacing: CGFloat = 2
     private let columns: [GridItem] = [
         GridItem(.flexible()),
@@ -19,9 +21,13 @@ struct ImageGridView: View {
                             LazyVGrid(columns: columns, spacing: spacing) {
                                 ForEach(viewModel.images.indices, id: \.self) { index in
                                     ImageCellView(image: viewModel.images[index])
-                                        .aspectRatio(1, contentMode: .fit) // Or .fill for cropping
+                                        .aspectRatio(1, contentMode: .fit) // Or .fill
                                         .frame(width: cellSize(geometry: geometry), height: cellSize(geometry: geometry))
                                         .clipped()
+                                        .onTapGesture {
+                                            selectedImageIndex = index // Correct index usage
+                                            isPresented = true
+                                        }
                                         .onAppear {
                                             if index == viewModel.images.count - 1 {
                                                 viewModel.loadNextBatch()
@@ -58,6 +64,13 @@ struct ImageGridView: View {
             .onAppear {
                 viewModel.checkPermissions()
             }
+        }
+        .fullScreenCover(isPresented: $isPresented) {
+            FullscreenImageView(
+                isPresented: $isPresented,
+                selectedImageIndex: $selectedImageIndex, // ✅ Fix: Add `$` to make it a Binding<Int>
+                imageAssets: viewModel.imageAssets
+            )
         }
     }
 

@@ -5,7 +5,8 @@ import Photos
 class ImageGridViewModel: ObservableObject {
     @Published var status: PhotoPermissionStatus = .notDetermined
     @Published var images: [UIImage] = []
-
+    @Published var imageAssets: [PHAsset] = [] // ✅ Fix: Now stores PHAssets
+    
     private let imageManager = ImageManager()
     private var allAssets: PHFetchResult<PHAsset>?
     private var currentIndex = 0
@@ -62,7 +63,11 @@ class ImageGridViewModel: ObservableObject {
 
         Logger.log("📥 Requesting thumbnails [\(currentIndex) to \(endIndex)]")
 
-        // **Efficient Parallel Processing (Limits Threads to 4)**
+        // ✅ Fix: Now stores PHAssets for fullscreen preview
+        DispatchQueue.main.async {
+            self.imageAssets.append(contentsOf: assetsToLoad)
+        }
+
         imageManager.fetchThumbnails(for: assetsToLoad, maxConcurrentRequests: 4) { [weak self] images in
             DispatchQueue.main.async {
                 self?.images.append(contentsOf: images)
