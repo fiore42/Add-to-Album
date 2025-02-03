@@ -6,12 +6,12 @@ struct FullscreenImageView: View {
     @Binding var selectedImageIndex: Int
     let imageAssets: [PHAsset]
     private let imageManager = PHImageManager.default()
-
+    
     @State private var currentImage: UIImage?
     @State private var leftImage: UIImage?
     @State private var rightImage: UIImage?
     @State private var dragOffset: CGFloat = 0
-    @GestureState private var dragState: CGSize = .zero
+    @GestureState private var dragTranslation: CGSize = .zero
     @Environment(\.dismiss) var dismiss
 
     var body: some View {
@@ -19,44 +19,42 @@ struct FullscreenImageView: View {
             ZStack {
                 Color.black.ignoresSafeArea()
 
-                if let currentImage = currentImage {
-                    HStack(spacing: 0) {
-                        if let leftImage = leftImage {
-                            Image(uiImage: leftImage)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: geometry.size.width, height: geometry.size.height)
-                                .offset(x: -geometry.size.width + dragOffset)
-                        }
-
+                // Display images side by side for natural swipe transition
+                HStack(spacing: 0) {
+                    if let leftImage = leftImage {
+                        Image(uiImage: leftImage)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                            .offset(x: -geometry.size.width + dragOffset + dragTranslation.width)
+                    }
+                    
+                    if let currentImage = currentImage {
                         Image(uiImage: currentImage)
                             .resizable()
                             .scaledToFit()
                             .frame(width: geometry.size.width, height: geometry.size.height)
-                            .offset(x: dragOffset)
-
-                        if let rightImage = rightImage {
-                            Image(uiImage: rightImage)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: geometry.size.width, height: geometry.size.height)
-                                .offset(x: geometry.size.width + dragOffset)
-                        }
+                            .offset(x: dragOffset + dragTranslation.width)
                     }
-                    .gesture(
-                        DragGesture()
-                            .updating($dragState) { value, state, _ in
-                                state = value.translation
-                            }
-                            .onEnded { value in
-                                handleSwipe(value: value, screenWidth: geometry.size.width)
-                            }
-                    )
-                } else {
-                    ProgressView()
-                        .foregroundColor(.white)
+
+                    if let rightImage = rightImage {
+                        Image(uiImage: rightImage)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                            .offset(x: geometry.size.width + dragOffset + dragTranslation.width)
+                    }
                 }
 
+                // Black separator between images during swipe
+                if dragTranslation.width != 0 {
+                    Rectangle()
+                        .fill(Color.black)
+                        .frame(width: 20, height: geometry.size.height)
+                        .offset(x: dragTranslation.width > 0 ? dragTranslation.width - 20 : dragTranslation.width + 20)
+                }
+
+                // Back button in the top left
                 VStack {
                     HStack {
                         Button(action: { dismiss() }) {
@@ -70,6 +68,15 @@ struct FullscreenImageView: View {
                     Spacer()
                 }
             }
+            .gesture(
+                DragGesture()
+                    .updating($dragTranslation) { value, state, _ in
+                        state = value.translation
+                    }
+                    .onEnded { value in
+                        handleSwipe(value: value, screenWidth: geometry.size.width)
+                    }
+            )
             .onAppear { loadImages() }
             .onChange(of: selectedImageIndex) { _ in loadImages() }
         }
