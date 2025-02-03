@@ -115,12 +115,9 @@ struct FullScreenImageView: View {
                         onTap: { togglePairing(for: "Function 1", asset: assets[selectedIndex], album: album1) }
                     )
                     .frame(maxWidth: .infinity, alignment: .leading) // Align to the left
-                    .position(
-                        x: 20 + geometry.safeAreaInsets.leading,
-                        y: geometry.size.height * (10 / 100) // Adjust this percentage
-                    )
+                    .position(x: 20 + geometry.safeAreaInsets.leading, y: 20 + geometry.safeAreaInsets.top)
                 }
-
+                
                 // Top Right
                 if let album2 = pairedAlbums["Function 2"] {
                     FunctionBox(
@@ -129,13 +126,9 @@ struct FullScreenImageView: View {
                         isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: album2),
                         onTap: { togglePairing(for: "Function 2", asset: assets[selectedIndex], album: album2) }
                     )
-                    .frame(maxWidth: .infinity, alignment: .trailing) // Align to the right
-                    .position(
-                        x: geometry.size.width - 20 - geometry.safeAreaInsets.trailing,
-                        y: geometry.size.height * (10 / 100) // Adjust this percentage
-                    )
+                    .position(x: geometry.size.width - 20 - geometry.safeAreaInsets.trailing, y: 20 + geometry.safeAreaInsets.top)
                 }
-
+                
                 // Bottom Left
                 if let album3 = pairedAlbums["Function 3"] {
                     FunctionBox(
@@ -144,13 +137,9 @@ struct FullScreenImageView: View {
                         isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: album3),
                         onTap: { togglePairing(for: "Function 3", asset: assets[selectedIndex], album: album3) }
                     )
-                    .frame(maxWidth: .infinity, alignment: .leading) // Align to the left
-                    .position(
-                        x: 20 + geometry.safeAreaInsets.leading,
-                        y: geometry.size.height * (90 / 100) // Adjust this percentage
-                    )
+                    .position(x: 20 + geometry.safeAreaInsets.leading, y: geometry.size.height - 20 - geometry.safeAreaInsets.bottom)
                 }
-
+                
                 // Bottom Right
                 if let album4 = pairedAlbums["Function 4"] {
                     FunctionBox(
@@ -159,13 +148,9 @@ struct FullScreenImageView: View {
                         isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: album4),
                         onTap: { togglePairing(for: "Function 4", asset: assets[selectedIndex], album: album4) }
                     )
-                    .frame(maxWidth: .infinity, alignment: .trailing) // Align to the right
-                    .position(
-                        x: geometry.size.width - 20 - geometry.safeAreaInsets.trailing,
-                        y: geometry.size.height * (90 / 100) // Adjust this percentage
-                    )
+                    .position(x: geometry.size.width - 20 - geometry.safeAreaInsets.trailing, y: geometry.size.height - 20 - geometry.safeAreaInsets.bottom)
                 }
-
+                
                 
                 // Dismiss Button
                 Button(action: onDismiss) {
