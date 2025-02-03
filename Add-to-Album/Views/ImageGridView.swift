@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ImageGridView: View {
-    @StateObject private var viewModel = ImageGridViewModel()
+    @StateObject private var viewModel = ImageGridViewModel() // Make sure you have this
     private let spacing: CGFloat = 2
     private let columns: [GridItem] = [
         GridItem(.flexible()),
@@ -19,7 +19,9 @@ struct ImageGridView: View {
                             LazyVGrid(columns: columns, spacing: spacing) {
                                 ForEach(viewModel.images.indices, id: \.self) { index in
                                     ImageCellView(image: viewModel.images[index])
+                                        .aspectRatio(1, contentMode: .fit) // Or .fill for cropping
                                         .frame(width: cellSize(geometry: geometry), height: cellSize(geometry: geometry))
+                                        .clipped()
                                         .onAppear {
                                             if index == viewModel.images.count - 1 {
                                                 viewModel.loadNextBatch()
