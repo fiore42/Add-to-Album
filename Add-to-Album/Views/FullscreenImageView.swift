@@ -26,20 +26,25 @@ struct FullscreenImageView: View {
                 Color.black.ignoresSafeArea()
                 
                 HStack(spacing: 0) {
-                    ForEach(imageAssets.indices, id: \.self) { index in
-                        if let image = getImage(for: index) {
-                            Image(uiImage: image)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: geometry.size.width, height: geometry.size.height)
-                                .clipped()
-                        } else {
-                            Color.black // Placeholder to prevent gaps
-                                .frame(width: geometry.size.width, height: geometry.size.height)
-                        }
-                    }
+                    Image(uiImage: leftImage ?? UIImage()) // ✅ Ensure placeholder instead of blank
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: geometry.size.width, height: geometry.size.height)
+                        .clipped()
+
+                    Image(uiImage: currentImage ?? UIImage()) // ✅ Ensure placeholder instead of blank
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: geometry.size.width, height: geometry.size.height)
+                        .clipped()
+
+                    Image(uiImage: rightImage ?? UIImage()) // ✅ Ensure placeholder instead of blank
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: geometry.size.width, height: geometry.size.height)
+                        .clipped()
                 }
-                .offset(x: CGFloat(-selectedImageIndex) * geometry.size.width + dragTranslation.width) // ✅ Now all images move smoothly!
+                .offset(x: -CGFloat(selectedImageIndex) * geometry.size.width + dragTranslation.width)
                 .animation(.interactiveSpring(), value: selectedImageIndex)
 
                 // Black separator
@@ -155,7 +160,7 @@ struct FullscreenImageView: View {
             Logger.log("[⚠️ loadImages] Skipping duplicate load for index: \(selectedImageIndex)")
             return
         }
-
+        
         Logger.log("[📸 loadImages] selectedImageIndex: \(selectedImageIndex), total assets: \(imageAssets.count)")
         loadingIndices.insert(selectedImageIndex) // ✅ Mark as in-progress
 
@@ -164,16 +169,44 @@ struct FullscreenImageView: View {
         options.isNetworkAccessAllowed = true
         options.deliveryMode = .highQualityFormat
 
-        Logger.log("[🔵 Current Image] Loading image at index \(selectedImageIndex)")
-        loadImage(for: imageAssets[selectedImageIndex], targetSize: targetSize, options: options) { image in
-            DispatchQueue.main.async {
-                self.currentImage = image
-                self.imageLoadState = .loaded
-                self.loadingIndices.remove(selectedImageIndex) // ✅ Mark as finished
-                Logger.log("[✅ Loaded Current Image] Index: \(selectedImageIndex)")
+        // ✅ Load current image
+        if currentImage == nil {
+            Logger.log("[🔵 Current Image] Loading image at index \(selectedImageIndex)")
+            loadImage(for: imageAssets[selectedImageIndex], targetSize: targetSize, options: options) { image in
+                DispatchQueue.main.async {
+                    self.currentImage = image
+                    self.imageLoadState = .loaded
+                    self.loadingIndices.remove(selectedImageIndex)
+                    Logger.log("[✅ Loaded Current Image] Index: \(selectedImageIndex)")
+                }
+            }
+        }
+
+        // ✅ Preload left image if available
+        let leftIndex = selectedImageIndex > 0 ? selectedImageIndex - 1 : nil
+        if let leftIndex = leftIndex, leftImage == nil {
+            Logger.log("[⬅️ Left Image] Preloading image at index \(leftIndex)")
+            loadImage(for: imageAssets[leftIndex], targetSize: targetSize, options: options) { image in
+                DispatchQueue.main.async {
+                    self.leftImage = image
+                    Logger.log("[✅ Loaded Left Image] Index: \(leftIndex)")
+                }
+            }
+        }
+
+        // ✅ Preload right image if available
+        let rightIndex = selectedImageIndex < imageAssets.count - 1 ? selectedImageIndex + 1 : nil
+        if let rightIndex = rightIndex, rightImage == nil {
+            Logger.log("[➡️ Right Image] Preloading image at index \(rightIndex)")
+            loadImage(for: imageAssets[rightIndex], targetSize: targetSize, options: options) { image in
+                DispatchQueue.main.async {
+                    self.rightImage = image
+                    Logger.log("[✅ Loaded Right Image] Index: \(rightIndex)")
+                }
             }
         }
     }
+
 
     private func loadImage(for asset: PHAsset, targetSize: CGSize, options: PHImageRequestOptions, completion: @escaping (UIImage?) -> Void) {
         Logger.log("[🖼 Requesting Image] Asset LocalIdentifier: \(asset.localIdentifier)")
