@@ -31,7 +31,6 @@ struct FullscreenImageView: View {
                             .scaledToFit()
                             .frame(width: geometry.size.width, height: geometry.size.height)
                             .clipped()
-                            .offset(x: -geometry.size.width) // Position off-screen to the left
                     }
                     
                     if let currentImage = currentImage {
@@ -48,14 +47,12 @@ struct FullscreenImageView: View {
                             .scaledToFit()
                             .frame(width: geometry.size.width, height: geometry.size.height)
                             .clipped()
-                            .offset(x: geometry.size.width) // Position off-screen to the right
                     }
                 }
-//                .offset(x: CGFloat(-selectedImageIndex) * geometry.size.width + dragTranslation.width) // Key change!
-//                .animation(.interactiveSpring(), value: dragTranslation) // Animate dragTranslation
-                .offset(x: dragTranslation.width) // Use dragTranslation directly
-                .animation(.interactiveSpring(), value: dragTranslation) // Animate with dragTranslation
-                
+//                .offset(x: dragTranslation.width) // Use dragTranslation directly
+//                .animation(.interactiveSpring(), value: dragTranslation) // Animate with dragTranslation
+                .offset(x: CGFloat(-selectedImageIndex) * geometry.size.width + dragTranslation.width)
+                .animation(.interactiveSpring(), value: selectedImageIndex)
                 // Black separator
                 if dragTranslation != .zero { // Only show when dragging
                     Rectangle()
