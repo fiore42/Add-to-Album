@@ -6,6 +6,7 @@ struct FullScreenImageView: View {
     // MARK: - Properties
     
     @ObservedObject var viewModel: ViewModel
+    
     /// The array of assets to page through.
     let assets: [PHAsset]
     let imageManager: PHImageManager
@@ -56,9 +57,10 @@ struct FullScreenImageView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
+                // Background
                 Color.black.edgesIgnoringSafeArea(.all)
                 
-                // Paging Content
+                // The swiping/paging HStack
                 HStack(spacing: 0) {
                     ForEach(assets.indices, id: \.self) { index in
                         ZStack {
@@ -92,9 +94,9 @@ struct FullScreenImageView: View {
                     DragGesture()
                         .onChanged { value in
                             let translation = value.translation.width
-                            // Damp the drag when at the boundaries.
+                            // Damp the drag if we are at the boundaries:
                             if (selectedIndex == 0 && translation > 0) ||
-                                (selectedIndex == assets.count - 1 && translation < 0) {
+                               (selectedIndex == assets.count - 1 && translation < 0) {
                                 dragOffset = translation * 0.3
                             } else {
                                 dragOffset = translation
@@ -119,19 +121,10 @@ struct FullScreenImageView: View {
                         }
                 )
                 
-                // Dismiss Button
-                Button(action: onDismiss) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 30, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding()
-                }
-                .position(x: 40, y: 60)
-            }
-
-            .overlay(
+                // The function boxes, arranged in a VStack
                 VStack {
-                    // Top Row: Positioned ~20% from the top
+                    
+                    // Top Row
                     HStack {
                         if let album1 = pairedAlbums["Function 1"] ?? nil {
                             FunctionBox(
@@ -153,15 +146,12 @@ struct FullScreenImageView: View {
                                     togglePairing(for: "Function 2", asset: assets[selectedIndex], album: album2)
                                 }
                             )
-                            .frame(maxWidth: .infinity, alignment: .trailing)
                         }
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, geometry.size.height * 0.20)
                     
                     Spacer()
                     
-                    // Bottom Row: Positioned ~80% from the top
+                    // Bottom Row
                     HStack {
                         if let album3 = pairedAlbums["Function 3"] ?? nil {
                             FunctionBox(
@@ -183,18 +173,21 @@ struct FullScreenImageView: View {
                                     togglePairing(for: "Function 4", asset: assets[selectedIndex], album: album4)
                                 }
                             )
-                            .frame(maxWidth: .infinity, alignment: .trailing)
                         }
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, geometry.size.height * 0.20)
-                },
-                alignment: .center
-            )
-
-
-
-            .id(refreshToggle) // Toggling this forces the overlay to refresh.
+                }
+                .padding() // Adjust as needed
+                .id(refreshToggle)
+                
+                // Dismiss Button in top-left corner
+                Button(action: onDismiss) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 30, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding()
+                }
+                .position(x: 40, y: 60)
+            }
             .edgesIgnoringSafeArea(.all)
             .onAppear {
                 loadImageIfNeeded(for: selectedIndex, containerWidth: geometry.size.width)
@@ -203,11 +196,9 @@ struct FullScreenImageView: View {
     }
     
     // MARK: - Toggle Pairing
-    
-    /// Performs the pairing toggle and then forces a UI refresh.
     private func togglePairing(for function: String,
-                                 asset: PHAsset,
-                                 album: PHAssetCollection?) {
+                               asset: PHAsset,
+                               album: PHAssetCollection?) {
         guard let album = album else { return }
         PHPhotoLibrary.shared().performChanges({
             let fetchOptions = PHFetchOptions()
@@ -225,6 +216,7 @@ struct FullScreenImageView: View {
         }, completionHandler: { success, error in
             if success {
                 DispatchQueue.main.async {
+                    // Force a small refresh
                     refreshToggle.toggle()
                 }
             } else if let error = error {
@@ -233,30 +225,32 @@ struct FullScreenImageView: View {
         })
     }
     
-    // MARK: - Image Loading Helpers
-    
+    // MARK: - Image Loading
     private func loadImageIfNeeded(for index: Int, containerWidth: CGFloat) {
         guard index < assets.count else { return }
         let asset = assets[index]
         if highResImages[index] != nil || imageLoadRequests[index] != nil { return }
+        
         let scale = UIScreen.main.scale
         let targetSize = CGSize(width: containerWidth * scale, height: containerWidth * scale)
         let options = PHImageRequestOptions()
         options.isSynchronous = false
         options.deliveryMode = .highQualityFormat
         options.isNetworkAccessAllowed = true
-
-        let requestID = imageManager.requestImage(for: asset,
-                                                  targetSize: targetSize,
-                                                  contentMode: .aspectFit,
-                                                  options: options) { image, info in
+        
+        let requestID = imageManager.requestImage(
+            for: asset,
+            targetSize: targetSize,
+            contentMode: .aspectFit,
+            options: options
+        ) { image, info in
             DispatchQueue.main.async {
                 if let image = image {
                     self.highResImages[index] = image
                     self.imageCache.setObject(image, forKey: asset)
                 } else if let error = info?[PHImageErrorKey] as? NSError,
                           error.domain == "PHPhotosErrorDomain", error.code == 3072 {
-                    // Request cancelled (expected when scrolling quickly)
+                    // Request cancelled (usually expected when scrolling quickly)
                 } else {
                     print("Error loading image at index \(index): \(info ?? [:])")
                 }
