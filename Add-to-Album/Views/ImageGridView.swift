@@ -3,12 +3,12 @@ import SwiftUI
 struct ImageGridView: View {
     @StateObject private var viewModel = ImageGridViewModel()
 
-    // Defines a three-column layout with **5px spacing** between images
-    private let spacing: CGFloat = 5
+    // Defines a three-column layout with **2px spacing** between images
+    private let spacing: CGFloat = 2
     private let columns: [GridItem] = [
-        GridItem(.flexible(), spacing: 5),
-        GridItem(.flexible(), spacing: 5),
-        GridItem(.flexible(), spacing: 5)
+        GridItem(.flexible(), spacing: 2),
+        GridItem(.flexible(), spacing: 2),
+        GridItem(.flexible(), spacing: 2)
     ]
 
     var body: some View {
