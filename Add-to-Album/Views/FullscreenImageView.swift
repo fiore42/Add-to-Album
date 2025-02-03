@@ -119,12 +119,16 @@ struct FullscreenImageView: View {
         options.isNetworkAccessAllowed = true
         options.deliveryMode = .highQualityFormat
 
-        loadImage(for: imageAssets[selectedImageIndex], targetSize: targetSize, options: options) { image in
+        let currentIndex = selectedImageIndex // Ensure we capture the correct index before async execution
+        loadImage(for: imageAssets[currentIndex], targetSize: targetSize, options: options) { image in
             DispatchQueue.main.async {
-                currentImage = image
-                imageLoadState = .loaded // Set loaded state
+                if selectedImageIndex == currentIndex { // ✅ Ensure we set the correct image
+                    currentImage = image
+                    imageLoadState = .loaded // Set loaded state
+                }
             }
         }
+
 
         let leftIndex = selectedImageIndex > 0 ? selectedImageIndex - 1 : nil
         leftImage = nil // Clear previous left image
