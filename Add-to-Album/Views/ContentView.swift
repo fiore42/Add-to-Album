@@ -1,203 +1,139 @@
 import SwiftUI
-import PhotosUI
-import Foundation // ✅ Ensure Foundation is imported
+import Photos
 
-// This is where IdentifiableAsset goes:
-struct IdentifiableAsset: Identifiable {
-    let id = UUID() // Or use asset.localIdentifier if you prefer
-    let asset: PHAsset
-}
-
-class ViewModel: ObservableObject {
-    let albumAssociationManager = AlbumAssociationManager()
-    @Published var pairedAlbums: [String: PHAssetCollection?] = [:] {
-        didSet {
-            albumAssociationManager.pairedAlbums = pairedAlbums // Synchronize when ViewModel's pairedAlbums changes
-        }
-    }
-
-    init() {
-        albumAssociationManager.loadFunctionAlbumAssociations()
-        pairedAlbums = albumAssociationManager.pairedAlbums // Initialize ViewModel's pairedAlbums
-    }
-}
 struct ContentView: View {
-    @StateObject var viewModel = ViewModel()
-    @State private var photoAssets: [PHAsset] = []
-    @State private var selectedImage: IdentifiableAsset? = nil
-    @State private var isLoadingMore = false
-    @State private var albums: [PHAssetCollection] = [] // Store available albums
-    @AppStorage("functionAlbumAssociations") private var functionAlbumAssociations: Data = Data()
-//    @State private var pairedAlbums: [String: PHAssetCollection] = [:] // Now in ContentView
-
-//    @State private var pairedAlbums: [String: PHAssetCollection?] = [
-//        "Function 1": nil,
-//        "Function 2": nil,
-//        "Function 3": nil,
-//        "Function 4": nil
-//    ] // Store paired albums
+    @StateObject private var viewModel = PhotoGridViewModel()
     
-    private let imageManager = PHImageManager.default()
-    private let batchSize = 30
+    // Number of columns in the grid
+    private let columns = [
+        GridItem(.flexible(), spacing: 2),
+        GridItem(.flexible(), spacing: 2),
+        GridItem(.flexible(), spacing: 2)
+    ]
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))]) {
-                    ForEach(photoAssets, id: \.localIdentifier) { asset in
-                        ImageThumbnailView(asset: asset, imageManager: imageManager)
-                            .onTapGesture {
-                                selectedImage = IdentifiableAsset(asset: asset)
-                            }
-                            .onAppear {
-                                if asset == photoAssets.last && !isLoadingMore {
-                                    loadNextBatch()
+            Group {
+                switch viewModel.status {
+                case .granted, .limited:
+                    // Authorized: Show the grid of images
+                    if viewModel.images.isEmpty {
+                        ProgressView("Loading Photos...")
+                    } else {
+                        ScrollView {
+                            LazyVGrid(columns: columns, spacing: 2) {
+                                ForEach(viewModel.images, id: \.self) { image in
+                                    Image(uiImage: image)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(minWidth: 0, maxWidth: .infinity,
+                                               minHeight: 100, maxHeight: .infinity)
+                                        .clipped()
                                 }
                             }
-                    }
-                }
-                if isLoadingMore {
-                    ProgressView()
-                }
-            }
-            .navigationTitle("Photo Gallery")
-            .navigationBarItems(trailing: albumSelectionMenu) // ✅ Add Hamburger Menu
-            .onAppear {
-                requestPhotoLibraryAccess()
-                fetchAlbums() // ✅ Fetch available albums
-//                viewModel.albumAssociationManager.loadFunctionAlbumAssociations()
-//                viewModel.albumAssociationManager.checkAlbumExistence()
-            }
-            .fullScreenCover(item: $selectedImage) { identifiableAsset in
-                FullScreenImageView(
-                    viewModel: viewModel,
-                    assets: photoAssets,
-                    imageManager: imageManager,
-                    selectedIndex: photoAssets.firstIndex(where: { $0.localIdentifier == identifiableAsset.asset.localIdentifier }) ?? 0,
-//                    pairedAlbums: $viewModel.albumAssociationManager.pairedAlbums, // Pass the binding through the viewModel
-//                    pairedAlbums: $pairedAlbums, // Pass a binding
-//                    pairedAlbums: viewModel.pairedAlbumsBinding, // Use the computed property
-                    pairedAlbums: $viewModel.pairedAlbums, // Directly use the ViewModel's pairedAlbums
-                    loadMoreAssets: loadNextBatch,
-                    onDismiss: { selectedImage = nil }
-                )
-            }
-        }
-    }
-    
-    // ✅ Hamburger Menu for selecting albums
-    var albumSelectionMenu: some View {
-        Menu {
-            // ✅ Ensure functions are always listed in the correct order
-            let orderedFunctions = ["Fu 1", "Fu 2", "Fu 3", "Fu 4"]
-
-            let functionMap: [String: String] = [
-                "Fu 1": "Function 1",
-                "Fu 2": "Function 2",
-                "Fu 3": "Function 3",
-                "Fu 4": "Function 4"
-            ]
-            
-            ForEach(orderedFunctions, id: \.self) { shortFunctionName in
-                let fullFunctionName = functionMap[shortFunctionName] ?? shortFunctionName
-//                let albumName = viewModel.albumAssociationManager.pairedAlbums[fullFunctionName]??.localizedTitle ?? "Not Set"
-                let albumName = viewModel.pairedAlbums[fullFunctionName]??.localizedTitle ?? "Not Set"
-                let truncatedAlbumName = truncateAlbumName(albumName, maxLength: 16)
-
-                Menu("\(shortFunctionName): \(truncatedAlbumName)") {
-                    ForEach(albums, id: \.localIdentifier) { album in
-                        Button(album.localizedTitle ?? "Unnamed Album") {
-                            viewModel.pairedAlbums[fullFunctionName] = album
-//                            viewModel.albumAssociationManager.updatePairedAlbum(for: fullFunctionName, with: album) // Use the new function
-//                            viewModel.albumAssociationManager.pairedAlbums[fullFunctionName] = album // Update through viewModel
-                            print("📂 Paired \(fullFunctionName) with album: \(album.localizedTitle ?? "Unnamed")")
+                            .padding(2)
                         }
                     }
+                    
+                case .notDetermined:
+                    // Permission not determined yet: show button to request
+                    VStack(spacing: 20) {
+                        Text("We need access to your photo library.")
+                            .multilineTextAlignment(.center)
+                            .padding()
+                        
+                        Button("Request Permission") {
+                            viewModel.requestPermission()
+                        }
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                    }
+                    
+                case .denied, .restricted:
+                    // Denied or restricted: show message
+                    Text("Photo library access is denied or restricted.\nPlease update your settings to continue.")
+                        .multilineTextAlignment(.center)
+                        .padding()
                 }
             }
-        } label: {
-            Image(systemName: "line.horizontal.3") // Hamburger icon
-                .font(.title2)
+            .navigationTitle("Photo Grid")
+        }
+        .onAppear {
+            // If the user had previously granted permission, fetch photos right away.
+            // (This also triggers when the view is first loaded.)
+            viewModel.checkCurrentStatus()
         }
     }
+}
 
-    func updateFunctionAlbumAssociation(for function: String, with collection: PHAssetCollection?) {
-        viewModel.albumAssociationManager.pairedAlbums[function] = collection // Directly update pairedAlbums
+// MARK: - View Model
 
-//        let associationsToSave = viewModel.albumAssociationManager.pairedAlbums.compactMapValues { $0?.localIdentifier }
-        viewModel.albumAssociationManager.saveFunctionAlbumAssociations() // No need to pass associationsToSave anymore
-    }
-
-
+class PhotoGridViewModel: ObservableObject {
+    @Published var status: PhotoPermissionStatus = .notDetermined
+    @Published var images: [UIImage] = []
     
-    // ✅ Fetch user albums
-    func fetchAlbums() {
-        let fetchOptions = PHFetchOptions()
-        let collections = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: fetchOptions)
+    // For demonstration, we’ll fetch a small set of photos
+    private let batchSize = 30
+    
+    func checkCurrentStatus() {
+        let current = PhotoPermissionManager.currentStatus()
+        status = current
         
-        var fetchedAlbums: [PHAssetCollection] = []
-        collections.enumerateObjects { (collection, _, _) in
-            fetchedAlbums.append(collection)
+        if current == .granted || current == .limited {
+            fetchPhotos()
         }
+    }
+    
+    func requestPermission() {
+        PhotoPermissionManager.requestPermission { [weak self] newStatus in
+            guard let self = self else { return }
+            self.status = newStatus
+            if newStatus == .granted || newStatus == .limited {
+                self.fetchPhotos()
+            }
+        }
+    }
+    
+    private func fetchPhotos() {
+        // 1. Fetch PHAssets
+        let options = PHFetchOptions()
+        options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
         
-        DispatchQueue.main.async {
-            self.albums = fetchedAlbums
-        }
-    }
-    
-    func requestPhotoLibraryAccess() {
-        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
-        switch status {
-        case .notDetermined:
-            PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in
-                if status == .authorized {
-                    loadNextBatch()
-                    fetchAlbums()
+        let result = PHAsset.fetchAssets(with: .image, options: options)
+        let count = min(batchSize, result.count)
+        
+        // 2. Request images (synchronously or asynchronously)
+        //    We'll do a simple approach: get them in a for-loop.
+        
+        // Typically, you'd use a PHImageManager (caching or not).
+        let imageManager = PHCachingImageManager()
+        
+        var tempImages: [UIImage] = []
+        let targetSize = CGSize(width: 150, height: 150) // low-res
+        
+        let requestOptions = PHImageRequestOptions()
+        requestOptions.isNetworkAccessAllowed = true
+        
+        for i in 0..<count {
+            let asset = result.object(at: i)
+            imageManager.requestImage(
+                for: asset,
+                targetSize: targetSize,
+                contentMode: .aspectFill,
+                options: requestOptions
+            ) { image, _ in
+                if let image = image {
+                    tempImages.append(image)
                 }
-            }
-        case .authorized:
-            loadNextBatch()
-            fetchAlbums()
-        default:
-            print("Photo library access denied or restricted")
-        }
-    }
-    
-    func loadNextBatch() {
-        guard !isLoadingMore else { return }
-        isLoadingMore = true
-
-        let startTime = Date()
-        print("🔄 Starting to load next batch of images at \(startTime) (current count: \(photoAssets.count))")
-
-        DispatchQueue.global(qos: .userInitiated).async {
-            let fetchOptions = PHFetchOptions()
-            fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
-            fetchOptions.fetchLimit = self.photoAssets.count + self.batchSize
-
-            let fetchResult = PHAsset.fetchAssets(with: .image, options: fetchOptions)
-
-            let startIndex = self.photoAssets.count
-            let endIndex = min(fetchResult.count, startIndex + self.batchSize)
-
-            guard startIndex < endIndex else {
-                print("⚠️ No new assets found to load")
-                DispatchQueue.main.async {
-                    self.isLoadingMore = false
+                
+                // When we've reached the last requested asset, publish
+                if i == count - 1 {
+                    DispatchQueue.main.async {
+                        self.images = tempImages
+                    }
                 }
-                return
-            }
-
-            let newAssets = fetchResult.objects(at: IndexSet(startIndex..<endIndex))
-
-            DispatchQueue.main.async {
-                let mainThreadStart = Date()
-                self.photoAssets.append(contentsOf: newAssets)
-                self.isLoadingMore = false
-
-                let mainThreadEnd = Date()
-                print("✅ Batch loaded: \(newAssets.count) images added. Total images: \(self.photoAssets.count)")
-                print("⏳ Time taken: \(mainThreadEnd.timeIntervalSince(startTime)) seconds (UI update: \(mainThreadEnd.timeIntervalSince(mainThreadStart)) seconds)")
             }
         }
     }
