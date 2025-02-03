@@ -8,57 +8,30 @@ struct FullscreenImageView: View {
     private let imageManager = PHImageManager.default()
 
     @State private var currentImage: UIImage?
-    @State private var nextImage: UIImage?
-    @State private var previousImage: UIImage? // For the left image
+    @State private var leftImage: UIImage?
+    @State private var rightImage: UIImage?
     @State private var dragOffset: CGFloat = 0
-    @GestureState private var dragState = DragState.inactive
+    @GestureState private var dragState: CGSize = .zero
     @Environment(\.dismiss) var dismiss
 
-    enum DragState {
-        case inactive
-        case dragging(translation: CGSize)
-
-        var translation: CGSize {
-            switch self {
-            case .inactive:
-                return .zero
-            case .dragging(let translation):
-                return translation
-            }
-        }
-
-        var isDragging: Bool {
-            switch self {
-            case .inactive:
-                return false
-            case .dragging:
-                return true
-            }
-        }
-    }
-
     var body: some View {
-        NavigationView {
-            GeometryReader { geometry in // Get geometry here
-                ZStack {
-                    Color.black.ignoresSafeArea()
+        ZStack {
+            Color.black.ignoresSafeArea()
 
-                    HStack(spacing: 0) { // Use HStack for transitions
-                        if let previousImage = previousImage {
-                            Image(uiImage: previousImage)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: geometry.size.width, height: geometry.size.height)
-                                .clipped()
-                        }
-                        if let currentImage = currentImage {
-                            Image(uiImage: currentImage)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: geometry.size.width, height: geometry.size.height)
-                                .clipped()
-                        }
-                        if let nextImage = nextImage {
+            if let currentImage = currentImage {
+                GeometryReader { geometry in
+                    HStack(spacing: 0) {
+                        Image(uiImage: currentImage)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                            .clipped()
+
+                        if let nextImage = getNextImage() {
+                            Rectangle()
+                                .fill(Color.black)
+                                .frame(width: 20) // 20px vertical black separator
+                            
                             Image(uiImage: nextImage)
                                 .resizable()
                                 .scaledToFit()
@@ -66,125 +39,146 @@ struct FullscreenImageView: View {
                                 .clipped()
                         }
                     }
-                    .offset(x: dragState.translation.width)
-                    .animation(.interactiveSpring(response: 0.3, dampingFraction: 0.6), value: dragState.isDragging) // Use interactiveSpring
-
-                    // Separator during swipe
-                    if dragState.isDragging {
-                        Rectangle()
-                            .fill(Color.black)
-                            .frame(width: 20, height: geometry.size.height) // Use geometry.size.height
-                            .offset(x: (dragState.translation.width > 0) ? dragState.translation.width - 20 : dragState.translation.width + 20)
-                            .animation(.interactiveSpring(), value: dragState.isDragging)
-                    }
-
-                    VStack {
-                        HStack {
-                            Button(action: { dismiss() }) {
-                                Image(systemName: "chevron.left")
-                                    .font(.system(size: 24, weight: .bold))
-                                    .foregroundColor(.white)
+                    .offset(x: dragOffset + dragState.width)
+                    .gesture(
+                        DragGesture()
+                            .updating($dragState) { value, state, _ in
+                                state = value.translation
                             }
-                            Spacer()
-                        }
-                        Spacer()
-                    }
-                    .padding(.top, 20)
-                    .padding(.leading, 20)
-                    .allowsHitTesting(false)
+                            .onEnded { value in
+                                handleSwipe(value: value)
+                            }
+                    )
                 }
-            } // End of GeometryReader
-            .gesture(
-                DragGesture()
-                    .updating($dragState, body: { (value, state, transaction) in
-                        state = .dragging(translation: value.translation)
-                    })
-                    .onEnded(onDragEnded)
-            )
-            .onAppear { loadImages() }
-            .onChange(of: selectedImageIndex) { _ in loadImages() }
-            .navigationBarHidden(true)
-            .navigationBarBackButtonHidden(true)
+            } else {
+                ProgressView()
+                    .foregroundColor(.white)
+            }
+
+            VStack {
+                HStack {
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 30, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding()
+                    }
+                    Spacer()
+                }
+                Spacer()
+            }
         }
-        .navigationViewStyle(.stack)
+        .onAppear { loadImages() }
+        .onChange(of: selectedImageIndex) { _ in loadImages() }
     }
 
-    private func onDragEnded(value: DragGesture.Value) {
+    /// **Determines the next image for transition**
+    private func getNextImage() -> UIImage? {
+        if dragOffset < 0 {
+            return rightImage // Swiping left, so show right image
+        } else if dragOffset > 0 {
+            return leftImage // Swiping right, so show left image
+        }
+        return nil
+    }
+
+    /// **Handles swipe gesture ending**
+    private func handleSwipe(value: DragGesture.Value) {
         let screenWidth = UIScreen.main.bounds.width
         let threshold = screenWidth / 3
 
-        if value.translation.width > threshold && selectedImageIndex > 0 {
-            withAnimation { selectedImageIndex -= 1 }
-            loadImages()
-        } else if value.translation.width < -threshold && selectedImageIndex < imageAssets.count - 1 {
-            withAnimation { selectedImageIndex += 1 }
-            loadImages()
+        if value.translation.width > threshold {
+            showPreviousImage()
+        } else if value.translation.width < -threshold {
+            showNextImage()
         } else {
-            withAnimation(.interactiveSpring(response: 0.3, dampingFraction: 0.6)) {
+            withAnimation(.interactiveSpring()) {
                 dragOffset = 0
             }
         }
     }
 
+    /// **Loads the main and adjacent images**
     private func loadImages() {
-        let targetSize = CGSize(width: UIScreen.main.bounds.width * 2, height: UIScreen.main.bounds.height * 2)
-        let options = PHImageRequestOptions()
-        options.isNetworkAccessAllowed = true
-        options.deliveryMode = .highQualityFormat
-
-        imageManager.requestImage(for: imageAssets[selectedImageIndex], targetSize: targetSize, contentMode: .aspectFit, options: options) { image, _ in
-            DispatchQueue.main.async {
-                withAnimation { currentImage = image }
+        loadImage(for: imageAssets[selectedImageIndex]) { image in
+            withAnimation {
+                currentImage = image
             }
         }
 
         let leftIndex = max(0, selectedImageIndex - 1)
         if leftIndex != selectedImageIndex {
-            imageManager.requestImage(for: imageAssets[leftIndex], targetSize: targetSize, contentMode: .aspectFit, options: options) { image, _ in
-                DispatchQueue.main.async {
-                    previousImage = image
-                }
+            loadImage(for: imageAssets[leftIndex]) { image in
+                leftImage = image
             }
         } else {
-            previousImage = nil // Clear previous image
+            leftImage = nil
         }
 
         let rightIndex = min(imageAssets.count - 1, selectedImageIndex + 1)
         if rightIndex != selectedImageIndex {
-            imageManager.requestImage(for: imageAssets[rightIndex], targetSize: targetSize, contentMode: .aspectFit, options: options) { image, _ in
-                DispatchQueue.main.async {
-                    nextImage = image
-                }
+            loadImage(for: imageAssets[rightIndex]) { image in
+                rightImage = image
             }
         } else {
-            nextImage = nil // Clear next image
+            rightImage = nil
         }
     }
 
+    /// **Loads an image and ensures correct aspect ratio**
+    private func loadImage(for asset: PHAsset, completion: @escaping (UIImage?) -> Void) {
+        let options = PHImageRequestOptions()
+        options.isNetworkAccessAllowed = true
+        options.deliveryMode = .highQualityFormat
 
-    private func showPreviousImage() {
-        if selectedImageIndex > 0 {
-            withAnimation { selectedImageIndex -= 1 }
-            loadImages()
-        } else {
-            bounceBack()
+        imageManager.requestImage(
+            for: asset,
+            targetSize: CGSize(width: UIScreen.main.bounds.width * 2, height: UIScreen.main.bounds.height * 2),
+            contentMode: .aspectFit,
+            options: options
+        ) { image, _ in
+            DispatchQueue.main.async {
+                completion(image)
+            }
         }
     }
 
+    /// **Handles swipe left (next image) with bounce effect**
     private func showNextImage() {
         if selectedImageIndex < imageAssets.count - 1 {
-            withAnimation { selectedImageIndex += 1 }
-            loadImages()
+            withAnimation(.easeInOut(duration: 0.4)) {
+                dragOffset = -UIScreen.main.bounds.width
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                selectedImageIndex += 1
+                dragOffset = 0
+            }
         } else {
             bounceBack()
         }
     }
 
+    /// **Handles swipe right (previous image) with bounce effect**
+    private func showPreviousImage() {
+        if selectedImageIndex > 0 {
+            withAnimation(.easeInOut(duration: 0.4)) {
+                dragOffset = UIScreen.main.bounds.width
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                selectedImageIndex -= 1
+                dragOffset = 0
+            }
+        } else {
+            bounceBack()
+        }
+    }
+
+    /// **Creates a bounce effect when swiping beyond the first/last image**
     private func bounceBack() {
-        withAnimation(.interactiveSpring(response: 0.3, dampingFraction: 0.6)) {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
             dragOffset = (dragOffset > 0) ? 50 : -50
         }
-        withAnimation(.interactiveSpring(response: 0.3, dampingFraction: 0.6, blendDuration: 0.2)) {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.6).delay(0.1)) {
             dragOffset = 0
         }
     }
