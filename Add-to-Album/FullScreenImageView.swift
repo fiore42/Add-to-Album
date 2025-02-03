@@ -46,33 +46,37 @@ struct FullScreenImageView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-
-                
                 Color.black.edgesIgnoringSafeArea(.all)
                 
+                // Paging Content
                 // Paging Content
                 HStack(spacing: 0) {
                     ForEach(assets.indices, id: \.self) { index in
                         ZStack {
-                            if let image = highResImages[index] {
+                            // Show placeholder or low-res image initially
+                            ProgressView("Loading...") // Or a low-res version
+                                .frame(width: geometry.size.width, height: geometry.size.height)
+                                .background(Color.black)
+                                .onAppear {
+                                    // Preload current, left, and right images
+                                    preloadImages(for: index, containerWidth: geometry.size.width)
+                                }
+                                .onDisappear {
+                                    cancelLoad(for: index)
+                                }
+                                .onTapGesture {
+                                    // Load high-res image on tap
+                                    loadImageIfNeeded(for: index, containerWidth: geometry.size.width)
+                                }
+                            if let image = highResImages[index] { // Show high-res when available
                                 Image(uiImage: image)
                                     .resizable()
                                     .scaledToFit()
                                     .frame(width: geometry.size.width, height: geometry.size.height)
                                     .background(Color.black)
-                            } else {
-                                ProgressView("Loading...")
-                                    .frame(width: geometry.size.width, height: geometry.size.height)
-                                    .background(Color.black)
-                                    .onAppear {
-                                        loadImageIfNeeded(for: index, containerWidth: geometry.size.width)
-                                    }
                             }
                         }
                         .frame(width: geometry.size.width, height: geometry.size.height)
-                        .onDisappear {
-                            cancelLoad(for: index)
-                        }
                     }
                 }
                 .offset(x: -CGFloat(selectedIndex) * geometry.size.width + dragOffset)
@@ -164,7 +168,12 @@ struct FullScreenImageView: View {
             }
             .edgesIgnoringSafeArea(.all)
             .onAppear {
-                loadImageIfNeeded(for: selectedIndex, containerWidth: geometry.size.width)
+                // Preload initial images (current, left, and right)
+                preloadImages(for: selectedIndex, containerWidth: geometry.size.width)
+            }
+            .onChange(of: selectedIndex) { newValue in
+                // Preload images when selected index changes
+                preloadImages(for: newValue, containerWidth: geometry.size.width)
             }
         }
     }
@@ -197,29 +206,31 @@ struct FullScreenImageView: View {
         })
     }
     
-    // MARK: - Image Loading Helpers
-    
+    private func preloadImages(for index: Int, containerWidth: CGFloat) {
+        loadImageIfNeeded(for: index, containerWidth: containerWidth)
+        loadImageIfNeeded(for: index - 1, containerWidth: containerWidth) // Left
+        loadImageIfNeeded(for: index + 1, containerWidth: containerWidth) // Right
+    }
+
     private func loadImageIfNeeded(for index: Int, containerWidth: CGFloat) {
-        guard index < assets.count else { return }
+        guard index >= 0 && index < assets.count else { return } // Check bounds
         let asset = assets[index]
+
         if highResImages[index] != nil || imageLoadRequests[index] != nil { return }
+
         let scale = UIScreen.main.scale
         let targetSize = CGSize(width: containerWidth * scale, height: containerWidth * scale)
         let options = PHImageRequestOptions()
         options.isSynchronous = false
         options.deliveryMode = .highQualityFormat
         options.isNetworkAccessAllowed = true
-        
-        let requestID = imageManager.requestImage(for: asset,
-                                                  targetSize: targetSize,
-                                                  contentMode: .aspectFit,
-                                                  options: options) { image, info in
+
+        let requestID = imageManager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFit, options: options) { image, info in
             DispatchQueue.main.async {
                 if let image = image {
                     self.highResImages[index] = image
                     self.imageCache.setObject(image, forKey: asset)
-                } else if let error = info?[PHImageErrorKey] as? NSError,
-                          error.domain == "PHPhotosErrorDomain", error.code == 3072 {
+                } else if let error = info?[PHImageErrorKey] as? NSError, error.domain == "PHPhotosErrorDomain", error.code == 3072 {
                     // Request cancelled (expected when scrolling quickly)
                 } else {
                     print("Error loading image at index \(index): \(info ?? [:])")
@@ -229,7 +240,8 @@ struct FullScreenImageView: View {
         }
         imageLoadRequests[index] = requestID
     }
-    
+
+
     private func cancelLoad(for index: Int) {
         if let requestID = imageLoadRequests[index] {
             imageManager.cancelImageRequest(requestID)
