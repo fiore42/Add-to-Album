@@ -4,7 +4,7 @@ import Photos
 struct ContentView: View {
     @StateObject private var viewModel = PhotoGridViewModel()
     
-    // Define a three-column grid with 2-pt spacing
+    // A three-column grid with 2-pt spacing
     private let columns = [
         GridItem(.flexible(), spacing: 2),
         GridItem(.flexible(), spacing: 2),
@@ -18,10 +18,8 @@ struct ContentView: View {
                 case .granted, .limited:
                     // Permission granted or limited
                     if viewModel.displayedImages.isEmpty && !viewModel.isFetching {
-                        // No images yet, and we're not currently fetching -> show a loading indicator
                         ProgressView("Loading Photos...")
                     } else {
-                        // Show the grid of loaded thumbnails
                         ScrollView {
                             LazyVGrid(columns: columns, spacing: 2) {
                                 ForEach(viewModel.displayedImages.indices, id: \.self) { i in
@@ -31,8 +29,8 @@ struct ContentView: View {
                                         .scaledToFill()
                                         .frame(width: thumbnailSize(), height: thumbnailSize())
                                         .clipped()
-                                        // When we reach the last item, attempt to load the next batch
                                         .onAppear {
+                                            // When the user scrolls to the last item, load the next batch
                                             if i == viewModel.displayedImages.count - 1 {
                                                 viewModel.loadNextBatch()
                                             }
@@ -44,7 +42,6 @@ struct ContentView: View {
                     }
                     
                 case .notDetermined:
-                    // Permission not determined; prompt user
                     VStack(spacing: 20) {
                         Text("We need access to your photo library.")
                             .multilineTextAlignment(.center)
@@ -60,8 +57,7 @@ struct ContentView: View {
                     }
                     
                 case .denied, .restricted:
-                    // Permission denied or restricted
-                    Text("Photo library access is denied or restricted.\nPlease update your settings.")
+                    Text("Photo library access is denied or restricted.\nPlease update your Settings.")
                         .multilineTextAlignment(.center)
                         .padding()
                 }
@@ -73,14 +69,11 @@ struct ContentView: View {
         }
     }
     
-    /// Returns the width for a three-column layout with 2-pt spacing, ensuring a square shape.
+    /// Calculate a square cell size for a 3-column layout with 2-pt spacing.
     private func thumbnailSize() -> CGFloat {
-        // We'll do a rough calculation based on screen width minus total spacing
         let screenWidth = UIScreen.main.bounds.width
-        let columns: CGFloat = 3
-        let spacing: CGFloat = 2
-        let totalSpacing = (columns - 1) * spacing
-        return (screenWidth - totalSpacing) / columns
+        let totalSpacing: CGFloat = 2 * (3 - 1) // 3 columns => 2 gaps
+        return (screenWidth - totalSpacing) / 3
     }
 }
 
@@ -89,76 +82,98 @@ struct ContentView: View {
 class PhotoGridViewModel: ObservableObject {
     @Published var status: PhotoPermissionStatus = .notDetermined
     
-    /// All PHAssets in descending creationDate order
+    /// All PHAssets (fetched once) in descending creationDate order
     private var allAssets: PHFetchResult<PHAsset>?
     
-    /// Converted thumbnails that are currently displayed
+    /// The thumbnails currently displayed
     @Published var displayedImages: [UIImage] = []
     
-    /// Indicates if a fetch or load operation is ongoing
+    /// Indicates if we're currently fetching or loading a batch
     @Published var isFetching = false
     
-    /// How many photos to load per batch
-    private let batchSize = 30
+    /// How many photos to load per batch (smaller to help diagnose issues)
+    private let batchSize = 10
     
-    /// Keep track of how many assets we've converted so far
+    /// Index of the next asset to load
     private var currentIndex = 0
     
     private let imageManager = PHCachingImageManager()
     
-    // -------------------------------------------------------------------------
+    // Debug logger with timestamp
+    private func log(_ message: String) {
+        print("[\(Date())] [PhotoGridViewModel] \(message)")
+    }
+    
+    // ---------------------------------------------------------------------
     // MARK: - Permission Flow
-    // -------------------------------------------------------------------------
+    // ---------------------------------------------------------------------
     
     func checkCurrentStatus() {
         let current = PhotoPermissionManager.currentStatus()
         status = current
+        log("checkCurrentStatus() -> \(current)")
+        
         if current == .granted || current == .limited {
             fetchAssetsIfNeeded()
         }
     }
     
     func requestPermission() {
+        log("requestPermission() called.")
         PhotoPermissionManager.requestPermission { [weak self] newStatus in
             guard let self = self else { return }
+            self.log("requestPermission() -> user responded with \(newStatus)")
             self.status = newStatus
+            
             if newStatus == .granted || newStatus == .limited {
                 self.fetchAssetsIfNeeded()
             }
         }
     }
     
-    // -------------------------------------------------------------------------
-    // MARK: - Asset Fetching and Batching
-    // -------------------------------------------------------------------------
+    // ---------------------------------------------------------------------
+    // MARK: - Asset Fetching / Batching
+    // ---------------------------------------------------------------------
     
-    /// Fetches all assets (if not yet fetched), then loads the first batch.
+    /// Fetches all photo assets (if we haven't already),
+    /// then triggers the initial batch load.
     private func fetchAssetsIfNeeded() {
-        // If we’ve already fetched, no need to do it again
         guard allAssets == nil else {
+            log("fetchAssetsIfNeeded() -> allAssets already fetched. Will load next batch.")
             loadNextBatch()
             return
         }
         
         isFetching = true
+        log("fetchAssetsIfNeeded() -> Fetching assets from Photo Library...")
         
         let options = PHFetchOptions()
         options.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
         
-        allAssets = PHAsset.fetchAssets(with: .image, options: options)
-        currentIndex = 0
+        let result = PHAsset.fetchAssets(with: .image, options: options)
+        self.allAssets = result
+        self.currentIndex = 0
+        
+        log("fetchAssetsIfNeeded() -> Fetched total assets: \(result.count)")
         
         isFetching = false
         loadNextBatch()
     }
     
-    /// Loads the next batch of images from our `allAssets`, if available.
+    /// Loads the next batch of photos if available.
     func loadNextBatch() {
-        guard !isFetching else { return } // If we're already fetching, skip
-        guard let allAssets = allAssets else { return }
+        guard !isFetching else {
+            log("loadNextBatch() -> Already fetching, skipping.")
+            return
+        }
+        guard let allAssets = allAssets else {
+            log("loadNextBatch() -> No assets fetched yet.")
+            return
+        }
         
-        // If we already loaded everything, do nothing
+        // Check if we've loaded all
         if currentIndex >= allAssets.count {
+            log("loadNextBatch() -> All assets already loaded. currentIndex=\(currentIndex).")
             return
         }
         
@@ -167,44 +182,55 @@ class PhotoGridViewModel: ObservableObject {
         let endIndex = min(currentIndex + batchSize, allAssets.count)
         let assetsToLoad = (currentIndex..<endIndex).map { allAssets.object(at: $0) }
         
-        fetchThumbnails(for: assetsToLoad) {
-            self.isFetching = false
-        }
+        log("loadNextBatch() -> Will load assets [\(currentIndex) ..< \(endIndex)] (count: \(assetsToLoad.count)).")
         
         currentIndex = endIndex
+        
+        fetchThumbnails(for: assetsToLoad) {
+            self.isFetching = false
+            self.log("loadNextBatch() -> Finished batch. displayedImages.count = \(self.displayedImages.count)")
+        }
     }
     
+    /// Fetch thumbnails for the given PHAssets on a background thread,
+    /// then append them to displayedImages on the main thread.
     private func fetchThumbnails(for assets: [PHAsset], completion: @escaping () -> Void) {
         let targetSize = CGSize(width: 150, height: 150)
         let requestOptions = PHImageRequestOptions()
         requestOptions.isNetworkAccessAllowed = true
         
-        // We’ll track how many we’ve loaded
-        var loadedCount = 0
-        
-        for asset in assets {
-            imageManager.requestImage(
-                for: asset,
-                targetSize: targetSize,
-                contentMode: .aspectFill,
-                options: requestOptions
-            ) { [weak self] (image, _) in
-                guard let self = self, let image = image else {
-                    loadedCount += 1
-                    if loadedCount == assets.count {
-                        completion()
-                    }
-                    return
-                }
+        DispatchQueue.global(qos: .userInitiated).async {
+            self.log("fetchThumbnails() -> Starting background fetch for \(assets.count) assets.")
+            
+            var tempImages = [UIImage]()
+            tempImages.reserveCapacity(assets.count)
+            
+            let group = DispatchGroup()
+            
+            for (i, asset) in assets.enumerated() {
+                group.enter()
+                self.log("fetchThumbnails() -> Requesting image for item \(i+1)/\(assets.count) (assetIndex=\(i)).")
                 
-                // Append the image on the main thread
-                DispatchQueue.main.async {
-                    self.displayedImages.append(image)
-                    loadedCount += 1
-                    if loadedCount == assets.count {
-                        completion()
+                self.imageManager.requestImage(
+                    for: asset,
+                    targetSize: targetSize,
+                    contentMode: .aspectFill,
+                    options: requestOptions
+                ) { image, info in
+                    if let image = image {
+                        self.log("fetchThumbnails() -> Received image for item \(i+1)/\(assets.count).")
+                        tempImages.append(image)
+                    } else {
+                        self.log("fetchThumbnails() -> Nil image for item \(i+1)/\(assets.count). Possibly iCloud or error.")
                     }
+                    group.leave()
                 }
+            }
+            
+            group.notify(queue: .main) {
+                self.log("fetchThumbnails() -> Completed batch of \(assets.count) assets. Appending to displayedImages.")
+                self.displayedImages.append(contentsOf: tempImages)
+                completion()
             }
         }
     }
