@@ -1,23 +1,14 @@
-import UIKit
+import SwiftUI
 
 @main
-class Add_to_AlbumApp: UIResponder, UIApplicationDelegate {
-
-    var window: UIWindow?
-
-    func application(
-        _ application: UIApplication,
-        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
-    ) -> Bool {
-
-        window = UIWindow(frame: UIScreen.main.bounds)
-        let layout = UICollectionViewFlowLayout()
-        let imageGridVC = ImageGridViewController(collectionViewLayout: layout)
-        let navigationController = UINavigationController(rootViewController: imageGridVC)
-
-        window?.rootViewController = navigationController
-        window?.makeKeyAndVisible()
-
-        return true
+struct Add_to_AlbumApp: App {
+    
+    init() {
+        Logger.log("🚀 App launched") // ✅ First debug print
+    }
+    var body: some Scene {
+        WindowGroup {
+            ImageGridView()
+        }
     }
 }

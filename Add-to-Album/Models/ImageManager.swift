@@ -3,44 +3,56 @@ import UIKit
 
 class ImageManager {
 
+    func getPhotoPermissionStatus() -> PhotoPermissionStatus {
+        switch PHPhotoLibrary.authorizationStatus() {
+        case .authorized: return .granted
+        case .limited: return .limited
+        case .denied: return .denied
+        case .restricted: return .restricted
+        case .notDetermined: return .notDetermined
+        @unknown default: return .denied
+        }
+    }
+
     func requestPhotoPermissions(completion: @escaping (Bool) -> Void) {
         PHPhotoLibrary.requestAuthorization { status in
-            completion(status == .authorized || status == .limited)
-        }
-    }
-
-    func fetchNextBatch(batchSize: Int, after asset: PHAsset?) -> [PHAsset] {
-        let fetchOptions = PHFetchOptions()
-        fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
-
-        if let lastAsset = asset, let lastDate = lastAsset.creationDate {
-            fetchOptions.predicate = NSPredicate(format: "creationDate < %@", lastDate as CVarArg)
-        }
-
-        let fetchResult = PHAsset.fetchAssets(with: .image, options: fetchOptions)
-
-        // Convert fetchResult to an array manually
-        var assets: [PHAsset] = []
-        fetchResult.enumerateObjects { (asset, index, stop) in
-            if assets.count < batchSize {
-                assets.append(asset)
-            } else {
-                stop.pointee = true
+            DispatchQueue.main.async {
+                completion(status == .authorized || status == .limited)
             }
         }
-
-        return assets
     }
 
+    func fetchAllAssets() -> PHFetchResult<PHAsset> {
+        let fetchOptions = PHFetchOptions()
+        fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+        return PHAsset.fetchAssets(with: .image, options: fetchOptions)
+    }
 
-    func requestImage(for asset: PHAsset, targetSize: CGSize, completion: @escaping (UIImage?) -> Void) {
+    /// ✅ **Parallelized Image Fetching (Super Fast)**
+    func fetchThumbnails(for assets: [PHAsset], completion: @escaping ([UIImage]) -> Void) {
+        let targetSize = CGSize(width: 150, height: 150)
         let options = PHImageRequestOptions()
         options.deliveryMode = .opportunistic
         options.isNetworkAccessAllowed = true
-        options.resizeMode = .exact
 
-        PHImageManager.default().requestImage(
-            for: asset, targetSize: targetSize, contentMode: .aspectFill, options: options
-        ) { image, _ in completion(image) }
+        DispatchQueue.global(qos: .userInitiated).async {
+            let imageManager = PHCachingImageManager()
+            var tempImages = [UIImage]()
+            let group = DispatchGroup()
+
+            for asset in assets {
+                group.enter()
+                imageManager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFill, options: options) { image, _ in
+                    if let image = image {
+                        tempImages.append(image)
+                    }
+                    group.leave()
+                }
+            }
+
+            group.notify(queue: .main) {
+                completion(tempImages)
+            }
+        }
     }
 }
