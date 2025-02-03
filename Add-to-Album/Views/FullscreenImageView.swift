@@ -14,6 +14,7 @@ struct FullscreenImageView: View {
     @GestureState private var dragTranslation: CGSize = .zero
     @Environment(\.dismiss) var dismiss
     @State private var loadingIndices: Set<Int> = [] // ✅ Track in-progress image loads
+    @State private var imageCache: [Int: UIImage] = [:] // ✅ Stores loaded images
 
     enum ImageLoadState {
         case loading, loaded
@@ -25,34 +26,22 @@ struct FullscreenImageView: View {
                 Color.black.ignoresSafeArea()
                 
                 HStack(spacing: 0) {
-                    if let leftImage = leftImage {
-                        Image(uiImage: leftImage)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: geometry.size.width, height: geometry.size.height)
-                            .clipped()
-                    }
-                    
-                    if let currentImage = currentImage {
-                        Image(uiImage: currentImage)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: geometry.size.width, height: geometry.size.height)
-                            .clipped()
-                    }
-                    
-                    if let rightImage = rightImage {
-                        Image(uiImage: rightImage)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: geometry.size.width, height: geometry.size.height)
-                            .clipped()
+                    ForEach(imageAssets.indices, id: \.self) { index in
+                        if let image = getImage(for: index) {
+                            Image(uiImage: image)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: geometry.size.width, height: geometry.size.height)
+                                .clipped()
+                        } else {
+                            Color.black // Placeholder to prevent gaps
+                                .frame(width: geometry.size.width, height: geometry.size.height)
+                        }
                     }
                 }
-//                .offset(x: dragTranslation.width) // Use dragTranslation directly
-//                .animation(.interactiveSpring(), value: dragTranslation) // Animate with dragTranslation
-                .offset(x: CGFloat(-selectedImageIndex) * geometry.size.width + dragTranslation.width)
+                .offset(x: CGFloat(-selectedImageIndex) * geometry.size.width + dragTranslation.width) // ✅ Now all images move smoothly!
                 .animation(.interactiveSpring(), value: selectedImageIndex)
+
                 // Black separator
                 if dragTranslation != .zero { // Only show when dragging
                     Rectangle()
@@ -112,7 +101,33 @@ struct FullscreenImageView: View {
         } // End of GeometryReader
     }
 
+    func getImage(for index: Int) -> UIImage? {
+        if let cachedImage = imageCache[index] {
+            return cachedImage // ✅ Load from cache if available
+        }
+        loadImageIfNeeded(for: index) // ✅ Request image asynchronously
+        return nil // ✅ Prevents crash, returns black placeholder
+    }
 
+    private func loadImageIfNeeded(for index: Int) {
+        guard imageCache[index] == nil else { return } // ✅ Prevent reloading
+
+        let asset = imageAssets[index]
+        let targetSize = CGSize(width: UIScreen.main.bounds.width * 2, height: UIScreen.main.bounds.height * 2)
+        let options = PHImageRequestOptions()
+        options.isNetworkAccessAllowed = true
+        options.deliveryMode = .highQualityFormat
+
+        imageManager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFit, options: options) { image, _ in
+            if let image = image {
+                DispatchQueue.main.async {
+                    imageCache[index] = image
+                }
+            }
+        }
+    }
+
+    
     private func handleSwipe(value: DragGesture.Value, screenWidth: CGFloat) {
         let threshold = screenWidth / 3
 
