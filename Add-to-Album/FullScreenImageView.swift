@@ -114,11 +114,7 @@ struct FullScreenImageView: View {
                         isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: album1),
                         onTap: { togglePairing(for: "Function 1", asset: assets[selectedIndex], album: album1) }
                     )
-                    .alignmentGuide(.leading) { _ in 20 } // Align left
-                    .position(
-                        x: 20 + geometry.safeAreaInsets.leading,
-                        y: geometry.size.height * (10 / 100)
-                    )
+                    .position(x: 20 + geometry.safeAreaInsets.leading, y: 20 + geometry.safeAreaInsets.top) // Adjust position as needed
                 }
                 
                 // Top Right
@@ -129,7 +125,7 @@ struct FullScreenImageView: View {
                         isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: album2),
                         onTap: { togglePairing(for: "Function 2", asset: assets[selectedIndex], album: album2) }
                     )
-                    .position(x: geometry.size.width - 20 - geometry.safeAreaInsets.trailing, y: 20 + geometry.safeAreaInsets.top)
+                    .position(x: geometry.size.width - 20 - geometry.safeAreaInsets.trailing, y: 20 + geometry.safeAreaInsets.top) // Adjust position as needed
                 }
                 
                 // Bottom Left
@@ -140,7 +136,7 @@ struct FullScreenImageView: View {
                         isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: album3),
                         onTap: { togglePairing(for: "Function 3", asset: assets[selectedIndex], album: album3) }
                     )
-                    .position(x: 20 + geometry.safeAreaInsets.leading, y: geometry.size.height - 20 - geometry.safeAreaInsets.bottom)
+                    .position(x: 20 + geometry.safeAreaInsets.leading, y: geometry.size.height - 20 - geometry.safeAreaInsets.bottom) // Adjust position as needed
                 }
                 
                 // Bottom Right
@@ -151,7 +147,7 @@ struct FullScreenImageView: View {
                         isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: album4),
                         onTap: { togglePairing(for: "Function 4", asset: assets[selectedIndex], album: album4) }
                     )
-                    .position(x: geometry.size.width - 20 - geometry.safeAreaInsets.trailing, y: geometry.size.height - 20 - geometry.safeAreaInsets.bottom)
+                    .position(x: geometry.size.width - 20 - geometry.safeAreaInsets.trailing, y: geometry.size.height - 20 - geometry.safeAreaInsets.bottom) // Adjust position as needed
                 }
                 
                 
