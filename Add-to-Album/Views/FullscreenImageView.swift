@@ -15,76 +15,68 @@ struct FullscreenImageView: View {
     @Environment(\.dismiss) var dismiss
 
     var body: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
+        GeometryReader { geometry in
+            ZStack {
+                Color.black.ignoresSafeArea()
 
-            if let currentImage = currentImage {
-                GeometryReader { geometry in
+                if let currentImage = currentImage {
                     HStack(spacing: 0) {
+                        if let leftImage = leftImage {
+                            Image(uiImage: leftImage)
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: geometry.size.width, height: geometry.size.height)
+                                .offset(x: -geometry.size.width + dragOffset)
+                        }
+
                         Image(uiImage: currentImage)
                             .resizable()
                             .scaledToFit()
                             .frame(width: geometry.size.width, height: geometry.size.height)
-                            .clipped()
+                            .offset(x: dragOffset)
 
-                        if let nextImage = getNextImage() {
-                            Rectangle()
-                                .fill(Color.black)
-                                .frame(width: 20) // 20px vertical black separator
-                            
-                            Image(uiImage: nextImage)
+                        if let rightImage = rightImage {
+                            Image(uiImage: rightImage)
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: geometry.size.width, height: geometry.size.height)
-                                .clipped()
+                                .offset(x: geometry.size.width + dragOffset)
                         }
                     }
-                    .offset(x: dragOffset + dragState.width)
                     .gesture(
                         DragGesture()
                             .updating($dragState) { value, state, _ in
                                 state = value.translation
                             }
                             .onEnded { value in
-                                handleSwipe(value: value)
+                                handleSwipe(value: value, screenWidth: geometry.size.width)
                             }
                     )
+                } else {
+                    ProgressView()
+                        .foregroundColor(.white)
                 }
-            } else {
-                ProgressView()
-                    .foregroundColor(.white)
-            }
 
-            VStack {
-                HStack {
-                    Button(action: { dismiss() }) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 30, weight: .bold))
-                            .foregroundColor(.white)
-                            .padding()
+                VStack {
+                    HStack {
+                        Button(action: { dismiss() }) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 30, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding()
+                        }
+                        Spacer()
                     }
                     Spacer()
                 }
-                Spacer()
             }
+            .onAppear { loadImages() }
+            .onChange(of: selectedImageIndex) { _ in loadImages() }
         }
-        .onAppear { loadImages() }
-        .onChange(of: selectedImageIndex) { _ in loadImages() }
-    }
-
-    /// **Determines the next image for transition**
-    private func getNextImage() -> UIImage? {
-        if dragOffset < 0 {
-            return rightImage // Swiping left, so show right image
-        } else if dragOffset > 0 {
-            return leftImage // Swiping right, so show left image
-        }
-        return nil
     }
 
     /// **Handles swipe gesture ending**
-    private func handleSwipe(value: DragGesture.Value) {
-        let screenWidth = UIScreen.main.bounds.width
+    private func handleSwipe(value: DragGesture.Value, screenWidth: CGFloat) {
         let threshold = screenWidth / 3
 
         if value.translation.width > threshold {
@@ -101,9 +93,7 @@ struct FullscreenImageView: View {
     /// **Loads the main and adjacent images**
     private func loadImages() {
         loadImage(for: imageAssets[selectedImageIndex]) { image in
-            withAnimation {
-                currentImage = image
-            }
+            currentImage = image
         }
 
         let leftIndex = max(0, selectedImageIndex - 1)
@@ -143,7 +133,7 @@ struct FullscreenImageView: View {
         }
     }
 
-    /// **Handles swipe left (next image) with bounce effect**
+    /// **Handles swipe left (next image) with smooth transition**
     private func showNextImage() {
         if selectedImageIndex < imageAssets.count - 1 {
             withAnimation(.easeInOut(duration: 0.4)) {
@@ -158,7 +148,7 @@ struct FullscreenImageView: View {
         }
     }
 
-    /// **Handles swipe right (previous image) with bounce effect**
+    /// **Handles swipe right (previous image) with smooth transition**
     private func showPreviousImage() {
         if selectedImageIndex > 0 {
             withAnimation(.easeInOut(duration: 0.4)) {
