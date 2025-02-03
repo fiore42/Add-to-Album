@@ -7,33 +7,22 @@ struct FullScreenImageView: View {
     
     @ObservedObject var viewModel: ViewModel
     
-    /// The array of assets to page through.
     let assets: [PHAsset]
     let imageManager: PHImageManager
     
-    /// The currently visible index.
     @State private var selectedIndex: Int
-    /// The current drag offset.
     @State private var dragOffset: CGFloat = 0
-    /// Cache for loaded high‑resolution images.
     @State private var highResImages: [Int: UIImage] = [:]
-    /// In‑flight image request IDs.
     @State private var imageLoadRequests: [Int: PHImageRequestID] = [:]
-    /// A dummy state variable to force a UI refresh after pairing changes.
     @State private var refreshToggle: Bool = false
     
-    /// Binding for the paired albums dictionary.
     @Binding var pairedAlbums: [String: PHAssetCollection?]
-    /// Closure called when a new batch of assets should be loaded.
     let loadMoreAssets: () -> Void
-    /// Closure called to dismiss this view.
     let onDismiss: () -> Void
     
-    /// A simple image cache.
     let imageCache = NSCache<PHAsset, UIImage>()
     
-    // MARK: - Initializer
-    
+    // MARK: - Init
     init(
         viewModel: ViewModel,
         assets: [PHAsset],
@@ -53,14 +42,13 @@ struct FullScreenImageView: View {
     }
     
     // MARK: - Body
-    
     var body: some View {
         GeometryReader { geometry in
             ZStack {
                 // Background
                 Color.black.edgesIgnoringSafeArea(.all)
                 
-                // The swiping/paging HStack
+                // The swiping/paging stack
                 HStack(spacing: 0) {
                     ForEach(assets.indices, id: \.self) { index in
                         ZStack {
@@ -68,17 +56,14 @@ struct FullScreenImageView: View {
                                 Image(uiImage: image)
                                     .resizable()
                                     .scaledToFit()
-                                    .frame(width: geometry.size.width,
-                                           height: geometry.size.height)
+                                    .frame(width: geometry.size.width, height: geometry.size.height)
                                     .background(Color.black)
                             } else {
                                 ProgressView("Loading...")
-                                    .frame(width: geometry.size.width,
-                                           height: geometry.size.height)
+                                    .frame(width: geometry.size.width, height: geometry.size.height)
                                     .background(Color.black)
                                     .onAppear {
-                                        loadImageIfNeeded(for: index,
-                                                          containerWidth: geometry.size.width)
+                                        loadImageIfNeeded(for: index, containerWidth: geometry.size.width)
                                     }
                             }
                         }
@@ -94,7 +79,6 @@ struct FullScreenImageView: View {
                     DragGesture()
                         .onChanged { value in
                             let translation = value.translation.width
-                            // Damp the drag if we are at the boundaries:
                             if (selectedIndex == 0 && translation > 0) ||
                                (selectedIndex == assets.count - 1 && translation < 0) {
                                 dragOffset = translation * 0.3
@@ -106,85 +90,84 @@ struct FullScreenImageView: View {
                             let threshold: CGFloat = 50
                             let translation = value.translation.width
                             var newIndex = selectedIndex
+                            
                             if translation < -threshold, selectedIndex < assets.count - 1 {
                                 newIndex += 1
                             } else if translation > threshold, selectedIndex > 0 {
                                 newIndex -= 1
                             }
+                            
                             withAnimation(.interactiveSpring()) {
                                 selectedIndex = newIndex
                                 dragOffset = 0
                             }
+                            
+                            // If near the end, load next batch
                             if newIndex > assets.count - 5 {
                                 loadMoreAssets()
                             }
                         }
                 )
                 
-                // The function boxes, arranged in a VStack
+                // Function boxes
                 VStack {
                     
-                    // Top Row
+                    // Add a spacer to push the top row to about 10% from top
+                    Spacer()
+                        .frame(height: geometry.size.height * 0.1)
+                    
+                    // Top row: Fu1 / Fu2
                     HStack {
-                        if let album1 = pairedAlbums["Function 1"] ?? nil {
-                            FunctionBox(
-                                title: "Fu 1",
-                                album: album1.localizedTitle,
-                                isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: album1),
-                                onTap: {
-                                    togglePairing(for: "Function 1", asset: assets[selectedIndex], album: album1)
-                                }
-                            )
-                        }
+                        // Fu1 (left side)
+                        boxForFunction(
+                            function: "Function 1",
+                            shortName: "Fu 1",
+                            asset: assets[selectedIndex]
+                        )
+                        
                         Spacer()
-                        if let album2 = pairedAlbums["Function 2"] ?? nil {
-                            FunctionBox(
-                                title: "Fu 2",
-                                album: album2.localizedTitle,
-                                isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: album2),
-                                onTap: {
-                                    togglePairing(for: "Function 2", asset: assets[selectedIndex], album: album2)
-                                }
-                            )
-                        }
+                        
+                        // Fu2 (right side)
+                        boxForFunction(
+                            function: "Function 2",
+                            shortName: "Fu 2",
+                            asset: assets[selectedIndex]
+                        )
                     }
                     
                     Spacer()
                     
-                    // Bottom Row
+                    // Bottom row: Fu3 / Fu4
                     HStack {
-                        if let album3 = pairedAlbums["Function 3"] ?? nil {
-                            FunctionBox(
-                                title: "Fu 3",
-                                album: album3.localizedTitle,
-                                isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: album3),
-                                onTap: {
-                                    togglePairing(for: "Function 3", asset: assets[selectedIndex], album: album3)
-                                }
-                            )
-                        }
+                        // Fu3 (left side)
+                        boxForFunction(
+                            function: "Function 3",
+                            shortName: "Fu 3",
+                            asset: assets[selectedIndex]
+                        )
+                        
                         Spacer()
-                        if let album4 = pairedAlbums["Function 4"] ?? nil {
-                            FunctionBox(
-                                title: "Fu 4",
-                                album: album4.localizedTitle,
-                                isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: album4),
-                                onTap: {
-                                    togglePairing(for: "Function 4", asset: assets[selectedIndex], album: album4)
-                                }
-                            )
-                        }
+                        
+                        // Fu4 (right side)
+                        boxForFunction(
+                            function: "Function 4",
+                            shortName: "Fu 4",
+                            asset: assets[selectedIndex]
+                        )
                     }
+                    
+                    // Add a spacer to push bottom row ~10% from bottom
+                    Spacer()
+                        .frame(height: geometry.size.height * 0.1)
                 }
-                .padding() // Adjust as needed
                 .id(refreshToggle)
+                .padding(.horizontal, 20) // adjust as needed
                 
-                // Dismiss Button in top-left corner
+                // Dismiss button - top left
                 Button(action: onDismiss) {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 30, weight: .bold))
                         .foregroundColor(.white)
-                        .padding()
                 }
                 .position(x: 40, y: 60)
             }
@@ -195,29 +178,54 @@ struct FullScreenImageView: View {
         }
     }
     
+    // MARK: - Helper for Fu Boxes
+    /// Returns either a `FunctionBox` if the album is set, or a fallback "Not Paired" box.
+    private func boxForFunction(function: String, shortName: String, asset: PHAsset) -> some View {
+        if let album = pairedAlbums[function] ?? nil {
+            return AnyView(
+                FunctionBox(
+                    title: shortName,
+                    album: album.localizedTitle,
+                    isPaired: FunctionBox.isImagePaired(asset: asset, with: album),
+                    onTap: {
+                        togglePairing(for: function, asset: asset, album: album)
+                    }
+                )
+            )
+        } else {
+            // Fallback if we have no album set
+            return AnyView(
+                Text("\(shortName): Not Paired")
+                    .foregroundColor(.red)
+                    .padding(8)
+                    .background(Color.black.opacity(0.6))
+                    .cornerRadius(8)
+            )
+        }
+    }
+    
     // MARK: - Toggle Pairing
-    private func togglePairing(for function: String,
-                               asset: PHAsset,
-                               album: PHAssetCollection?) {
+    private func togglePairing(for function: String, asset: PHAsset, album: PHAssetCollection?) {
         guard let album = album else { return }
+        
         PHPhotoLibrary.shared().performChanges({
             let fetchOptions = PHFetchOptions()
             fetchOptions.predicate = NSPredicate(format: "localIdentifier == %@", asset.localIdentifier)
             let fetchResult = PHAsset.fetchAssets(in: album, options: fetchOptions)
+            
+            let changeRequest = PHAssetCollectionChangeRequest(for: album)
+            
             if fetchResult.count > 0 {
-                let changeRequest = PHAssetCollectionChangeRequest(for: album)
                 changeRequest?.removeAssets([asset] as NSArray)
                 print("Removed asset from \(function)")
             } else {
-                let changeRequest = PHAssetCollectionChangeRequest(for: album)
                 changeRequest?.addAssets([asset] as NSArray)
                 print("Added asset to \(function)")
             }
         }, completionHandler: { success, error in
             if success {
                 DispatchQueue.main.async {
-                    // Force a small refresh
-                    refreshToggle.toggle()
+                    refreshToggle.toggle() // Forces the function boxes to refresh
                 }
             } else if let error = error {
                 print("Error toggling pairing for \(function): \(error)")
@@ -229,7 +237,9 @@ struct FullScreenImageView: View {
     private func loadImageIfNeeded(for index: Int, containerWidth: CGFloat) {
         guard index < assets.count else { return }
         let asset = assets[index]
-        if highResImages[index] != nil || imageLoadRequests[index] != nil { return }
+        if highResImages[index] != nil || imageLoadRequests[index] != nil {
+            return
+        }
         
         let scale = UIScreen.main.scale
         let targetSize = CGSize(width: containerWidth * scale, height: containerWidth * scale)
@@ -250,7 +260,7 @@ struct FullScreenImageView: View {
                     self.imageCache.setObject(image, forKey: asset)
                 } else if let error = info?[PHImageErrorKey] as? NSError,
                           error.domain == "PHPhotosErrorDomain", error.code == 3072 {
-                    // Request cancelled (usually expected when scrolling quickly)
+                    // Request was cancelled (quick swipes)
                 } else {
                     print("Error loading image at index \(index): \(info ?? [:])")
                 }
