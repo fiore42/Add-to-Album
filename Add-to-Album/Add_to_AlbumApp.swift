@@ -1,26 +1,23 @@
-import SwiftUI
+import UIKit
 
 @main
-struct Add_to_AlbumApp: App {
-    
-    init() {
-        print("🚀 App launched at:", Date()) // ✅ First debug print
-    }
+class Add_to_AlbumApp: UIResponder, UIApplicationDelegate {
 
-    var body: some Scene {
-        WindowGroup {
-            ImageGridViewControllerWrapper() // SwiftUI wrapper for UIKit VC
-        }
-    }
-}
+    var window: UIWindow?
 
-// SwiftUI Wrapper for ImageGridViewController
-struct ImageGridViewControllerWrapper: UIViewControllerRepresentable {
-    func makeUIViewController(context: Context) -> ImageGridViewController {
-        return ImageGridViewController()
-    }
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+    ) -> Bool {
 
-    func updateUIViewController(_ uiViewController: ImageGridViewController, context: Context) {
-        // No updates needed here for this example
+        window = UIWindow(frame: UIScreen.main.bounds)
+        let layout = UICollectionViewFlowLayout()
+        let imageGridVC = ImageGridViewController(collectionViewLayout: layout)
+        let navigationController = UINavigationController(rootViewController: imageGridVC)
+
+        window?.rootViewController = navigationController
+        window?.makeKeyAndVisible()
+
+        return true
     }
 }
