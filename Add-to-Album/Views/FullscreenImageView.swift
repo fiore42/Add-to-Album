@@ -22,7 +22,7 @@ struct FullscreenImageView: View {
         GeometryReader { geometry in
             ZStack {
                 Color.black.ignoresSafeArea()
-
+                
                 HStack(spacing: 0) {
                     if let leftImage = leftImage {
                         Image(uiImage: leftImage)
@@ -31,7 +31,7 @@ struct FullscreenImageView: View {
                             .frame(width: geometry.size.width, height: geometry.size.height)
                             .clipped()
                     }
-
+                    
                     if let currentImage = currentImage {
                         Image(uiImage: currentImage)
                             .resizable()
@@ -39,7 +39,7 @@ struct FullscreenImageView: View {
                             .frame(width: geometry.size.width, height: geometry.size.height)
                             .clipped()
                     }
-
+                    
                     if let rightImage = rightImage {
                         Image(uiImage: rightImage)
                             .resizable()
@@ -50,7 +50,7 @@ struct FullscreenImageView: View {
                 }
                 .offset(x: dragTranslation.width) // Use dragTranslation directly
                 .animation(.interactiveSpring(), value: dragTranslation) // Animate with dragTranslation
-
+                
                 // Black separator
                 if dragTranslation != .zero { // Only show when dragging
                     Rectangle()
@@ -59,7 +59,7 @@ struct FullscreenImageView: View {
                         .offset(x: dragTranslation.width > 0 ? dragTranslation.width - 20 : dragTranslation.width + 20)
                         .animation(.interactiveSpring(), value: dragTranslation)
                 }
-
+                
                 // Back button
                 VStack {
                     HStack {
@@ -74,7 +74,7 @@ struct FullscreenImageView: View {
                 }
                 .padding(.top, 20)
                 .padding(.leading, 20)
-
+                
             } // End of ZStack
             .gesture(
                 DragGesture()
@@ -85,10 +85,13 @@ struct FullscreenImageView: View {
                         handleSwipe(value: value, screenWidth: geometry.size.width)
                     }
             )
-            .onAppear { loadImages() }
-            .onChange(of: selectedImageIndex) { oldValue, newValue in // Corrected onChange
+            .onAppear {
+                // No loadImages() call here
+            }
+            .onChange(of: selectedImageIndex) { oldValue, newValue in
                 loadImages()
-            }        } // End of GeometryReader
+            }
+        } // End of GeometryReader
     }
 
 
