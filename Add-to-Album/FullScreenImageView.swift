@@ -115,7 +115,11 @@ struct FullScreenImageView: View {
                         onTap: { togglePairing(for: "Function 1", asset: assets[selectedIndex], album: album1) }
                     )
                     .frame(alignment: .leading) // Align to the left
-                    .position(x: 20 + geometry.safeAreaInsets.leading, y: 20 + geometry.safeAreaInsets.top)
+//                    .position(x: 20 + geometry.safeAreaInsets.leading, y: 20 + geometry.safeAreaInsets.top)
+                    .position(
+                        x: 20 + geometry.safeAreaInsets.leading,
+                        y: geometry.size.height * (10 / 100) // Adjust this percentage
+                    )
                 }
                 
                 // Top Right
