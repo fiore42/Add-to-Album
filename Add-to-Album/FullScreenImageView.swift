@@ -46,6 +46,7 @@ struct FullScreenImageView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
+
                 
                 Color.black.edgesIgnoringSafeArea(.all)
                 
