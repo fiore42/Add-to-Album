@@ -37,19 +37,28 @@ class PhotoViewModel: ObservableObject {
         print("📥 Fetching ALL assets from the photo library...")
         let fetchOptions = PHFetchOptions()
         fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
-        let result = PHAsset.fetchAssets(with: .image, options: fetchOptions)
         
+        // Optionally limit the results if you have huge libraries (e.g., 30k+ photos)
+        // Comment out this line if you truly want *all* photos at once.
+        fetchOptions.fetchLimit = 5000
+        
+        let result = PHAsset.fetchAssets(with: .image, options: fetchOptions)
+        print("📊 Photos framework returned \(result.count) assets (respecting fetchLimit if set).")
+
         var temp: [PHAsset] = []
         result.enumerateObjects { asset, _, _ in
             temp.append(asset)
         }
         self.allAssets = temp
         
+        print("📊 After enumeration, we have allAssets.count = \(self.allAssets.count).")
+
         DispatchQueue.main.async {
             self.displayedAssets.removeAll()
             self.fetchNextBatchIfNeeded()
         }
     }
+
     
     // MARK: - Batch Loading
     func fetchNextBatchIfNeeded() {
@@ -64,9 +73,14 @@ class PhotoViewModel: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             self.displayedAssets.append(contentsOf: newSlice)
             self.isFetching = false
-            print("✅ Next batch appended. Count = \(self.displayedAssets.count)")
+            
+            let addedCount = newSlice.count
+            let totalDisplayed = self.displayedAssets.count
+            print("✅ Fetched \(addedCount) items in this batch. Now displaying \(totalDisplayed) total.")
         }
     }
+
+
     
     // MARK: - Fetch User Albums
     func fetchUserAlbums() {
