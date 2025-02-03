@@ -85,9 +85,17 @@ struct FullscreenImageView: View {
                         handleSwipe(value: value, screenWidth: geometry.size.width)
                     }
             )
-            .onAppear { loadImages() }
+//            .onAppear { loadImages() }
+            .onAppear {
+                DispatchQueue.main.async {
+                    loadImages()
+                }
+            }
             .onChange(of: selectedImageIndex) { oldValue, newValue in // Corrected onChange
-                loadImages()
+                DispatchQueue.main.async {
+                    loadImages()
+                }
+//                loadImages()
             }        } // End of GeometryReader
     }
 
