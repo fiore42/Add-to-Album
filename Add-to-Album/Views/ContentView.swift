@@ -16,25 +16,50 @@ struct ContentView: View {
             Group {
                 switch viewModel.status {
                 case .granted, .limited:
-                    // Permission granted or limited
                     if viewModel.displayedImages.isEmpty && !viewModel.isFetching {
                         ProgressView("Loading Photos...")
                     } else {
+                        // (Debug Log) Print when we actually render the grid
+                        Text("[DEBUG] Rendering grid with \(viewModel.displayedImages.count) images.")
+                            .font(.footnote)
+                            .foregroundColor(.gray)
+                        
                         ScrollView {
                             LazyVGrid(columns: columns, spacing: 2) {
                                 ForEach(viewModel.displayedImages.indices, id: \.self) { i in
-                                    // Square thumbnail
-                                    Image(uiImage: viewModel.displayedImages[i])
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(width: thumbnailSize(), height: thumbnailSize())
-                                        .clipped()
-                                        .onAppear {
-                                            // When the user scrolls to the last item, load the next batch
-                                            if i == viewModel.displayedImages.count - 1 {
-                                                viewModel.loadNextBatch()
-                                            }
+                                    ZStack {
+                                        // Background color to ensure we see the cell area
+                                        Color.gray.opacity(0.2)
+                                            .frame(width: thumbnailSize(), height: thumbnailSize())
+                                        
+                                        // The photo thumbnail
+                                        if let image = viewModel.displayedImages[safe: i] {
+                                            Image(uiImage: image)
+                                                .resizable()
+                                                .scaledToFill()
+                                                .frame(width: thumbnailSize(), height: thumbnailSize())
+                                                .clipped()
+                                        } else {
+                                            // If for some reason there's no image at that index,
+                                            // show a placeholder color.
+                                            Color.red
+                                                .frame(width: thumbnailSize(), height: thumbnailSize())
                                         }
+                                        
+                                        // A small overlay label to see the cell # for debugging
+                                        Text("Cell #\(i + 1)")
+                                            .font(.caption2)
+                                            .foregroundColor(.white)
+                                            .padding(4)
+                                            .background(Color.black.opacity(0.3))
+                                            .cornerRadius(4)
+                                    }
+                                    // When this cell appears, check if it's the last -> load next batch
+                                    .onAppear {
+                                        if i == viewModel.displayedImages.count - 1 {
+                                            viewModel.loadNextBatch()
+                                        }
+                                    }
                                 }
                             }
                             .padding(2)
@@ -65,19 +90,29 @@ struct ContentView: View {
             .navigationTitle("Photo Grid")
         }
         .onAppear {
+            // Debug log when the view first appears
+            print("[\(Date())] [ContentView] onAppear -> checking status.")
             viewModel.checkCurrentStatus()
         }
     }
     
     /// Calculate a square cell size for a 3-column layout with 2-pt spacing.
     private func thumbnailSize() -> CGFloat {
-        let screenWidth = UIScreen.main.bounds.width
+        // If this runs too early on certain devices/orientations, you can
+        // fallback to a known default if zero:
+        let width = UIScreen.main.bounds.width
+        if width == 0 {
+            print("[\(Date())] [ContentView] WARNING: Screen width is 0. Using default 100.")
+            return 100
+        }
+        
         let totalSpacing: CGFloat = 2 * (3 - 1) // 3 columns => 2 gaps
-        return (screenWidth - totalSpacing) / 3
+        let size = (width - totalSpacing) / 3
+        return size
     }
 }
 
-// MARK: - ViewModel
+// MARK: - PhotoGridViewModel
 
 class PhotoGridViewModel: ObservableObject {
     @Published var status: PhotoPermissionStatus = .notDetermined
@@ -91,7 +126,7 @@ class PhotoGridViewModel: ObservableObject {
     /// Indicates if we're currently fetching or loading a batch
     @Published var isFetching = false
     
-    /// How many photos to load per batch (smaller to help diagnose issues)
+    /// How many photos to load per batch
     private let batchSize = 10
     
     /// Index of the next asset to load
@@ -103,10 +138,6 @@ class PhotoGridViewModel: ObservableObject {
     private func log(_ message: String) {
         print("[\(Date())] [PhotoGridViewModel] \(message)")
     }
-    
-    // ---------------------------------------------------------------------
-    // MARK: - Permission Flow
-    // ---------------------------------------------------------------------
     
     func checkCurrentStatus() {
         let current = PhotoPermissionManager.currentStatus()
@@ -131,12 +162,7 @@ class PhotoGridViewModel: ObservableObject {
         }
     }
     
-    // ---------------------------------------------------------------------
-    // MARK: - Asset Fetching / Batching
-    // ---------------------------------------------------------------------
-    
-    /// Fetches all photo assets (if we haven't already),
-    /// then triggers the initial batch load.
+    /// Fetches all photo assets once, then triggers loadNextBatch.
     private func fetchAssetsIfNeeded() {
         guard allAssets == nil else {
             log("fetchAssetsIfNeeded() -> allAssets already fetched. Will load next batch.")
@@ -171,7 +197,6 @@ class PhotoGridViewModel: ObservableObject {
             return
         }
         
-        // Check if we've loaded all
         if currentIndex >= allAssets.count {
             log("loadNextBatch() -> All assets already loaded. currentIndex=\(currentIndex).")
             return
@@ -233,5 +258,12 @@ class PhotoGridViewModel: ObservableObject {
                 completion()
             }
         }
+    }
+}
+
+// An optional safe subscript to avoid out-of-range errors
+fileprivate extension Array {
+    subscript(safe index: Index) -> Element? {
+        indices.contains(index) ? self[index] : nil
     }
 }
