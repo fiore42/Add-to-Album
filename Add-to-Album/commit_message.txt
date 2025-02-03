@@ -1,0 +1,101 @@
+trying to fix the same image loaded multiple times
+
+[2025-02-03 22:48:58 +0000] Project History:
+[2025-02-03 22:48:58 +0000] 1. 03 Feb 2025 - 19:30 the thumbnail view works
+[2025-02-03 22:48:58 +0000] 2. 03 Feb 2025 - 21:59 the full screen view almost works
+[2025-02-03 22:48:58 +0000] 🚀 App launched
+Error creating the CFMessagePort needed to communicate with PPT.
+[2025-02-03 22:49:04 +0000] 🔍 Current permission status: granted
+[2025-02-03 22:49:04 +0000] 📸 Fetching assets...
+"Error returned from daemon: Error Domain=com.apple.accounts Code=7 "(null)""
+[2025-02-03 22:49:05 +0000] 📥 Requesting thumbnails [30 to 30]
+[2025-02-03 22:49:44 +0000] [🟢 onAppear] selectedImageIndex: 0
+[2025-02-03 22:49:44 +0000] [📸 loadImages] selectedImageIndex: 0, total assets: 30
+[2025-02-03 22:49:44 +0000] [🔵 Current Image] Loading image at index 0
+[2025-02-03 22:49:44 +0000] [🖼 Requesting Image] Asset LocalIdentifier: 7E3E938F-2DFE-4139-A6B0-447C143EBFD1/L0/001
+[2025-02-03 22:49:45 +0000] [🔄 onChange] Old Index: 0, New Index: 1
+[2025-02-03 22:49:45 +0000] [📸 loadImages] selectedImageIndex: 1, total assets: 30
+[2025-02-03 22:49:45 +0000] [🔵 Current Image] Loading image at index 1
+[2025-02-03 22:49:45 +0000] [🖼 Requesting Image] Asset LocalIdentifier: D2E9FDC1-D11E-495F-BFD7-4143C0AE62E0/L0/001
+[2025-02-03 22:49:46 +0000] [🔄 onChange] Old Index: 1, New Index: 2
+[2025-02-03 22:49:46 +0000] [📸 loadImages] selectedImageIndex: 2, total assets: 30
+[2025-02-03 22:49:46 +0000] [🔵 Current Image] Loading image at index 2
+[2025-02-03 22:49:46 +0000] [🖼 Requesting Image] Asset LocalIdentifier: 1764713E-5CAC-44ED-9524-558B15F9BAF4/L0/001
+[2025-02-03 22:49:47 +0000] [✅ Image Loaded Successfully]
+[2025-02-03 22:49:47 +0000] [✅ Loaded Current Image] Index: 2
+[2025-02-03 22:49:51 +0000] [🔄 onChange] Old Index: 2, New Index: 3
+[2025-02-03 22:49:51 +0000] [📸 loadImages] selectedImageIndex: 3, total assets: 30
+[2025-02-03 22:49:51 +0000] [🔵 Current Image] Loading image at index 3
+[2025-02-03 22:49:51 +0000] [🖼 Requesting Image] Asset LocalIdentifier: 24DB00F4-D512-42BE-B920-69EDCD738ACB/L0/001
+[2025-02-03 22:49:53 +0000] [🔄 onChange] Old Index: 3, New Index: 4
+[2025-02-03 22:49:53 +0000] [📸 loadImages] selectedImageIndex: 4, total assets: 30
+[2025-02-03 22:49:53 +0000] [🔵 Current Image] Loading image at index 4
+[2025-02-03 22:49:53 +0000] [🖼 Requesting Image] Asset LocalIdentifier: 18EC227E-68D4-4E2E-AF31-7A2CC4D840FD/L0/001
+[2025-02-03 22:49:54 +0000] [🔄 onChange] Old Index: 4, New Index: 5
+[2025-02-03 22:49:54 +0000] [📸 loadImages] selectedImageIndex: 5, total assets: 30
+[2025-02-03 22:49:54 +0000] [🔵 Current Image] Loading image at index 5
+[2025-02-03 22:49:54 +0000] [🖼 Requesting Image] Asset LocalIdentifier: 16C837D4-B312-47EF-85B7-9C2635A1F8C2/L0/001
+[2025-02-03 22:49:54 +0000] [✅ Image Loaded Successfully]
+[2025-02-03 22:49:54 +0000] [✅ Loaded Current Image] Index: 5
+[2025-02-03 22:49:55 +0000] [🔄 onChange] Old Index: 5, New Index: 4
+[2025-02-03 22:49:55 +0000] [⚠️ loadImages] Skipping duplicate load for index: 4
+[2025-02-03 22:49:56 +0000] [🔄 onChange] Old Index: 4, New Index: 3
+[2025-02-03 22:49:56 +0000] [⚠️ loadImages] Skipping duplicate load for index: 3
+[2025-02-03 22:49:57 +0000] [🔄 onChange] Old Index: 3, New Index: 2
+[2025-02-03 22:49:57 +0000] [📸 loadImages] selectedImageIndex: 2, total assets: 30
+[2025-02-03 22:49:57 +0000] [🔵 Current Image] Loading image at index 2
+[2025-02-03 22:49:57 +0000] [🖼 Requesting Image] Asset LocalIdentifier: 1764713E-5CAC-44ED-9524-558B15F9BAF4/L0/001
+[2025-02-03 22:49:58 +0000] [🔄 onChange] Old Index: 2, New Index: 1
+[2025-02-03 22:49:58 +0000] [⚠️ loadImages] Skipping duplicate load for index: 1
+[2025-02-03 22:49:59 +0000] [🔄 onChange] Old Index: 1, New Index: 0
+[2025-02-03 22:49:59 +0000] [⚠️ loadImages] Skipping duplicate load for index: 0
+[2025-02-03 22:49:59 +0000] [🔄 onChange] Old Index: 0, New Index: 1
+[2025-02-03 22:49:59 +0000] [⚠️ loadImages] Skipping duplicate load for index: 1
+[2025-02-03 22:50:00 +0000] [🔄 onChange] Old Index: 1, New Index: 2
+[2025-02-03 22:50:00 +0000] [⚠️ loadImages] Skipping duplicate load for index: 2
+[2025-02-03 22:50:02 +0000] [🟢 onAppear] selectedImageIndex: 0
+[2025-02-03 22:50:02 +0000] [📸 loadImages] selectedImageIndex: 0, total assets: 30
+[2025-02-03 22:50:02 +0000] [🔵 Current Image] Loading image at index 0
+[2025-02-03 22:50:02 +0000] [🖼 Requesting Image] Asset LocalIdentifier: 7E3E938F-2DFE-4139-A6B0-447C143EBFD1/L0/001
+[2025-02-03 22:50:05 +0000] [🟢 onAppear] selectedImageIndex: 1
+[2025-02-03 22:50:05 +0000] [📸 loadImages] selectedImageIndex: 1, total assets: 30
+[2025-02-03 22:50:05 +0000] [🔵 Current Image] Loading image at index 1
+[2025-02-03 22:50:05 +0000] [🖼 Requesting Image] Asset LocalIdentifier: D2E9FDC1-D11E-495F-BFD7-4143C0AE62E0/L0/001
+[2025-02-03 22:50:07 +0000] [🟢 onAppear] selectedImageIndex: 2
+[2025-02-03 22:50:07 +0000] [📸 loadImages] selectedImageIndex: 2, total assets: 30
+[2025-02-03 22:50:07 +0000] [🔵 Current Image] Loading image at index 2
+[2025-02-03 22:50:07 +0000] [🖼 Requesting Image] Asset LocalIdentifier: 1764713E-5CAC-44ED-9524-558B15F9BAF4/L0/001
+[2025-02-03 22:50:09 +0000] [🟢 onAppear] selectedImageIndex: 3
+[2025-02-03 22:50:09 +0000] [📸 loadImages] selectedImageIndex: 3, total assets: 30
+[2025-02-03 22:50:09 +0000] [🔵 Current Image] Loading image at index 3
+[2025-02-03 22:50:09 +0000] [🖼 Requesting Image] Asset LocalIdentifier: 24DB00F4-D512-42BE-B920-69EDCD738ACB/L0/001
+[2025-02-03 22:50:11 +0000] [🟢 onAppear] selectedImageIndex: 4
+[2025-02-03 22:50:11 +0000] [📸 loadImages] selectedImageIndex: 4, total assets: 30
+[2025-02-03 22:50:11 +0000] [🔵 Current Image] Loading image at index 4
+[2025-02-03 22:50:11 +0000] [🖼 Requesting Image] Asset LocalIdentifier: 18EC227E-68D4-4E2E-AF31-7A2CC4D840FD/L0/001
+[2025-02-03 22:50:15 +0000] [🟢 onAppear] selectedImageIndex: 5
+[2025-02-03 22:50:15 +0000] [📸 loadImages] selectedImageIndex: 5, total assets: 30
+[2025-02-03 22:50:15 +0000] [🔵 Current Image] Loading image at index 5
+[2025-02-03 22:50:15 +0000] [🖼 Requesting Image] Asset LocalIdentifier: 16C837D4-B312-47EF-85B7-9C2635A1F8C2/L0/001
+[2025-02-03 22:50:16 +0000] [✅ Image Loaded Successfully]
+[2025-02-03 22:50:16 +0000] [✅ Loaded Current Image] Index: 5
+[2025-02-03 22:50:17 +0000] [✅ Image Loaded Successfully]
+[2025-02-03 22:50:17 +0000] [✅ Loaded Current Image] Index: 5
+[2025-02-03 22:50:20 +0000] [✅ Image Loaded Successfully]
+[2025-02-03 22:50:20 +0000] [✅ Loaded Current Image] Index: 5
+[2025-02-03 22:50:20 +0000] [✅ Image Loaded Successfully]
+[2025-02-03 22:50:20 +0000] [✅ Loaded Current Image] Index: 5
+[2025-02-03 22:50:20 +0000] [✅ Image Loaded Successfully]
+[2025-02-03 22:50:20 +0000] [✅ Loaded Current Image] Index: 5
+[2025-02-03 22:50:20 +0000] [✅ Image Loaded Successfully]
+[2025-02-03 22:50:20 +0000] [✅ Loaded Current Image] Index: 5
+[2025-02-03 22:50:23 +0000] [✅ Image Loaded Successfully]
+[2025-02-03 22:50:23 +0000] [✅ Loaded Current Image] Index: 5
+[2025-02-03 22:50:29 +0000] [✅ Image Loaded Successfully]
+[2025-02-03 22:50:29 +0000] [✅ Loaded Current Image] Index: 5
+[2025-02-03 22:50:36 +0000] [✅ Image Loaded Successfully]
+[2025-02-03 22:50:36 +0000] [✅ Loaded Current Image] Index: 5
+[2025-02-03 22:50:42 +0000] [✅ Image Loaded Successfully]
+[2025-02-03 22:50:42 +0000] [✅ Loaded Current Image] Index: 5
+[2025-02-03 22:50:49 +0000] [✅ Image Loaded Successfully]
+[2025-02-03 22:50:49 +0000] [✅ Loaded Current Image] Index: 5

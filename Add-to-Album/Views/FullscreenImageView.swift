@@ -39,8 +39,8 @@ struct FullscreenImageView: View {
                         }
                     }
                 }
-                .offset(x: CGFloat(-selectedImageIndex) * geometry.size.width + dragTranslation.width) // ✅ Now all images move smoothly!
-                .animation(.interactiveSpring(), value: selectedImageIndex)
+                .offset(x: -CGFloat(selectedImageIndex) * geometry.size.width + dragTranslation.width)
+                .animation(.interactiveSpring(response: 0.4, dampingFraction: 0.8), value: selectedImageIndex)
 
                 // Black separator
                 if dragTranslation != .zero { // Only show when dragging
@@ -151,26 +151,39 @@ struct FullscreenImageView: View {
     }
 
     private func loadImages() {
-        guard !loadingIndices.contains(selectedImageIndex) else {
-            Logger.log("[⚠️ loadImages] Skipping duplicate load for index: \(selectedImageIndex)")
+        guard imageCache[selectedImageIndex] == nil else {
+            Logger.log("[⚠️ loadImages] Image already cached for index: \(selectedImageIndex)")
             return
         }
 
         Logger.log("[📸 loadImages] selectedImageIndex: \(selectedImageIndex), total assets: \(imageAssets.count)")
-        loadingIndices.insert(selectedImageIndex) // ✅ Mark as in-progress
+        loadingIndices.insert(selectedImageIndex)
 
         let targetSize = CGSize(width: UIScreen.main.bounds.width * 2, height: UIScreen.main.bounds.height * 2)
         let options = PHImageRequestOptions()
         options.isNetworkAccessAllowed = true
         options.deliveryMode = .highQualityFormat
 
-        Logger.log("[🔵 Current Image] Loading image at index \(selectedImageIndex)")
-        loadImage(for: imageAssets[selectedImageIndex], targetSize: targetSize, options: options) { image in
+        let currentIndex = selectedImageIndex // Capture the *current* selectedImageIndex
+
+        Logger.log("[🔵 Current Image] Loading image at index \(currentIndex)") // Use captured index
+        loadImage(for: imageAssets[currentIndex], targetSize: targetSize, options: options) { image in // Use captured index
             DispatchQueue.main.async {
-                self.currentImage = image
-                self.imageLoadState = .loaded
-                self.loadingIndices.remove(selectedImageIndex) // ✅ Mark as finished
-                Logger.log("[✅ Loaded Current Image] Index: \(selectedImageIndex)")
+                self.loadingIndices.remove(currentIndex) // Remove using the captured index
+
+                guard let image = image else {
+                    Logger.log("[❌ Failed to load image for index: \(currentIndex)]") // Use captured index
+                    return
+                }
+
+                if self.selectedImageIndex == currentIndex { // Compare with *current* selectedImageIndex
+                    self.currentImage = image
+                    self.imageLoadState = .loaded
+                    self.imageCache[currentIndex] = image // Cache using captured index
+                    Logger.log("[✅ Loaded Image] Index: \(currentIndex)") // Use captured index
+                } else {
+                    Logger.log("[⚠️ Skipped outdated image load for index: \(currentIndex)]") // Use captured index
+                }
             }
         }
     }
