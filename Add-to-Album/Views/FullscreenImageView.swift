@@ -13,6 +13,7 @@ struct FullscreenImageView: View {
     @State private var imageLoadState: ImageLoadState = .loading // Track image loading state
     @GestureState private var dragTranslation: CGSize = .zero
     @Environment(\.dismiss) var dismiss
+    @State private var loadingIndices: Set<Int> = [] // ✅ Track in-progress image loads
 
     enum ImageLoadState {
         case loading, loaded
@@ -121,7 +122,13 @@ struct FullscreenImageView: View {
     }
 
     private func loadImages() {
+        guard !loadingIndices.contains(selectedImageIndex) else {
+            Logger.log("[⚠️ loadImages] Skipping duplicate load for index: \(selectedImageIndex)")
+            return
+        }
+
         Logger.log("[📸 loadImages] selectedImageIndex: \(selectedImageIndex), total assets: \(imageAssets.count)")
+        loadingIndices.insert(selectedImageIndex) // ✅ Mark as in-progress
 
         let targetSize = CGSize(width: UIScreen.main.bounds.width * 2, height: UIScreen.main.bounds.height * 2)
         let options = PHImageRequestOptions()
@@ -133,31 +140,8 @@ struct FullscreenImageView: View {
             DispatchQueue.main.async {
                 self.currentImage = image
                 self.imageLoadState = .loaded
+                self.loadingIndices.remove(selectedImageIndex) // ✅ Mark as finished
                 Logger.log("[✅ Loaded Current Image] Index: \(selectedImageIndex)")
-            }
-        }
-
-        let leftIndex = selectedImageIndex > 0 ? selectedImageIndex - 1 : nil
-        leftImage = nil
-        if let leftIndex = leftIndex {
-            Logger.log("[⬅️ Left Image] Loading image at index \(leftIndex)")
-            loadImage(for: imageAssets[leftIndex], targetSize: targetSize, options: options) { image in
-                DispatchQueue.main.async {
-                    self.leftImage = image
-                    Logger.log("[✅ Loaded Left Image] Index: \(leftIndex)")
-                }
-            }
-        }
-
-        let rightIndex = selectedImageIndex < imageAssets.count - 1 ? selectedImageIndex + 1 : nil
-        rightImage = nil
-        if let rightIndex = rightIndex {
-            Logger.log("[➡️ Right Image] Loading image at index \(rightIndex)")
-            loadImage(for: imageAssets[rightIndex], targetSize: targetSize, options: options) { image in
-                DispatchQueue.main.async {
-                    self.rightImage = image
-                    Logger.log("[✅ Loaded Right Image] Index: \(rightIndex)")
-                }
             }
         }
     }
