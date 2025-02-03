@@ -1,20 +1,31 @@
 import UIKit
 import Photos
-import SwiftUI // For the wrapper
 
 class ImageGridViewController: UICollectionViewController {
 
     private let imageManager = ImageManager()
     private var imageAssets: [PHAsset] = []
-    private let imageCache = NSCache<NSNumber, UIImage>() // Cache for thumbnails
-    private var isLoadingBatch = false // Flag to prevent concurrent batch loading
+    private let imageCache = NSCache<NSNumber, UIImage>()
+    private var isLoadingBatch = false
+
+    private var collectionViewFlowLayout: UICollectionViewFlowLayout! // Declare the layout property
+
+    init() {
+        super.init(collectionViewLayout: UICollectionViewFlowLayout()) // Initialize with a default layout
+    }
+
+    required init?(coder aDecoder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
         print("ImageGridViewController loaded")
 
-        collectionView.collectionViewLayout = createGridLayout() // Set up the grid layout
+        collectionViewFlowLayout = createGridLayout() // Create and assign the layout
+        collectionView.collectionViewLayout = collectionViewFlowLayout // Set the collection view's layout
+
         collectionView.register(ImageCell.self, forCellWithReuseIdentifier: "ImageCell")
 
         imageManager.requestPhotoPermissions { [weak self] granted in
@@ -22,9 +33,7 @@ class ImageGridViewController: UICollectionViewController {
                 if granted {
                     self?.loadNextBatch()
                 } else {
-                    // Handle permission denial (e.g., show an alert)
                     print("Permissions not granted")
-                    // Example alert:
                     let alert = UIAlertController(title: "Permission Denied", message: "Please grant access to your photos in Settings.", preferredStyle: .alert)
                     alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
                     self?.present(alert, animated: true, completion: nil)
@@ -36,7 +45,7 @@ class ImageGridViewController: UICollectionViewController {
     private func createGridLayout() -> UICollectionViewFlowLayout {
         let layout = UICollectionViewFlowLayout()
         let spacing: CGFloat = 5
-        let numberOfColumns: CGFloat = 4 // Adjust as needed
+        let numberOfColumns: CGFloat = 4
         let itemSize = (view.frame.width - (numberOfColumns - 1) * spacing) / numberOfColumns
         layout.itemSize = CGSize(width: itemSize, height: itemSize)
         layout.minimumInteritemSpacing = spacing
@@ -45,23 +54,17 @@ class ImageGridViewController: UICollectionViewController {
         return layout
     }
 
-    // ... (rest of the class code below)
-}
-
-
-// MARK: - Data Loading and UIScrollViewDelegate
-
-extension ImageGridViewController {
+    // MARK: - Data Loading and UIScrollViewDelegate
 
     func loadNextBatch() {
-        guard !isLoadingBatch else { return } // Prevent concurrent loading
+        guard !isLoadingBatch else { return }
 
         isLoadingBatch = true
         print("Loading next batch...")
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let newAssets = self?.imageManager.fetchNextBatch(batchSize: 30, after: self?.imageAssets.last) ?? []
-            
+
             DispatchQueue.main.async {
                 if !newAssets.isEmpty {
                     self?.imageAssets.append(contentsOf: newAssets)
@@ -92,16 +95,13 @@ extension ImageGridViewController {
         if !visibleImages.isEmpty {
             let lastIndexPath = visibleImages.max(by: { $0 < $1 })!
             let lastCellRect = self.collectionView.layoutAttributesForItem(at: lastIndexPath)!.frame
-            if lastCellRect.maxY <= visibleRect.maxY + 200 { // Load when near the end
+            if lastCellRect.maxY <= visibleRect.maxY + 200 {
                 loadNextBatch()
             }
         }
     }
-}
 
-// MARK: - UICollectionViewDataSource
-
-extension ImageGridViewController {
+    // MARK: - UICollectionViewDataSource
 
     override func numberOfSections(in collectionView: UICollectionView) -> Int {
         return 1
@@ -115,7 +115,7 @@ extension ImageGridViewController {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ImageCell", for: indexPath) as! ImageCell
 
         let asset = imageAssets[indexPath.item]
-        let targetSize = CGSize(width: 200, height: 200) // Adjust size as needed
+        let targetSize = CGSize(width: 200, height: 200)
 
         if let cachedImage = imageCache.object(forKey: NSNumber(value: asset.hashValue)) {
             cell.imageView.image = cachedImage
@@ -135,7 +135,6 @@ extension ImageGridViewController {
         return cell
     }
 }
-
 
 class ImageCell: UICollectionViewCell {
     let imageView = UIImageView()
