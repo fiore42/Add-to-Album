@@ -59,7 +59,7 @@ struct FullscreenImageView: View {
                             }
                         }
                         .offset(x: dragState.translation.width)
-                        .animation(.interactiveSpring(), value: dragState.isDragging)
+                        .animation(.easeInOut(duration: 0.3), value: dragState.isDragging) // Adjust duration
                     }
                 } else {
                     ProgressView()
@@ -72,7 +72,7 @@ struct FullscreenImageView: View {
                         .fill(Color.black)
                         .frame(width: 20, height: UIScreen.main.bounds.height) // Adjust height as needed
                         .offset(x: (dragState.translation.width > 0) ? dragState.translation.width - 20 : dragState.translation.width + 20)
-                        .animation(.interactiveSpring(), value: dragState.isDragging)
+                        .animation(.easeInOut(duration: 0.3), value: dragState.isDragging) // Adjust duration
                 }
 
                 VStack {
