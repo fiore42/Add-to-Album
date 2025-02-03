@@ -58,10 +58,6 @@ struct FullScreenImageView: View {
             ZStack {
                 Color.black.edgesIgnoringSafeArea(.all)
                 
-                    .onAppear {
-                        print("DEBUG - pairedAlbums content:", pairedAlbums)
-                    }
-
                 // Paging Content
                 HStack(spacing: 0) {
                     ForEach(assets.indices, id: \.self) { index in
