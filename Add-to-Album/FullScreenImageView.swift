@@ -128,80 +128,79 @@ struct FullScreenImageView: View {
                 }
                 .position(x: 40, y: 60)
             }
-            // Overlay for the function boxes.
             .overlay(
-                // Top row overlay at ~20% from the top.
-                HStack {
-                    if let fu1Album = pairedAlbums["Function 1"] {
-                        FunctionBox(
-                            title: "Fu 1",
-                            album: fu1Album?.localizedTitle,
-                            isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex],
-                                                                with: fu1Album),
-                            onTap: {
-                                togglePairing(for: "Function 1",
-                                              asset: assets[selectedIndex],
-                                              album: fu1Album)
-                            }
-                        )
-                    }
-                    Spacer()
-                    if let fu2Album = pairedAlbums["Function 2"] {
-                        HStack { // Added HStack for proper right alignment
+                VStack { // Main VStack for top and bottom rows
+                    HStack { // Top row
+                        if let fu1Album = pairedAlbums["Function 1"] {
                             FunctionBox(
-                                title: "Fu 2",
-                                album: fu2Album?.localizedTitle,
+                                title: "Fu 1",
+                                album: fu1Album?.localizedTitle,
                                 isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex],
-                                                                    with: fu2Album),
+                                                                    with: fu1Album),
                                 onTap: {
-                                    togglePairing(for: "Function 2",
+                                    togglePairing(for: "Function 1",
                                                   asset: assets[selectedIndex],
-                                                  album: fu2Album)
+                                                  album: fu1Album)
                                 }
                             )
                         }
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, geometry.size.height * 0.20)
-                , alignment: .top
-            )
-            .overlay(
-                // Bottom row overlay at ~80% from the top.
-                HStack {
-                    if let fu3Album = pairedAlbums["Function 3"] {
-                        FunctionBox(
-                            title: "Fu 3",
-                            album: fu3Album?.localizedTitle,
-                            isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex],
-                                                                with: fu3Album),
-                            onTap: {
-                                togglePairing(for: "Function 3",
-                                              asset: assets[selectedIndex],
-                                              album: fu3Album)
+                        Spacer() // Push Fu2 to the right
+                        if let fu2Album = pairedAlbums["Function 2"] {
+                            HStack { // Added HStack for proper right alignment
+                                FunctionBox(
+                                    title: "Fu 2",
+                                    album: fu2Album?.localizedTitle,
+                                    isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex],
+                                                                        with: fu2Album),
+                                    onTap: {
+                                        togglePairing(for: "Function 2",
+                                                      asset: assets[selectedIndex],
+                                                      album: fu2Album)
+                                    }
+                                )
                             }
-                        )
+                        }
                     }
-                    Spacer()
-                    if let fu4Album = pairedAlbums["Function 4"] {
-                        HStack { // Added HStack for proper right alignment
+                    .padding(.horizontal, 20)
+                    .padding(.top, geometry.size.height * 0.20)
+
+                    Spacer() // Flexible space between rows
+
+                    HStack { // Bottom row
+                        if let fu3Album = pairedAlbums["Function 3"] {
                             FunctionBox(
-                                title: "Fu 4",
-                                album: fu4Album?.localizedTitle,
+                                title: "Fu 3",
+                                album: fu3Album?.localizedTitle,
                                 isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex],
-                                                                    with: fu4Album),
+                                                                    with: fu3Album),
                                 onTap: {
-                                    togglePairing(for: "Function 4",
+                                    togglePairing(for: "Function 3",
                                                   asset: assets[selectedIndex],
-                                                  album: fu4Album)
+                                                  album: fu3Album)
                                 }
                             )
                         }
+                        Spacer() // Push Fu4 to the right
+                        if let fu4Album = pairedAlbums["Function 4"] {
+                            HStack { // Added HStack for proper right alignment
+                                FunctionBox(
+                                    title: "Fu 4",
+                                    album: fu4Album?.localizedTitle,
+                                    isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex],
+                                                                        with: fu4Album),
+                                    onTap: {
+                                        togglePairing(for: "Function 4",
+                                                      asset: assets[selectedIndex],
+                                                      album: fu4Album)
+                                    }
+                                )
+                            }
+                        }
                     }
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, geometry.size.height * 0.20)
-                , alignment: .bottom
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, geometry.size.height * 0.20)
+                },
+                alignment: .center // Center the VStack within the overlay
             )
             .id(refreshToggle) // Toggling this forces the overlay to refresh.
             .edgesIgnoringSafeArea(.all)
