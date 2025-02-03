@@ -46,6 +46,50 @@ struct FullScreenImageView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
+                
+                if let album1 = pairedAlbums["Function 1"] {
+                                    FunctionBox(
+                                        title: "Fu 1",
+                                        album: album1?.localizedTitle ?? "Unknown",
+                                        isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: album1),
+                                        onTap: { togglePairing(for: "Function 1", asset: assets[selectedIndex], album: album1) }
+                                    )
+                                    .position(x: 20 + geometry.safeAreaInsets.leading, y: 20 + geometry.safeAreaInsets.top) // Adjust position as needed
+                                }
+
+                                // Top Right
+                                if let album2 = pairedAlbums["Function 2"] {
+                                    FunctionBox(
+                                        title: "Fu 2",
+                                        album: album2?.localizedTitle ?? "Unknown",
+                                        isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: album2),
+                                        onTap: { togglePairing(for: "Function 2", asset: assets[selectedIndex], album: album2) }
+                                    )
+                                    .position(x: geometry.size.width - 20 - geometry.safeAreaInsets.trailing, y: 20 + geometry.safeAreaInsets.top) // Adjust position as needed
+                                }
+
+                                // Bottom Left
+                                if let album3 = pairedAlbums["Function 3"] {
+                                    FunctionBox(
+                                        title: "Fu 3",
+                                        album: album3?.localizedTitle ?? "Unknown",
+                                        isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: album3),
+                                        onTap: { togglePairing(for: "Function 3", asset: assets[selectedIndex], album: album3) }
+                                    )
+                                    .position(x: 20 + geometry.safeAreaInsets.leading, y: geometry.size.height - 20 - geometry.safeAreaInsets.bottom) // Adjust position as needed
+                                }
+
+                                // Bottom Right
+                                if let album4 = pairedAlbums["Function 4"] {
+                                    FunctionBox(
+                                        title: "Fu 4",
+                                        album: album4?.localizedTitle ?? "Unknown",
+                                        isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: album4),
+                                        onTap: { togglePairing(for: "Function 4", asset: assets[selectedIndex], album: album4) }
+                                    )
+                                    .position(x: geometry.size.width - 20 - geometry.safeAreaInsets.trailing, y: geometry.size.height - 20 - geometry.safeAreaInsets.bottom) // Adjust position as needed
+                                }
+                
                 Color.black.edgesIgnoringSafeArea(.all)
                 
                 // Paging Content
@@ -104,52 +148,52 @@ struct FullScreenImageView: View {
                         }
                 )
                 
-                // Function Boxes - Absolute Positioning
-
-                // Top Left
-                if let album1 = pairedAlbums["Function 1"] {
-                    FunctionBox(
-                        title: "Fu 1",
-                        album: album1?.localizedTitle ?? "Unknown",
-                        isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: album1),
-                        onTap: { togglePairing(for: "Function 1", asset: assets[selectedIndex], album: album1) }
-                    )
-                    .position(x: 20 + geometry.safeAreaInsets.leading, y: 20 + geometry.safeAreaInsets.top) // Adjust position as needed
-                }
-                
-                // Top Right
-                if let album2 = pairedAlbums["Function 2"] {
-                    FunctionBox(
-                        title: "Fu 2",
-                        album: album2?.localizedTitle ?? "Unknown",
-                        isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: album2),
-                        onTap: { togglePairing(for: "Function 2", asset: assets[selectedIndex], album: album2) }
-                    )
-                    .position(x: geometry.size.width - 20 - geometry.safeAreaInsets.trailing, y: 20 + geometry.safeAreaInsets.top) // Adjust position as needed
-                }
-                
-                // Bottom Left
-                if let album3 = pairedAlbums["Function 3"] {
-                    FunctionBox(
-                        title: "Fu 3",
-                        album: album3?.localizedTitle ?? "Unknown",
-                        isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: album3),
-                        onTap: { togglePairing(for: "Function 3", asset: assets[selectedIndex], album: album3) }
-                    )
-                    .position(x: 20 + geometry.safeAreaInsets.leading, y: geometry.size.height - 20 - geometry.safeAreaInsets.bottom) // Adjust position as needed
-                }
-                
-                // Bottom Right
-                if let album4 = pairedAlbums["Function 4"] {
-                    FunctionBox(
-                        title: "Fu 4",
-                        album: album4?.localizedTitle ?? "Unknown",
-                        isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: album4),
-                        onTap: { togglePairing(for: "Function 4", asset: assets[selectedIndex], album: album4) }
-                    )
-                    .position(x: geometry.size.width - 20 - geometry.safeAreaInsets.trailing, y: geometry.size.height - 20 - geometry.safeAreaInsets.bottom) // Adjust position as needed
-                }
-                
+//                // Function Boxes - Absolute Positioning
+//
+//                // Top Left
+//                if let album1 = pairedAlbums["Function 1"] {
+//                    FunctionBox(
+//                        title: "Fu 1",
+//                        album: album1?.localizedTitle ?? "Unknown",
+//                        isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: album1),
+//                        onTap: { togglePairing(for: "Function 1", asset: assets[selectedIndex], album: album1) }
+//                    )
+//                    .position(x: 20 + geometry.safeAreaInsets.leading, y: 20 + geometry.safeAreaInsets.top) // Adjust position as needed
+//                }
+//                
+//                // Top Right
+//                if let album2 = pairedAlbums["Function 2"] {
+//                    FunctionBox(
+//                        title: "Fu 2",
+//                        album: album2?.localizedTitle ?? "Unknown",
+//                        isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: album2),
+//                        onTap: { togglePairing(for: "Function 2", asset: assets[selectedIndex], album: album2) }
+//                    )
+//                    .position(x: geometry.size.width - 20 - geometry.safeAreaInsets.trailing, y: 20 + geometry.safeAreaInsets.top) // Adjust position as needed
+//                }
+//                
+//                // Bottom Left
+//                if let album3 = pairedAlbums["Function 3"] {
+//                    FunctionBox(
+//                        title: "Fu 3",
+//                        album: album3?.localizedTitle ?? "Unknown",
+//                        isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: album3),
+//                        onTap: { togglePairing(for: "Function 3", asset: assets[selectedIndex], album: album3) }
+//                    )
+//                    .position(x: 20 + geometry.safeAreaInsets.leading, y: geometry.size.height - 20 - geometry.safeAreaInsets.bottom) // Adjust position as needed
+//                }
+//                
+//                // Bottom Right
+//                if let album4 = pairedAlbums["Function 4"] {
+//                    FunctionBox(
+//                        title: "Fu 4",
+//                        album: album4?.localizedTitle ?? "Unknown",
+//                        isPaired: FunctionBox.isImagePaired(asset: assets[selectedIndex], with: album4),
+//                        onTap: { togglePairing(for: "Function 4", asset: assets[selectedIndex], album: album4) }
+//                    )
+//                    .position(x: geometry.size.width - 20 - geometry.safeAreaInsets.trailing, y: geometry.size.height - 20 - geometry.safeAreaInsets.bottom) // Adjust position as needed
+//                }
+//                
                 
                 // Dismiss Button
                 Button(action: onDismiss) {
