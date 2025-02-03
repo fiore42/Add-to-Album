@@ -22,7 +22,7 @@ struct FullscreenImageView: View {
         GeometryReader { geometry in
             ZStack {
                 Color.black.ignoresSafeArea()
-
+                
                 HStack(spacing: 0) {
                     if let leftImage = leftImage {
                         Image(uiImage: leftImage)
@@ -31,7 +31,7 @@ struct FullscreenImageView: View {
                             .frame(width: geometry.size.width, height: geometry.size.height)
                             .clipped()
                     }
-
+                    
                     if let currentImage = currentImage {
                         Image(uiImage: currentImage)
                             .resizable()
@@ -39,7 +39,7 @@ struct FullscreenImageView: View {
                             .frame(width: geometry.size.width, height: geometry.size.height)
                             .clipped()
                     }
-
+                    
                     if let rightImage = rightImage {
                         Image(uiImage: rightImage)
                             .resizable()
@@ -50,7 +50,7 @@ struct FullscreenImageView: View {
                 }
                 .offset(x: dragTranslation.width) // Use dragTranslation directly
                 .animation(.interactiveSpring(), value: dragTranslation) // Animate with dragTranslation
-
+                
                 // Black separator
                 if dragTranslation != .zero { // Only show when dragging
                     Rectangle()
@@ -59,7 +59,7 @@ struct FullscreenImageView: View {
                         .offset(x: dragTranslation.width > 0 ? dragTranslation.width - 20 : dragTranslation.width + 20)
                         .animation(.interactiveSpring(), value: dragTranslation)
                 }
-
+                
                 // Back button
                 VStack {
                     HStack {
@@ -74,7 +74,7 @@ struct FullscreenImageView: View {
                 }
                 .padding(.top, 20)
                 .padding(.leading, 20)
-
+                
             } // End of ZStack
             .gesture(
                 DragGesture()
@@ -85,10 +85,16 @@ struct FullscreenImageView: View {
                         handleSwipe(value: value, screenWidth: geometry.size.width)
                     }
             )
-            .onAppear { loadImages() }
-            .onChange(of: selectedImageIndex) { oldValue, newValue in // Corrected onChange
+            .onAppear {
+                Logger.log("[🟢 onAppear] selectedImageIndex: \(selectedImageIndex)")
                 loadImages()
-            }        } // End of GeometryReader
+            }
+            .onChange(of: selectedImageIndex) { oldValue, newValue in
+                Logger.log("[🔄 onChange] Old Index: \(oldValue), New Index: \(newValue)")
+                loadImages()
+            }
+
+        } // End of GeometryReader
     }
 
 
@@ -96,13 +102,16 @@ struct FullscreenImageView: View {
         let threshold = screenWidth / 3
 
         if value.translation.width > threshold && selectedImageIndex > 0 {
+            Logger.log("[⬅️ Swiped Left] Moving to index \(selectedImageIndex - 1)")
             selectedImageIndex -= 1 // Update the index *before* loading images
             loadImages()
         } else if value.translation.width < -threshold && selectedImageIndex < imageAssets.count - 1 {
+            Logger.log("[➡️ Swiped Right] Moving to index \(selectedImageIndex + 1)")
             selectedImageIndex += 1 // Update the index *before* loading images
             loadImages()
         } else {
             // Do *not* set dragTranslation here. Let the gesture end.
+            Logger.log("[🔄 Cancel Swipe] Returning to index \(selectedImageIndex)")
             withAnimation(.interactiveSpring()) {
                 // If you have other view properties you need to reset as part of the "cancel" animation,
                 // do it here.  For example, if you had a scale effect:
@@ -112,52 +121,59 @@ struct FullscreenImageView: View {
     }
 
     private func loadImages() {
-        imageLoadState = .loading // Set loading state
+        Logger.log("[📸 loadImages] selectedImageIndex: \(selectedImageIndex), total assets: \(imageAssets.count)")
 
         let targetSize = CGSize(width: UIScreen.main.bounds.width * 2, height: UIScreen.main.bounds.height * 2)
         let options = PHImageRequestOptions()
         options.isNetworkAccessAllowed = true
         options.deliveryMode = .highQualityFormat
 
-        guard selectedImageIndex >= 0, selectedImageIndex < imageAssets.count else { return } // ✅ Prevents out-of-bounds issues
-
-        let correctIndex = selectedImageIndex // ✅ Ensure index is properly captured before async calls
-
-        loadImage(for: imageAssets[correctIndex], targetSize: targetSize, options: options) { image in
+        Logger.log("[🔵 Current Image] Loading image at index \(selectedImageIndex)")
+        loadImage(for: imageAssets[selectedImageIndex], targetSize: targetSize, options: options) { image in
             DispatchQueue.main.async {
-                if selectedImageIndex == correctIndex { // ✅ Ensures we update the right image
-                    currentImage = image
-                    imageLoadState = .loaded
-                }
+                self.currentImage = image
+                self.imageLoadState = .loaded
+                Logger.log("[✅ Loaded Current Image] Index: \(selectedImageIndex)")
             }
         }
 
         let leftIndex = selectedImageIndex > 0 ? selectedImageIndex - 1 : nil
-        leftImage = nil // Clear previous left image
+        leftImage = nil
         if let leftIndex = leftIndex {
+            Logger.log("[⬅️ Left Image] Loading image at index \(leftIndex)")
             loadImage(for: imageAssets[leftIndex], targetSize: targetSize, options: options) { image in
                 DispatchQueue.main.async {
-                    leftImage = image
+                    self.leftImage = image
+                    Logger.log("[✅ Loaded Left Image] Index: \(leftIndex)")
                 }
             }
         }
 
         let rightIndex = selectedImageIndex < imageAssets.count - 1 ? selectedImageIndex + 1 : nil
-        rightImage = nil // Clear previous right image
+        rightImage = nil
         if let rightIndex = rightIndex {
+            Logger.log("[➡️ Right Image] Loading image at index \(rightIndex)")
             loadImage(for: imageAssets[rightIndex], targetSize: targetSize, options: options) { image in
                 DispatchQueue.main.async {
-                    rightImage = image
+                    self.rightImage = image
+                    Logger.log("[✅ Loaded Right Image] Index: \(rightIndex)")
                 }
             }
         }
     }
 
     private func loadImage(for asset: PHAsset, targetSize: CGSize, options: PHImageRequestOptions, completion: @escaping (UIImage?) -> Void) {
+        Logger.log("[🖼 Requesting Image] Asset LocalIdentifier: \(asset.localIdentifier)")
         imageManager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFit, options: options) { image, _ in
+            if let image = image {
+                Logger.log("[✅ Image Loaded Successfully]")
+            } else {
+                Logger.log("[❌ Image Load Failed]")
+            }
             completion(image)
         }
     }
+
 
     private func showNextImage() {
         if selectedImageIndex < imageAssets.count - 1 {
