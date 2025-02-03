@@ -138,6 +138,9 @@ struct FullScreenImageView: View {
                                         togglePairing(for: "Function 1", asset: assets[selectedIndex], album: fu1Album)
                                     } // Pass onTap
                           )
+                          .onAppear {
+                                  print("DEBUG - Function 1 should appear")
+                          }
                 }
                 if let fu2Album = pairedAlbums["Function 2"] {
                           FunctionBox(
@@ -150,6 +153,9 @@ struct FullScreenImageView: View {
                                         togglePairing(for: "Function 2", asset: assets[selectedIndex], album: fu2Album)
                                     } // Pass onTap
                           )
+                          .onAppear {
+                                  print("DEBUG - Function 2 should appear")
+                          }
                 }
                 if let fu3Album = pairedAlbums["Function 3"] {
                           FunctionBox(
@@ -162,6 +168,9 @@ struct FullScreenImageView: View {
                                         togglePairing(for: "Function 3", asset: assets[selectedIndex], album: fu3Album)
                                     } // Pass onTap
                           )
+                          .onAppear {
+                                  print("DEBUG - Function 3 should appear")
+                          }
                 }
                 if let fu4Album = pairedAlbums["Function 4"] {
                           FunctionBox(
@@ -175,6 +184,9 @@ struct FullScreenImageView: View {
                                     } // Pass onTap
 
                           )
+                          .onAppear {
+                                  print("DEBUG - Function 4 should appear")
+                          }
                 }
                 
                 // Dismiss Button
