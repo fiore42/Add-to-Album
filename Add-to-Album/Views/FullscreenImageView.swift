@@ -96,9 +96,11 @@ struct FullscreenImageView: View {
         let threshold = screenWidth / 3
 
         if value.translation.width > threshold && selectedImageIndex > 0 {
-            showPreviousImage()
+            selectedImageIndex -= 1 // Update the index *before* loading images
+            loadImages()
         } else if value.translation.width < -threshold && selectedImageIndex < imageAssets.count - 1 {
-            showNextImage()
+            selectedImageIndex += 1 // Update the index *before* loading images
+            loadImages()
         } else {
             // Do *not* set dragTranslation here. Let the gesture end.
             withAnimation(.interactiveSpring()) {
