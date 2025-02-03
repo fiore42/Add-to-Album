@@ -6,7 +6,7 @@ struct FullscreenImageView: View {
     @Binding var selectedImageIndex: Int
     let imageAssets: [PHAsset]
     private let imageManager = PHImageManager.default()
-    
+
     @State private var currentImage: UIImage?
     @State private var leftImage: UIImage?
     @State private var rightImage: UIImage?
@@ -19,7 +19,7 @@ struct FullscreenImageView: View {
             ZStack {
                 Color.black.ignoresSafeArea()
 
-                // Display images side by side for natural swipe transition
+                // Display images side by side for smooth swiping
                 HStack(spacing: 0) {
                     if let leftImage = leftImage {
                         Image(uiImage: leftImage)
@@ -28,7 +28,7 @@ struct FullscreenImageView: View {
                             .frame(width: geometry.size.width, height: geometry.size.height)
                             .offset(x: -geometry.size.width + dragOffset + dragTranslation.width)
                     }
-                    
+
                     if let currentImage = currentImage {
                         Image(uiImage: currentImage)
                             .resizable()
@@ -45,6 +45,7 @@ struct FullscreenImageView: View {
                             .offset(x: geometry.size.width + dragOffset + dragTranslation.width)
                     }
                 }
+                .animation(.interactiveSpring(), value: dragOffset)
 
                 // Black separator between images during swipe
                 if dragTranslation.width != 0 {
@@ -97,32 +98,38 @@ struct FullscreenImageView: View {
         }
     }
 
-    /// **Loads the main and adjacent images**
+    /// **Loads images into memory (current, left, right)**
     private func loadImages() {
-        loadImage(for: imageAssets[selectedImageIndex]) { image in
-            currentImage = image
+        let currentIndex = selectedImageIndex
+
+        loadImage(for: imageAssets[currentIndex]) { image in
+            DispatchQueue.main.async {
+                self.currentImage = image
+            }
         }
 
-        let leftIndex = max(0, selectedImageIndex - 1)
-        if leftIndex != selectedImageIndex {
+        let leftIndex = currentIndex > 0 ? currentIndex - 1 : nil
+        leftImage = nil
+        if let leftIndex = leftIndex {
             loadImage(for: imageAssets[leftIndex]) { image in
-                leftImage = image
+                DispatchQueue.main.async {
+                    self.leftImage = image
+                }
             }
-        } else {
-            leftImage = nil
         }
 
-        let rightIndex = min(imageAssets.count - 1, selectedImageIndex + 1)
-        if rightIndex != selectedImageIndex {
+        let rightIndex = currentIndex < imageAssets.count - 1 ? currentIndex + 1 : nil
+        rightImage = nil
+        if let rightIndex = rightIndex {
             loadImage(for: imageAssets[rightIndex]) { image in
-                rightImage = image
+                DispatchQueue.main.async {
+                    self.rightImage = image
+                }
             }
-        } else {
-            rightImage = nil
         }
     }
 
-    /// **Loads an image and ensures correct aspect ratio**
+    /// **Loads a high-res image from PHAsset**
     private func loadImage(for asset: PHAsset, completion: @escaping (UIImage?) -> Void) {
         let options = PHImageRequestOptions()
         options.isNetworkAccessAllowed = true
@@ -134,13 +141,11 @@ struct FullscreenImageView: View {
             contentMode: .aspectFit,
             options: options
         ) { image, _ in
-            DispatchQueue.main.async {
-                completion(image)
-            }
+            completion(image)
         }
     }
 
-    /// **Handles swipe left (next image) with smooth transition**
+    /// **Handles swipe to next image**
     private func showNextImage() {
         if selectedImageIndex < imageAssets.count - 1 {
             withAnimation(.easeInOut(duration: 0.4)) {
@@ -149,13 +154,14 @@ struct FullscreenImageView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                 selectedImageIndex += 1
                 dragOffset = 0
+                loadImages()
             }
         } else {
             bounceBack()
         }
     }
 
-    /// **Handles swipe right (previous image) with smooth transition**
+    /// **Handles swipe to previous image**
     private func showPreviousImage() {
         if selectedImageIndex > 0 {
             withAnimation(.easeInOut(duration: 0.4)) {
@@ -164,13 +170,14 @@ struct FullscreenImageView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                 selectedImageIndex -= 1
                 dragOffset = 0
+                loadImages()
             }
         } else {
             bounceBack()
         }
     }
 
-    /// **Creates a bounce effect when swiping beyond the first/last image**
+    /// **Creates a bounce effect when reaching first/last image**
     private func bounceBack() {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
             dragOffset = (dragOffset > 0) ? 50 : -50
