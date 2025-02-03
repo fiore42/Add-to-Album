@@ -58,6 +58,10 @@ struct FullScreenImageView: View {
             ZStack {
                 Color.black.edgesIgnoringSafeArea(.all)
                 
+                    .onAppear {
+                        print("DEBUG - pairedAlbums content:", pairedAlbums)
+                    }
+
                 // Paging Content
                 HStack(spacing: 0) {
                     ForEach(assets.indices, id: \.self) { index in
@@ -117,9 +121,12 @@ struct FullScreenImageView: View {
                                 loadMoreAssets()
                             }
                         }
+
+
                 )
 
                 // ✅ Function Boxes (Only if a function is paired)
+
                 if let fu1Album = pairedAlbums["Function 1"] { // Access through viewModel
                           FunctionBox(
                                     title: "Fu 1",
