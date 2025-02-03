@@ -102,7 +102,7 @@
 				0518062C2D3D77D20082983A /* Sources */,
 				0518062D2D3D77D20082983A /* Frameworks */,
 				0518062E2D3D77D20082983A /* Resources */,
-				05A1BC1F2D4E8F3F0068ADF7 /* ShellScript */,
+				05A1BC1F2D4E8F3F0068ADF7 /* Run Script */,
 			);
 			buildRules = (
 			);
@@ -233,7 +233,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		05A1BC1F2D4E8F3F0068ADF7 /* ShellScript */ = {
+		05A1BC1F2D4E8F3F0068ADF7 /* Run Script */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -243,13 +243,14 @@
 			);
 			inputPaths = (
 			);
+			name = "Run Script";
 			outputFileListPaths = (
 			);
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\n\n#!/bin/sh\n\n# Define your repository path\nREPO_PATH=\"$SRCROOT\"\n\n# Define commit message\nCOMMIT_MSG=\"Auto-commit: $(date +'%Y-%m-%d %H:%M:%S')\"\n\n# Navigate to repo\ncd \"$REPO_PATH\" || exit 1\n\n# Check for changes\nif [[ $(/opt/homebrew/bin/git status --porcelain) ]]; then\n    echo \"🔄 Changes detected, committing...\"\n    # Add all changes\n    git add .\n    # Commit the changes\n    git commit -m \"$COMMIT_MSG\"\n    # Push to GitHub\n    git push origin main # Change 'main' to your default branch if needed\n    echo \"✅ Code successfully pushed to GitHub.\"\nelse\n    echo \"✅ No changes detected. Nothing to commit.\"\nfi\n";
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\n\n#!/bin/sh\n\n# Define your repository path\nREPO_PATH=\"$SRCROOT\"\n\n# Define commit message file paths\nCOMMIT_MSG_FILE=\"$REPO_PATH/commit_message.txt\"\nOLD_COMMIT_MSG_FILE=\"$REPO_PATH/commit_message.old\"\n\n# Default commit message\nCOMMIT_MSG=\"Auto-commit: $(date +'%Y-%m-%d %H:%M:%S')\"\n\n# Navigate to repo\ncd \"$REPO_PATH\" || exit 1\n\n# Determine commit message\nif [ -f \"$COMMIT_MSG_FILE\" ]; then\n    # Check if the file is empty (only spaces or newlines)\n    if [ -s \"$COMMIT_MSG_FILE\" ] && grep -q '[^[:space:]]' \"$COMMIT_MSG_FILE\"; then\n        # If present and not empty, check against commit_message.old\n        if [ -f \"$OLD_COMMIT_MSG_FILE\" ] && cmp -s \"$COMMIT_MSG_FILE\" \"$OLD_COMMIT_MSG_FILE\"; then\n            COMMIT_MSG=\"Auto-commit: $(date +'%Y-%m-%d %H:%M:%S')\"\n        else\n            # Use the first line as the commit message and update commit_message.old\n            COMMIT_MSG=$(head -n 1 \"$COMMIT_MSG_FILE\")\n            cp \"$COMMIT_MSG_FILE\" \"$OLD_COMMIT_MSG_FILE\"\n        fi\n    fi\nfi\n\n# Check for changes\nif /opt/homebrew/bin/git status --porcelain | grep -q .; then\n    echo \"🔄 Changes detected, committing...\"\n    # Add all changes\n    git add .\n    # Commit the changes\n    git commit -m \"$COMMIT_MSG\"\n    # Push to GitHub\n    git push origin main # Change 'main' to your default branch if needed\n    echo \"✅ Code successfully pushed to GitHub.\"\nelse\n    echo \"✅ No changes detected. Nothing to commit.\"\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
