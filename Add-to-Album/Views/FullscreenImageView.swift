@@ -85,17 +85,9 @@ struct FullscreenImageView: View {
                         handleSwipe(value: value, screenWidth: geometry.size.width)
                     }
             )
-//            .onAppear { loadImages() }
-            .onAppear {
-                DispatchQueue.main.async {
-                    loadImages()
-                }
-            }
+            .onAppear { loadImages() }
             .onChange(of: selectedImageIndex) { oldValue, newValue in // Corrected onChange
-                DispatchQueue.main.async {
-                    loadImages()
-                }
-//                loadImages()
+                loadImages()
             }        } // End of GeometryReader
     }
 
@@ -127,10 +119,16 @@ struct FullscreenImageView: View {
         options.isNetworkAccessAllowed = true
         options.deliveryMode = .highQualityFormat
 
-        loadImage(for: imageAssets[selectedImageIndex], targetSize: targetSize, options: options) { image in
+        guard selectedImageIndex >= 0, selectedImageIndex < imageAssets.count else { return } // ✅ Prevents out-of-bounds issues
+
+        let correctIndex = selectedImageIndex // ✅ Ensure index is properly captured before async calls
+
+        loadImage(for: imageAssets[correctIndex], targetSize: targetSize, options: options) { image in
             DispatchQueue.main.async {
-                currentImage = image
-                imageLoadState = .loaded // Set loaded state
+                if selectedImageIndex == correctIndex { // ✅ Ensures we update the right image
+                    currentImage = image
+                    imageLoadState = .loaded
+                }
             }
         }
 
