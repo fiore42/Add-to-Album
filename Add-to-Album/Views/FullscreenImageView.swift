@@ -72,9 +72,6 @@ struct FullscreenImageView: View {
                     .updating($dragTranslation, body: { value, state, _ in
                         state = value.translation
                     })
-//                    .onEnded { value in
-//                        handleSwipe(value: value, screenWidth: geometry.size.width, geometry: geometry) // Pass geometry here
-//                    }
                     .onEnded { value in
                         let threshold = geometry.size.width / 3
                         let dragAmount = value.translation.width
@@ -111,6 +108,7 @@ struct FullscreenImageView: View {
     }
 
     func getImage(for index: Int, geometry: GeometryProxy) -> UIImage? { // Add geometry parameter
+// check cache first, if not in cache, load image
         if let cachedImage = imageCache[index] {
             return cachedImage // ✅ Load from cache if available
         }
@@ -122,11 +120,11 @@ struct FullscreenImageView: View {
         guard imageCache[index] == nil else { return } // ✅ Prevent reloading
 
         let asset = imageAssets[index]
-//        let targetSize = CGSize(width: UIScreen.main.bounds.width * 2, height: UIScreen.main.bounds.height * 2)
         let targetSize = CGSize(width: geometry.size.width * 1.2, height: geometry.size.height * 1.2)
         let options = PHImageRequestOptions()
         options.isNetworkAccessAllowed = true
-        options.deliveryMode = .highQualityFormat
+        options.deliveryMode = .fastFormat // Load a fast preview first
+        options.resizeMode = .fast // Prioritize speed over quality
 
         imageManager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFit, options: options) { image, _ in
             if let image = image {
@@ -136,29 +134,6 @@ struct FullscreenImageView: View {
             }
         }
     }
-
-    
-//    private func handleSwipe(value: DragGesture.Value, screenWidth: CGFloat, geometry: GeometryProxy) { // Add geometry parameter
-//        let threshold = screenWidth / 3
-//
-//        if value.translation.width > threshold && selectedImageIndex > 0 {
-//            Logger.log("[⬅️ Swiped Left] Moving to index \(selectedImageIndex - 1)")
-//            selectedImageIndex -= 1 // Update the index *before* loading images
-//            loadImages(geometry: geometry) // Pass geometry here
-//        } else if value.translation.width < -threshold && selectedImageIndex < imageAssets.count - 1 {
-//            Logger.log("[➡️ Swiped Right] Moving to index \(selectedImageIndex + 1)")
-//            selectedImageIndex += 1 // Update the index *before* loading images
-//            loadImages(geometry: geometry) // Pass geometry here
-//        } else {
-//            // Do *not* set dragTranslation here. Let the gesture end.
-//            Logger.log("[🔄 Cancel Swipe] Returning to index \(selectedImageIndex)")
-//            withAnimation(.interactiveSpring()) {
-//                // If you have other view properties you need to reset as part of the "cancel" animation,
-//                // do it here.  For example, if you had a scale effect:
-//                // scale = 1.0  // Example
-//            }
-//        }
-//    }
 
     private func loadImages(geometry: GeometryProxy) {
         guard imageCache[selectedImageIndex] == nil else {
@@ -178,8 +153,9 @@ struct FullscreenImageView: View {
         let targetSize = CGSize(width: UIScreen.main.bounds.width * 2, height: UIScreen.main.bounds.height * 2)
         let options = PHImageRequestOptions()
         options.isNetworkAccessAllowed = true
-        options.deliveryMode = .highQualityFormat
-
+        options.deliveryMode = .fastFormat // Load a fast preview first
+        options.resizeMode = .fast // Prioritize speed over quality
+        
         let currentIndex = selectedImageIndex // Capture the *current* selectedImageIndex
 
         Logger.log("[🔵 Current Image] Loading image at index \(currentIndex)") // Use captured index
@@ -204,58 +180,47 @@ struct FullscreenImageView: View {
         }
     }
 
+
     private func loadImage(for asset: PHAsset, geometry: GeometryProxy, targetSize: CGSize, options: PHImageRequestOptions, completion: @escaping (UIImage?) -> Void) {
 
-        let actualTargetSize = CGSize(width: geometry.size.width * 1.2, height: geometry.size.height * 1.2) // Use geometry here
+        let initialSize = CGSize(width: geometry.size.width * 0.5, height: geometry.size.height * 0.5) // Fast load
+        let fullSize = CGSize(width: geometry.size.width * 1.2, height: geometry.size.height * 1.2) // Full quality
 
-        Logger.log("[🖼 Requesting Image] Asset LocalIdentifier: \(asset.localIdentifier), Target Size: \(actualTargetSize)")
+        Logger.log("[🖼 Fast Requesting Image] \(asset.localIdentifier), Target: \(initialSize)")
 
-        options.isSynchronous = false // Request images asynchronously
-        options.resizeMode = .exact // Resize to exact target size
-        options.deliveryMode = .highQualityFormat // Or .fastFormat for thumbnails
+        
+        let options = PHImageRequestOptions()
+        options.isSynchronous = false // ✅ Async request
+        options.deliveryMode = .fastFormat // ✅ Prioritize speed
+        options.resizeMode = .fast // ✅ Load lower quality first
+        options.isNetworkAccessAllowed = true
+        
 
-        imageManager.requestImage(for: asset, targetSize: actualTargetSize, contentMode: .aspectFit, options: options) { image, info in
-
-            if let image = image {
-                Logger.log("[✅ Image Loaded Successfully]")
-            } else {
-                Logger.log("[❌ Image Load Failed]")
+        imageManager.requestImage(for: asset, targetSize: initialSize, contentMode: .aspectFit, options: options) { fastImage, _ in
+            if let fastImage = fastImage {
+                DispatchQueue.main.async {
+                    completion(fastImage) // ✅ Show fast version first
+                }
             }
 
-            if let isCancelled = info?[PHImageCancelledKey] as? Bool, isCancelled {
-                Logger.log("[✋ Image Request Cancelled]")
-                return
-            }
+            // ✅ Now request full-size image in the background
+            let fullOptions = PHImageRequestOptions()
+            fullOptions.isSynchronous = false
+            fullOptions.deliveryMode = .highQualityFormat // High quality
+            fullOptions.isNetworkAccessAllowed = false // No iCloud
 
-            completion(image)
+            Logger.log("[🖼 HQ Requesting Image] \(asset.localIdentifier), Target: \(fullSize)")
+
+            imageManager.requestImage(for: asset, targetSize: fullSize, contentMode: .aspectFit, options: fullOptions) { fullImage, _ in
+                if let fullImage = fullImage {
+                    DispatchQueue.main.async {
+                        completion(fullImage) // ✅ Replace with high-quality image
+                    }
+                }
+            }
         }
     }
 
 
-//    private func showNextImage() {
-//        if selectedImageIndex < imageAssets.count - 1 {
-//            selectedImageIndex += 1
-//            loadImages()
-//        } else {
-//            bounceBack()
-//        }
-//    }
-//
-//    private func showPreviousImage() {
-//        if selectedImageIndex > 0 {
-//            selectedImageIndex -= 1
-//            loadImages()
-//        } else {
-//            bounceBack()
-//        }
-//    }
 
-//    private func bounceBack() {
-//        withAnimation(.interactiveSpring(response: 0.3, dampingFraction: 0.6)) {
-//            // Animate any *other* properties that need to bounce
-//            // For example, if you had a 'scale' property:
-//            // scale = scale > 1 ? 1.1 : 0.9 // Example bounce scale
-//        }
-//        // Do *not* attempt to set dragTranslation here.
-//    }
 }
