@@ -199,7 +199,7 @@ struct FullscreenImageView: View {
             loadImage(at: index - 1, geometry: geometry, targetSize: targetSize, asset: imageAssets[index-1]) { image in
                 DispatchQueue.main.async {
                     leftImage = image
-                    Logger.log("[loadImages] Loaded left image for index: \(index - 1)")
+                    Logger.log(image != nil ? "[loadImages] ✅ Full-resolution image set for index: \(index - 1)" : "[loadImages] ❌ Failed to load full image for index: \(index - 1)")
                     group.leave() // Leave the group when the operation is complete
                 }
             }
@@ -227,7 +227,7 @@ struct FullscreenImageView: View {
             loadImage(at: index + 1, geometry: geometry, targetSize: targetSize, asset: imageAssets[index+1]) { image in
                 DispatchQueue.main.async {
                     rightImage = image
-                    Logger.log("[loadImages] Loaded right image for index: \(index + 1)")
+                    Logger.log(image != nil ? "[loadImages] ✅ Full-resolution image set for index: \(index + 1)" : "[loadImages] ❌ Failed to load full image for index: \(index + 1)")
                     group.leave() // Leave the group
                 }
             }
