@@ -21,7 +21,6 @@ struct FullscreenImageView: View {
     @State private var imageLoaded: Bool = false
     @State private var reloadTrigger = false
     @StateObject private var imageViewModel = ImageViewModel()
-    @State private var isImageLoaded: Bool = false  // ✅ Track if `loadImages` has already run
     @State private var isLoadingImages: Bool = false // Track if loadImages is currently running
     @State private var isLoading: Bool = false // Track overall loading state
 
@@ -227,6 +226,8 @@ struct FullscreenImageView: View {
         imageRequestIDs.removeAll()
 
         // ✅ Load the Current Image
+        Logger.log("☎️ [loadImages] Calling loadImage for index: \(index)")
+
         loadImage(at: index, geometry: geometry, targetSize: targetSize) { image in
             DispatchQueue.main.async {
                 imageViewModel.currentImage = image
@@ -237,6 +238,8 @@ struct FullscreenImageView: View {
 
         // ✅ Load the Left Image (Only If Within Bounds)
         if index > 0 {
+            Logger.log("☎️ [loadImages] Calling loadImage for index: \(index - 1)")
+
             loadImage(at: index - 1, geometry: geometry, targetSize: targetSize) { image in
                 DispatchQueue.main.async {
                     leftImage = image
@@ -250,6 +253,8 @@ struct FullscreenImageView: View {
 
         // ✅ Load the Right Image (Only If Within Bounds)
         if index < imageAssets.count - 1 {
+            Logger.log("☎️ [loadImages] Calling loadImage for index: \(index + 1)")
+
             loadImage(at: index + 1, geometry: geometry, targetSize: targetSize) { image in
                 DispatchQueue.main.async {
                     rightImage = image
