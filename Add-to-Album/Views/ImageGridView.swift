@@ -25,7 +25,8 @@ struct ImageGridView: View {
                                         .frame(width: cellSize(geometry: geometry), height: cellSize(geometry: geometry))
                                         .clipped()
                                         .onTapGesture {
-                                            selectedImageIndex = index // Correct index usage
+                                            Logger.log("🖼 Thumbnail tapped for index: \(index)")
+                                            selectedImageIndex = index // Explicitly set the selected index
                                             isPresented = true
                                         }
                                         .onAppear {
