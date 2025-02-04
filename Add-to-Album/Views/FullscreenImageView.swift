@@ -128,130 +128,133 @@ struct FullscreenImageView: View {
     }
 
     private func loadImageIfNeeded(for index: Int, geometry: GeometryProxy) {
-        guard index >= 0, index < imageAssets.count, imageCache[index] == nil, !loadingIndices.contains(index) else { return } // Check bounds and if already loaded
+            guard index >= 0, index < imageAssets.count, imageCache[index] == nil, !loadingIndices.contains(index) else { return }
 
-        loadingIndices.insert(index)
+            loadingIndices.insert(index)
 
-        let asset = imageAssets[index]
-        let targetSize = CGSize(width: geometry.size.width * 1.2, height: geometry.size.height * 1.2) // Fullscreen size
-        let options = PHImageRequestOptions()
-        options.isNetworkAccessAllowed = true
-        options.deliveryMode = .highQualityFormat // High quality for fullscreen
-        options.resizeMode = .exact
+            let asset = imageAssets[index]
+            let targetSize = CGSize(width: geometry.size.width * 1.2, height: geometry.size.height * 1.2)
+            let options = PHImageRequestOptions()
+            options.isNetworkAccessAllowed = true
+            options.deliveryMode = .highQualityFormat
+            options.resizeMode = .exact
 
-        imageManager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFit, options: options) { image, _ in
-            DispatchQueue.main.async {
-                self.loadingIndices.remove(index)
-                if let image = image {
-                    self.imageCache[index] = image
-                    if self.selectedImageIndex == index {
-                        self.currentImage = image
-                        self.imageLoadState = .loaded
+            imageManager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFit, options: options) { image, _ in
+                // ***FIX: Update state on the main thread***
+                DispatchQueue.main.async {
+                    self.loadingIndices.remove(index)
+                    if let image = image {
+                        self.imageCache[index] = image
+                        if self.selectedImageIndex == index {
+                            self.currentImage = image // Correctly updating State
+                            self.imageLoadState = .loaded // Correctly updating State
+                        }
+                    } else {
+                        self.imageLoadState = .failed // Correctly updating State if the image fails to load
                     }
                 }
             }
         }
-    }
 
     private func loadImages(geometry: GeometryProxy) {
-        let currentIndex = selectedImageIndex
+            let currentIndex = selectedImageIndex
 
-         guard !loadingIndices.contains(currentIndex), currentIndex >= 0, currentIndex < imageAssets.count else {
-             Logger.log("[⚠️ loadImages] Skipped: Already loading or invalid index: \(currentIndex)")
-             return
-         }
+            guard !loadingIndices.contains(currentIndex), currentIndex >= 0, currentIndex < imageAssets.count else {
+                Logger.log("[⚠️ loadImages] Skipped: Already loading or invalid index: \(currentIndex)")
+                return
+            }
 
-         let isFullScreen = showingFullScreenImage // Now available
+            let isFullScreen = showingFullScreenImage
 
-         let targetSize: CGSize
-         let options = PHImageRequestOptions()
-         options.isNetworkAccessAllowed = true
+            let targetSize: CGSize
+            let options = PHImageRequestOptions()
+            options.isNetworkAccessAllowed = true
 
-         if isFullScreen {
-             targetSize = CGSize(width: geometry.size.width * 1.2, height: geometry.size.height * 1.2)
-             options.deliveryMode = .highQualityFormat
-         } else {
-             let thumbnailSize = CGSize(width: 200, height: 200)
-             targetSize = thumbnailSize
-             options.deliveryMode = .fastFormat
-         }
+            if isFullScreen {
+                targetSize = CGSize(width: geometry.size.width * 1.2, height: geometry.size.height * 1.2)
+                options.deliveryMode = .highQualityFormat
+            } else {
+                let thumbnailSize = CGSize(width: 200, height: 200)
+                targetSize = thumbnailSize
+                options.deliveryMode = .fastFormat
+            }
 
-         if let cachedImage = imageCache[currentIndex], isFullScreen == (cachedImage.size != targetSize) {
-             Logger.log("[⚠️ loadImages] Image already cached for index: \(currentIndex), using cached image")
-             DispatchQueue.main.async {
-                 self.currentImage = cachedImage
-                 self.imageLoadState = .loaded
-             }
-             return
-         }
-
-        Logger.log("[📸 loadImages] selectedImageIndex: \(currentIndex), total assets: \(imageAssets.count)")
-        loadingIndices.insert(currentIndex)
-        imageLoadState = .loading
-
-        Logger.log("[🔵 Current Image] Loading image at index \(currentIndex)")
-        loadImage(for: imageAssets[currentIndex], geometry: geometry, targetSize: targetSize, options: options) { image in
-            DispatchQueue.main.async {
-                self.loadingIndices.remove(currentIndex)
-
-                guard let image = image else {
-                    Logger.log("[❌ Failed to load image for index: \(currentIndex)]")
-                    self.imageLoadState = .failed
-                    return
-                }
-
-                if self.selectedImageIndex == currentIndex {
-                    self.currentImage = image
-                    self.imageCache[currentIndex] = image
+            if let cachedImage = imageCache[currentIndex], isFullScreen == (cachedImage.size != targetSize) {
+                Logger.log("[⚠️ loadImages] Image already cached for index: \(currentIndex), using cached image")
+                DispatchQueue.main.async {
+                    self.currentImage = cachedImage
                     self.imageLoadState = .loaded
-                    Logger.log("[✅ Loaded Image] Index: \(currentIndex)")
-                } else {
-                    Logger.log("[⚠️ Skipped outdated image load for index: \(currentIndex)]")
+                }
+                return
+            }
+
+            Logger.log("[📸 loadImages] selectedImageIndex: \(currentIndex), total assets: \(imageAssets.count)")
+            loadingIndices.insert(currentIndex)
+            imageLoadState = .loading
+
+            Logger.log("[🔵 Current Image] Loading image at index \(currentIndex)")
+            loadImage(for: imageAssets[currentIndex], geometry: geometry, targetSize: targetSize, options: options) { image in
+                DispatchQueue.main.async {
+                    self.loadingIndices.remove(currentIndex)
+
+                    guard let image = image else {
+                        Logger.log("[❌ Failed to load image for index: \(currentIndex)]")
+                        self.imageLoadState = .failed
+                        return
+                    }
+
+                    if self.selectedImageIndex == currentIndex {
+                        self.currentImage = image
+                        self.imageCache[currentIndex] = image
+                        self.imageLoadState = .loaded
+                        Logger.log("[✅ Loaded Image] Index: \(currentIndex)")
+                    } else {
+                        Logger.log("[⚠️ Skipped outdated image load for index: \(currentIndex)]")
+                    }
                 }
             }
         }
-    }
 
 
     private func loadImage(for asset: PHAsset, geometry: GeometryProxy, targetSize: CGSize, options: PHImageRequestOptions, completion: @escaping (UIImage?) -> Void) {
 
-        let initialSize = CGSize(width: geometry.size.width * 0.5, height: geometry.size.height * 0.5) // Fast load
-        let fullSize = CGSize(width: geometry.size.width * 1.2, height: geometry.size.height * 1.2) // Full quality
+            let initialSize = CGSize(width: geometry.size.width * 0.5, height: geometry.size.height * 0.5) // Fast load
+            let fullSize = CGSize(width: geometry.size.width * 1.2, height: geometry.size.height * 1.2) // Full quality
 
-        Logger.log("[🖼 Fast Requesting Image] \(asset.localIdentifier), Target: \(initialSize)")
+            Logger.log("[🖼 Fast Requesting Image] \(asset.localIdentifier), Target: \(initialSize)")
 
-        
-        let options = PHImageRequestOptions()
-        options.isSynchronous = false // ✅ Async request
-        options.deliveryMode = .fastFormat // ✅ Prioritize speed
-        options.resizeMode = .fast // ✅ Load lower quality first
-        options.isNetworkAccessAllowed = true
-        
+            
+            let options = PHImageRequestOptions()
+            options.isSynchronous = false // ✅ Async request
+            options.deliveryMode = .fastFormat // ✅ Prioritize speed
+            options.resizeMode = .fast // ✅ Load lower quality first
+            options.isNetworkAccessAllowed = true
+            
 
-        imageManager.requestImage(for: asset, targetSize: initialSize, contentMode: .aspectFit, options: options) { fastImage, _ in
-            if let fastImage = fastImage {
-                DispatchQueue.main.async {
-                    completion(fastImage) // ✅ Show fast version first
-                }
-            }
-
-            // ✅ Now request full-size image in the background
-            let fullOptions = PHImageRequestOptions()
-            fullOptions.isSynchronous = false
-            fullOptions.deliveryMode = .highQualityFormat // High quality
-            fullOptions.isNetworkAccessAllowed = false // No iCloud
-
-            Logger.log("[🖼 HQ Requesting Image] \(asset.localIdentifier), Target: \(fullSize)")
-
-            imageManager.requestImage(for: asset, targetSize: fullSize, contentMode: .aspectFit, options: fullOptions) { fullImage, _ in
-                if let fullImage = fullImage {
+            imageManager.requestImage(for: asset, targetSize: initialSize, contentMode: .aspectFit, options: options) { fastImage, _ in
+                if let fastImage = fastImage {
                     DispatchQueue.main.async {
-                        completion(fullImage) // ✅ Replace with high-quality image
+                        completion(fastImage) // ✅ Show fast version first
+                    }
+                }
+
+                // ✅ Now request full-size image in the background
+                let fullOptions = PHImageRequestOptions()
+                fullOptions.isSynchronous = false
+                fullOptions.deliveryMode = .highQualityFormat // High quality
+                fullOptions.isNetworkAccessAllowed = false // No iCloud
+
+                Logger.log("[🖼 HQ Requesting Image] \(asset.localIdentifier), Target: \(fullSize)")
+
+                imageManager.requestImage(for: asset, targetSize: fullSize, contentMode: .aspectFit, options: fullOptions) { fullImage, _ in
+                    if let fullImage = fullImage {
+                        DispatchQueue.main.async {
+                            completion(fullImage) // ✅ Replace with high-quality image
+                        }
                     }
                 }
             }
         }
-    }
 
 
 
