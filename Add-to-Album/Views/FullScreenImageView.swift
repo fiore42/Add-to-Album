@@ -1,6 +1,5 @@
 import SwiftUI
 import Photos
-import PhotosUI
 
 class ImageViewModel: ObservableObject {
     @Published var currentImage: UIImage?
@@ -12,7 +11,7 @@ struct FullscreenImageView: View {
     let imageAssets: [PHAsset]
     @Environment(\.dismiss) var dismiss
     @StateObject private var imageViewModel = ImageViewModel()
-    @State private var imageLoadStates: [PHAsset: LoadingState] = [:] // Custom enum
+    @State private var imageLoadStates: [PHAsset: LoadingState] = [:]
 
     enum LoadingState {
         case idle
@@ -20,7 +19,7 @@ struct FullscreenImageView: View {
         case success
         case failure
     }
-    
+
     init(isPresented: Binding<Bool>, selectedImageIndex: Binding<Int>, imageAssets: [PHAsset]) {
         self._isPresented = isPresented
         self._selectedImageIndex = selectedImageIndex
@@ -35,41 +34,32 @@ struct FullscreenImageView: View {
                 TabView(selection: $selectedImageIndex) {
                     ForEach(imageAssets.indices, id: \.self) { index in
                         ZStack {
-                            Color.black.ignoresSafeArea() // Ensure black background
+                            Color.black.ignoresSafeArea()
 
-                            // Use PhotosPickerItem for image loading
-                            PhotosPicker(
-                                selection: .constant(nil),  // We don't need item selection here
-                                matching: .images,
-                                photoLibrary: .shared()
-                            ) {
-                                // Placeholder until image loads
-                                if imageLoadStates[imageAssets[index]] == .loading || imageLoadStates[imageAssets[index]] == nil {
-                                    ProgressView()
-                                        .scaleEffect(1.5)
-                                } else {
-                                    Color.clear // Transparent placeholder
-                                }
+                            if imageLoadStates[imageAssets[index]] == .loading || imageLoadStates[imageAssets[index]] == .idle {
+                                ProgressView()
+                                    .scaleEffect(1.5)
+                            } else if let image = imageViewModel.currentImage, imageLoadStates[imageAssets[index]] == .success {
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .transition(.opacity)
+                            } else {
+                                Image(systemName: "xmark.circle")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .foregroundColor(.red)
                             }
-                            .onChange(of: imageAssets[index]) { _, newAsset in
-                                loadImage(for: newAsset, targetSize: geometry.size)
-                            }
-                            .overlay {
-                                if let image = imageViewModel.currentImage, imageLoadStates[imageAssets[index]] == .success {
-                                    Image(uiImage: image)
-                                        .resizable()
-                                        .scaledToFit()
-                                        .transition(.opacity)
-                                }
-                            }
-                            .tag(index) // Important for TabView
+                        }
+                        .tag(index)
+                        .onAppear {
+                            loadImage(for: imageAssets[index], targetSize: geometry.size)
                         }
                     }
                 }
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .always))
-                .indexViewStyle(PageIndexViewStyle(backgroundDisplayMode: .never)) // Hide page indicator
+                .indexViewStyle(PageIndexViewStyle(backgroundDisplayMode: .never))
 
-                // Dismiss Button
                 VStack {
                     HStack {
                         Button(action: { dismiss() }) {
@@ -83,7 +73,7 @@ struct FullscreenImageView: View {
                     }
                     Spacer()
                 }
-                .padding(.top, 50) // Adjust as needed
+                .padding(.top, 50)
                 .padding(.leading)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
@@ -91,18 +81,18 @@ struct FullscreenImageView: View {
     }
 
     private func loadImage(for asset: PHAsset, targetSize: CGSize) {
-        guard imageLoadStates[asset] != .loading else { return } // Prevent concurrent loads
+        guard imageLoadStates[asset] != .loading else { return }
 
         imageLoadStates[asset] = .loading
 
         let manager = PHImageManager.default()
         let options = PHImageRequestOptions()
-        options.isSynchronous = false // Important for performance
+        options.isSynchronous = false // Key for performance
 
         manager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFit, options: options) { image, info in
             DispatchQueue.main.async {
                 if let image = image {
-                    self.imageViewModel.currentImage = image
+                    self.imageViewModel.currentImage = image // Update the ViewModel
                     self.imageLoadStates[asset] = .success
                 } else {
                     self.imageLoadStates[asset] = .failure
