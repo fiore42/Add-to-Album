@@ -76,3 +76,7 @@ class ImageGridViewModel: ObservableObject {
         }
     }
 }
+
+enum PermissionStatus {
+    case notDetermined, granted, limited, denied, restricted
+}

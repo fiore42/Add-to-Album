@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ImageGridView: View {
-    @StateObject private var viewModel = ImageGridViewModel() // Make sure this is implemented
+    @StateObject private var viewModel = ImageGridViewModel()
     @State private var isPresented = false
     @State private var selectedImageIndex = 0
     private let spacing: CGFloat = 2
@@ -19,18 +19,18 @@ struct ImageGridView: View {
                     GeometryReader { geometry in
                         ScrollView {
                             LazyVGrid(columns: columns, spacing: spacing) {
-                                ForEach(viewModel.images.indices, id: \.self) { index in
-                                    ImageCellView(image: viewModel.images[index])
-                                        .aspectRatio(1, contentMode: .fit) // Or .fill
+                                ForEach(viewModel.imageAssets.indices, id: \.self) { index in // Use imageAssets
+                                    ImageCellView(asset: viewModel.imageAssets[index]) // Pass the PHAsset
+                                        .aspectRatio(1, contentMode: .fit)
                                         .frame(width: cellSize(geometry: geometry), height: cellSize(geometry: geometry))
                                         .clipped()
                                         .onTapGesture {
                                             Logger.log("🖼 Thumbnail tapped for index: \(index)")
-                                            selectedImageIndex = index // Explicitly set the selected index
+                                            selectedImageIndex = index
                                             isPresented = true
                                         }
                                         .onAppear {
-                                            if index == viewModel.images.count - 1 {
+                                            if index == viewModel.imageAssets.count - 1 { // Use imageAssets
                                                 viewModel.loadNextBatch()
                                             }
                                         }
@@ -69,8 +69,8 @@ struct ImageGridView: View {
         .fullScreenCover(isPresented: $isPresented) {
             FullscreenImageView(
                 isPresented: $isPresented,
-                selectedImageIndex: $selectedImageIndex, // ✅ Fix: Add `$` to make it a Binding<Int>
-                imageAssets: viewModel.imageAssets
+                selectedImageIndex: $selectedImageIndex,
+                imageAssets: viewModel.imageAssets // Pass imageAssets
             )
         }
     }
