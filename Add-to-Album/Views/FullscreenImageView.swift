@@ -133,7 +133,7 @@ struct FullscreenImageView: View {
 
         // Load Thumbnail
         let thumbnailTargetSize = CGSize(width: geometry.size.width / 3, height: geometry.size.height / 3) // Use geometry here
-        let thumbnailRequestID = manager.requestImage(for: imageAssets[index], targetSize: thumbnailTargetSize, contentMode: .aspectFit, options: options) { (image, info) in
+        let _ = manager.requestImage(for: imageAssets[index], targetSize: thumbnailTargetSize, contentMode: .aspectFit, options: options) { (image, info) in
             DispatchQueue.main.async {
                 if let image = image {
                     thumbnail = image
