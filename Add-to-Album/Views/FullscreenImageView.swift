@@ -129,7 +129,7 @@ struct FullscreenImageView: View {
         let manager = PHImageManager.default()
         let options = PHImageRequestOptions()
         options.isSynchronous = false
-        options.deliveryMode = .fastFormat
+//        options.deliveryMode = .fastFormat
 
         // Load Thumbnail
         let thumbnailTargetSize = CGSize(width: geometry.size.width / 3, height: geometry.size.height / 3) // Use geometry here
