@@ -27,7 +27,7 @@ struct FullscreenImageView: View {
                 
                 HStack(spacing: 0) {
                     ForEach(imageAssets.indices, id: \.self) { index in
-                        if let image = getImage(for: index) {
+                        if let image = getImage(for: index, geometry: geometry) { // Pass geometry here!
                             Image(uiImage: image)
                                 .resizable()
                                 .scaledToFit()
@@ -73,7 +73,7 @@ struct FullscreenImageView: View {
                         state = value.translation
                     })
 //                    .onEnded { value in
-//                        handleSwipe(value: value, screenWidth: geometry.size.width)
+//                        handleSwipe(value: value, screenWidth: geometry.size.width, geometry: geometry) // Pass geometry here
 //                    }
                     .onEnded { value in
                         let threshold = geometry.size.width / 3
@@ -91,29 +91,30 @@ struct FullscreenImageView: View {
             )
             .onAppear {
                 Logger.log("[🟢 onAppear] selectedImageIndex: \(selectedImageIndex)")
-                loadImages()
+                loadImages(geometry: geometry)
             }
             .onChange(of: selectedImageIndex) { oldValue, newValue in
                 Logger.log("[🔄 onChange] Old Index: \(oldValue), New Index: \(newValue)")
-                loadImages()
+                loadImages(geometry: geometry)
             }
 
         } // End of GeometryReader
     }
 
-    func getImage(for index: Int) -> UIImage? {
+    func getImage(for index: Int, geometry: GeometryProxy) -> UIImage? { // Add geometry parameter
         if let cachedImage = imageCache[index] {
             return cachedImage // ✅ Load from cache if available
         }
-        loadImageIfNeeded(for: index) // ✅ Request image asynchronously
+        loadImageIfNeeded(for: index, geometry: geometry) // Pass geometry here!
         return nil // ✅ Prevents crash, returns black placeholder
     }
 
-    private func loadImageIfNeeded(for index: Int) {
+    private func loadImageIfNeeded(for index: Int, geometry: GeometryProxy) { // Add geometry parameter
         guard imageCache[index] == nil else { return } // ✅ Prevent reloading
 
         let asset = imageAssets[index]
-        let targetSize = CGSize(width: UIScreen.main.bounds.width * 2, height: UIScreen.main.bounds.height * 2)
+//        let targetSize = CGSize(width: UIScreen.main.bounds.width * 2, height: UIScreen.main.bounds.height * 2)
+        let targetSize = CGSize(width: geometry.size.width * 1.2, height: geometry.size.height * 1.2)
         let options = PHImageRequestOptions()
         options.isNetworkAccessAllowed = true
         options.deliveryMode = .highQualityFormat
@@ -128,29 +129,29 @@ struct FullscreenImageView: View {
     }
 
     
-    private func handleSwipe(value: DragGesture.Value, screenWidth: CGFloat) {
-        let threshold = screenWidth / 3
+//    private func handleSwipe(value: DragGesture.Value, screenWidth: CGFloat, geometry: GeometryProxy) { // Add geometry parameter
+//        let threshold = screenWidth / 3
+//
+//        if value.translation.width > threshold && selectedImageIndex > 0 {
+//            Logger.log("[⬅️ Swiped Left] Moving to index \(selectedImageIndex - 1)")
+//            selectedImageIndex -= 1 // Update the index *before* loading images
+//            loadImages(geometry: geometry) // Pass geometry here
+//        } else if value.translation.width < -threshold && selectedImageIndex < imageAssets.count - 1 {
+//            Logger.log("[➡️ Swiped Right] Moving to index \(selectedImageIndex + 1)")
+//            selectedImageIndex += 1 // Update the index *before* loading images
+//            loadImages(geometry: geometry) // Pass geometry here
+//        } else {
+//            // Do *not* set dragTranslation here. Let the gesture end.
+//            Logger.log("[🔄 Cancel Swipe] Returning to index \(selectedImageIndex)")
+//            withAnimation(.interactiveSpring()) {
+//                // If you have other view properties you need to reset as part of the "cancel" animation,
+//                // do it here.  For example, if you had a scale effect:
+//                // scale = 1.0  // Example
+//            }
+//        }
+//    }
 
-        if value.translation.width > threshold && selectedImageIndex > 0 {
-            Logger.log("[⬅️ Swiped Left] Moving to index \(selectedImageIndex - 1)")
-            selectedImageIndex -= 1 // Update the index *before* loading images
-            loadImages()
-        } else if value.translation.width < -threshold && selectedImageIndex < imageAssets.count - 1 {
-            Logger.log("[➡️ Swiped Right] Moving to index \(selectedImageIndex + 1)")
-            selectedImageIndex += 1 // Update the index *before* loading images
-            loadImages()
-        } else {
-            // Do *not* set dragTranslation here. Let the gesture end.
-            Logger.log("[🔄 Cancel Swipe] Returning to index \(selectedImageIndex)")
-            withAnimation(.interactiveSpring()) {
-                // If you have other view properties you need to reset as part of the "cancel" animation,
-                // do it here.  For example, if you had a scale effect:
-                // scale = 1.0  // Example
-            }
-        }
-    }
-
-    private func loadImages() {
+    private func loadImages(geometry: GeometryProxy) {
         guard imageCache[selectedImageIndex] == nil else {
             Logger.log("[⚠️ loadImages] Image already cached for index: \(selectedImageIndex)")
             return
@@ -167,7 +168,7 @@ struct FullscreenImageView: View {
         let currentIndex = selectedImageIndex // Capture the *current* selectedImageIndex
 
         Logger.log("[🔵 Current Image] Loading image at index \(currentIndex)") // Use captured index
-        loadImage(for: imageAssets[currentIndex], targetSize: targetSize, options: options) { image in // Use captured index
+        loadImage(for: imageAssets[currentIndex], geometry: geometry, targetSize: targetSize, options: options) { image in // Pass geometry here
             DispatchQueue.main.async {
                 self.loadingIndices.remove(currentIndex) // Remove using the captured index
 
@@ -188,43 +189,58 @@ struct FullscreenImageView: View {
         }
     }
 
-    private func loadImage(for asset: PHAsset, targetSize: CGSize, options: PHImageRequestOptions, completion: @escaping (UIImage?) -> Void) {
-        Logger.log("[🖼 Requesting Image] Asset LocalIdentifier: \(asset.localIdentifier)")
-        imageManager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFit, options: options) { image, _ in
+    private func loadImage(for asset: PHAsset, geometry: GeometryProxy, targetSize: CGSize, options: PHImageRequestOptions, completion: @escaping (UIImage?) -> Void) {
+
+        let actualTargetSize = CGSize(width: geometry.size.width * 1.2, height: geometry.size.height * 1.2) // Use geometry here
+
+        Logger.log("[🖼 Requesting Image] Asset LocalIdentifier: \(asset.localIdentifier), Target Size: \(actualTargetSize)")
+
+        options.isSynchronous = false // Request images asynchronously
+        options.resizeMode = .exact // Resize to exact target size
+        options.deliveryMode = .highQualityFormat // Or .fastFormat for thumbnails
+
+        imageManager.requestImage(for: asset, targetSize: actualTargetSize, contentMode: .aspectFit, options: options) { image, info in
+
             if let image = image {
                 Logger.log("[✅ Image Loaded Successfully]")
             } else {
                 Logger.log("[❌ Image Load Failed]")
             }
+
+            if let isCancelled = info?[PHImageCancelledKey] as? Bool, isCancelled {
+                Logger.log("[✋ Image Request Cancelled]")
+                return
+            }
+
             completion(image)
         }
     }
 
 
-    private func showNextImage() {
-        if selectedImageIndex < imageAssets.count - 1 {
-            selectedImageIndex += 1
-            loadImages()
-        } else {
-            bounceBack()
-        }
-    }
+//    private func showNextImage() {
+//        if selectedImageIndex < imageAssets.count - 1 {
+//            selectedImageIndex += 1
+//            loadImages()
+//        } else {
+//            bounceBack()
+//        }
+//    }
+//
+//    private func showPreviousImage() {
+//        if selectedImageIndex > 0 {
+//            selectedImageIndex -= 1
+//            loadImages()
+//        } else {
+//            bounceBack()
+//        }
+//    }
 
-    private func showPreviousImage() {
-        if selectedImageIndex > 0 {
-            selectedImageIndex -= 1
-            loadImages()
-        } else {
-            bounceBack()
-        }
-    }
-
-    private func bounceBack() {
-        withAnimation(.interactiveSpring(response: 0.3, dampingFraction: 0.6)) {
-            // Animate any *other* properties that need to bounce
-            // For example, if you had a 'scale' property:
-            // scale = scale > 1 ? 1.1 : 0.9 // Example bounce scale
-        }
-        // Do *not* attempt to set dragTranslation here.
-    }
+//    private func bounceBack() {
+//        withAnimation(.interactiveSpring(response: 0.3, dampingFraction: 0.6)) {
+//            // Animate any *other* properties that need to bounce
+//            // For example, if you had a 'scale' property:
+//            // scale = scale > 1 ? 1.1 : 0.9 // Example bounce scale
+//        }
+//        // Do *not* attempt to set dragTranslation here.
+//    }
 }
