@@ -104,13 +104,14 @@ struct FullscreenImageView: View {
                         }
                 )
                 .onAppear {
-                    loadImage(at: selectedImageIndex, geometry: geometry)
+                    
+                    loadImages(for: selectedImageIndex, geometry: geometry) // COLOR CHANGE
                     loadAdjacentImages(geometry: geometry)
                     offset = -CGFloat(selectedImageIndex) * geometry.size.width // Initial offset
                     Logger.log("FullscreenImageView: Appeared for index \(selectedImageIndex)")
                 }
                 .onChange(of: selectedImageIndex) { oldValue, newValue in
-                    loadImage(at: newValue, geometry: geometry)
+                    loadImages(for: newValue, geometry: geometry)
                     loadAdjacentImages(geometry: geometry)
                     offset = -CGFloat(newValue) * geometry.size.width
                     Logger.log("FullscreenImageView: selectedImageIndex changed to \(newValue)")
@@ -129,7 +130,6 @@ struct FullscreenImageView: View {
         let manager = PHImageManager.default()
         let options = PHImageRequestOptions()
         options.isSynchronous = false
-//        options.deliveryMode = .fastFormat
 
         // Load Thumbnail
         let thumbnailTargetSize = CGSize(width: geometry.size.width / 3, height: geometry.size.height / 3) // Use geometry here
@@ -164,6 +164,59 @@ struct FullscreenImageView: View {
         imageRequestIDs[index] = requestID
     }
 
+    private func loadImages(for index: Int, geometry: GeometryProxy) {
+        let targetSize = CGSize(width: geometry.size.width * 1.2, height: geometry.size.height * 1.2)
+
+        Logger.log("loadImages called for index: \(index)") // Added log entry
+
+        // Cancel any existing requests
+        if let leftRequestID = imageRequestIDs[index - 1] {
+            PHImageManager.default().cancelImageRequest(leftRequestID)
+            imageRequestIDs.removeValue(forKey: index - 1)
+            Logger.log("Cancelled left image request for index: \(index - 1)") // Added log entry
+        }
+        if let currentRequestID = imageRequestIDs[index] {
+            PHImageManager.default().cancelImageRequest(currentRequestID)
+            imageRequestIDs.removeValue(forKey: index)
+            Logger.log("Cancelled current image request for index: \(index)") // Added log entry
+        }
+        if let rightRequestID = imageRequestIDs[index + 1] {
+            PHImageManager.default().cancelImageRequest(rightRequestID)
+            imageRequestIDs.removeValue(forKey: index + 1)
+            Logger.log("Cancelled right image request for index: \(index + 1)") // Added log entry
+        }
+
+        if index > 0 {
+            loadImage(at: index - 1, geometry: geometry, targetSize: targetSize) { image in
+                DispatchQueue.main.async {
+                    leftImage = image
+                    Logger.log("Loaded left image for index: \(index - 1)") // Added log entry
+                }
+            }
+        } else {
+            leftImage = nil
+            Logger.log("No left image to load for index: \(index)") // Added log entry
+        }
+
+        loadImage(at: index, geometry: geometry, targetSize: targetSize) { image in
+            DispatchQueue.main.async {
+                currentImage = image
+                Logger.log("Loaded current image for index: \(index)") // Added log entry
+            }
+        }
+
+        if index < imageAssets.count - 1 {
+            loadImage(at: index + 1, geometry: geometry, targetSize: targetSize) { image in
+                DispatchQueue.main.async {
+                    rightImage = image
+                    Logger.log("Loaded right image for index: \(index + 1)") // Added log entry
+                }
+            }
+        } else {
+            rightImage = nil
+            Logger.log("No right image to load for index: \(index)") // Added log entry
+        }
+    }
 
     private func loadImage(at index: Int, geometry: GeometryProxy) { // Modified call
         let targetSize = CGSize(width: geometry.size.width * 1.2, height: geometry.size.height * 1.2)
