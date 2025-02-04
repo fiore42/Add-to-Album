@@ -40,30 +40,23 @@ struct FullscreenImageView: View {
                     } else {
                         Color.clear.frame(width: geometry.size.width, height: geometry.size.height) // Placeholder
                     }
+                    Group {
                         if let img = imageViewModel.currentImage {
                             Image(uiImage: img)
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: geometry.size.width, height: geometry.size.height)
-                                .transition(.opacity) // ✅ Smooth fade-in
-                                .onAppear {
-                                            imageLoaded = true // Set the flag when the image is displayed
-                                        }
-                        } else if let thumb = thumbnail {
-
-                            Image(uiImage: thumb)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: geometry.size.width, height: geometry.size.height)
                                 .transition(.opacity)
-                                .onAppear {
-                                    Logger.log("⚠️ Showing only thumbnail for index: \(selectedImageIndex)")
-                                }
                         } else {
                             ProgressView()
                                 .scaleEffect(1.5)
                                 .frame(width: geometry.size.width, height: geometry.size.height)
                         }
+                    }
+                    .onChange(of: reloadTrigger) { oldValue, newValue in
+                        Logger.log("🔄 UI updated due to reloadTrigger: \(newValue)")
+                    }
+
 
 
                     if rightImage != nil {
@@ -130,6 +123,11 @@ struct FullscreenImageView: View {
                     Logger.log("🔍 Thumbnail: \(thumbnail != nil ? "Loaded" : "Nil")")
                     Logger.log("🔍 Image Cache contains: \(imageRequestIDs.keys)")
 
+                    DispatchQueue.main.async {
+                        self.imageViewModel.currentImage = nil // ✅ NEW: Clear old image
+                    }
+
+                    
                     loadImages(for: newValue, geometry: geometry)
                     offset = -CGFloat(newValue) * geometry.size.width
                 }
@@ -219,15 +217,22 @@ struct FullscreenImageView: View {
 
         loadImage(at: index, geometry: geometry, targetSize: targetSize) { image in
             DispatchQueue.main.async {
-                imageViewModel.currentImage = image // Use imageViewModel to update
-                thumbnail = nil // Clear the thumbnail when the full image loads
+                self.imageViewModel.currentImage = image
+                self.thumbnail = nil // Clear the thumbnail when full image loads
+                self.reloadTrigger.toggle()  // ✅ NEW: Trigger UI update
+
+
                 if image != nil {
                     Logger.log("✅ Full-resolution image set for index: \(index)")
                 } else {
                     Logger.log("❌ Failed to load current image for index: \(index)")
                 }
+
+                // NEW LOGS
+                Logger.log("🔎 currentImage updated: \(self.imageViewModel.currentImage != nil ? "Success" : "Failure")")
             }
         }
+
 
 
         if index < imageAssets.count - 1 {
