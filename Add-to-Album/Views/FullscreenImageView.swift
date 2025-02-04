@@ -23,6 +23,7 @@ struct FullscreenImageView: View {
     @StateObject private var imageViewModel = ImageViewModel()
     @State private var isImageLoaded: Bool = false  // ✅ Track if `loadImages` has already run
     @State private var isLoadingImages: Bool = false // Track if loadImages is currently running
+    @State private var isLoading: Bool = false // Track overall loading state
 
 
     var body: some View {
@@ -120,16 +121,18 @@ struct FullscreenImageView: View {
                         }
                 )
                 .onAppear {
-                    if !isImageLoaded {  // ✅ Ensure this block runs only once per appearance
+                    Logger.log("⚠️ Attempt to call loadImages for: \(selectedImageIndex)")
+                    if !isLoading {  // ✅ Ensure this block runs only once per appearance
+                        Logger.log("❌ Locking isLoading flag")
+                        isLoading = true
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                            Logger.log("✅ Call loadImages for: \(selectedImageIndex)")
                             loadImages(for: selectedImageIndex, geometry: geometry)
-                            isImageLoaded = true  // ✅ Set flag to prevent duplicate loads
-                            Logger.log("⚠️ Locking isImageLoaded flag")
-
+                            Logger.log("✅ Unlocking isLoading flag")
+                            isLoading = false  // ✅ Set flag to prevent duplicate loads
                         }
-                        Logger.log("📥 First-time image load triggered for index \(selectedImageIndex)")
                     } else {
-                        Logger.log("⏳ Skipping redundant image load for index \(selectedImageIndex)")
+                        Logger.log("⏳ Skipping redundant loadImages for index \(selectedImageIndex)")
                     }
                     offset = -CGFloat(selectedImageIndex) * geometry.size.width
                 }
@@ -140,8 +143,18 @@ struct FullscreenImageView: View {
                     Logger.log("🔍 Thumbnail: \(thumbnail != nil ? "Loaded" : "Nil")")
                     Logger.log("🔍 Image Cache contains: \(imageRequestIDs.keys)")
 
-                    loadImages(for: newValue, geometry: geometry)
-                    offset = -CGFloat(newValue) * geometry.size.width
+                    Logger.log("⚠️ Attempt to call loadImages for: \(newValue)")
+                    if !isLoading {  
+                        Logger.log("❌ Locking isLoading flag")
+                        isLoading = true
+                        Logger.log("✅ Call loadImages for: \(newValue)")
+                        loadImages(for: newValue, geometry: geometry)
+                        Logger.log("✅ Unlocking isLoading flag")
+                        isLoading = false  // ✅ Set flag to prevent duplicate loads
+                        offset = -CGFloat(newValue) * geometry.size.width
+                    } else {
+                        Logger.log("⏳ Skipping redundant loadImages for index \(newValue)")
+                    }
                 }
                 .opacity(imageLoaded ? 1 : 0) // Fade-in effect
                 .animation(.default, value: imageLoaded)
