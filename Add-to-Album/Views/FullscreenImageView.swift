@@ -98,9 +98,8 @@ struct FullscreenImageView: View {
                 selectedImageIndex = -1
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                     selectedImageIndex = tempIndex
+                    loadImages(geometry: geometry) // ✅ Only call loadImages after restoring index
                 }
-
-                loadImages(geometry: geometry)
             }
             
             .onChange(of: selectedImageIndex) { oldValue, newValue in
@@ -164,6 +163,12 @@ struct FullscreenImageView: View {
     private func loadImages(geometry: GeometryProxy) {
         guard imageCache[selectedImageIndex] == nil else {
             Logger.log("[⚠️ loadImages] Image already cached for index: \(selectedImageIndex)")
+            return
+        }
+        
+        // ✅ Prevent out-of-bounds access
+        guard selectedImageIndex >= 0, selectedImageIndex < imageAssets.count else {
+            Logger.log("[⚠️ loadImages] Skipped due to invalid index: \(selectedImageIndex)")
             return
         }
 
