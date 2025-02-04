@@ -21,7 +21,8 @@ struct FullscreenImageView: View {
     @State private var imageLoaded: Bool = false
     @State private var reloadTrigger = false
     @StateObject private var imageViewModel = ImageViewModel()
-
+    @State private var isImageLoaded: Bool = false  // ✅ Track if `loadImages` has already run
+    
 
     var body: some View {
         GeometryReader { geometry in
@@ -117,13 +118,14 @@ struct FullscreenImageView: View {
                         }
                 )
                 .onAppear {
-                    if imageViewModel.currentImage == nil {  // ✅ Prevents duplicate calls
+                    if !isImageLoaded {  // ✅ Ensure this block runs only once per appearance
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                             loadImages(for: selectedImageIndex, geometry: geometry)
+                            isImageLoaded = true  // ✅ Set flag to prevent duplicate loads
                         }
-                        Logger.log("📥 First time loading images for index \(selectedImageIndex)")
+                        Logger.log("📥 First-time image load triggered for index \(selectedImageIndex)")
                     } else {
-                        Logger.log("⏳ Skipping redundant load for index \(selectedImageIndex) (Already Loaded)")
+                        Logger.log("⏳ Skipping redundant image load for index \(selectedImageIndex)")
                     }
                     offset = -CGFloat(selectedImageIndex) * geometry.size.width
                 }
