@@ -91,8 +91,18 @@ struct FullscreenImageView: View {
             )
             .onAppear {
                 Logger.log("[🟢 onAppear] selectedImageIndex: \(selectedImageIndex)")
+                imageCache.removeAll() // ✅ Clear the cache when reopening fullscreen
+
+                // ✅ Force a re-selection update to trigger `onChange`
+                let tempIndex = selectedImageIndex
+                selectedImageIndex = -1
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                    selectedImageIndex = tempIndex
+                }
+
                 loadImages(geometry: geometry)
             }
+            
             .onChange(of: selectedImageIndex) { oldValue, newValue in
                 Logger.log("[🔄 onChange] Old Index: \(oldValue), New Index: \(newValue)")
                 loadImages(geometry: geometry)
