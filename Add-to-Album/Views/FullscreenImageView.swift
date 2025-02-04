@@ -42,17 +42,27 @@ struct FullscreenImageView: View {
                         Color.clear.frame(width: geometry.size.width, height: geometry.size.height) // Placeholder
                     }
 
-                    if currentImage != nil {
-                        Image(uiImage: currentImage!)
+                    if let img = currentImage {
+                        Image(uiImage: img)
                             .resizable()
                             .scaledToFit()
                             .frame(width: geometry.size.width, height: geometry.size.height)
+                            .transition(.opacity) // ✅ Smooth fade-in
+                    } else if let thumb = thumbnail {
+                        Image(uiImage: thumb)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                            .transition(.opacity)
+                            .onAppear {
+                                Logger.log("⚠️ Showing only thumbnail for index: \(selectedImageIndex)")
+                            }
                     } else {
                         ProgressView()
-                            .progressViewStyle(.circular)
                             .scaleEffect(1.5)
                             .frame(width: geometry.size.width, height: geometry.size.height)
                     }
+
 
                     if rightImage != nil {
                         Image(uiImage: rightImage!)
@@ -114,9 +124,13 @@ struct FullscreenImageView: View {
                     Logger.log("FullscreenImageView: Appeared for index \(selectedImageIndex)")
                 }
                 .onChange(of: selectedImageIndex) { oldValue, newValue in
+                    Logger.log("🟢 selectedImageIndex changed: \(oldValue) → \(newValue)")
+                    Logger.log("🔍 currentImage: \(currentImage != nil ? "Loaded" : "Nil")")
+                    Logger.log("🔍 Thumbnail: \(thumbnail != nil ? "Loaded" : "Nil")")
+                    Logger.log("🔍 Image Cache contains: \(imageRequestIDs.keys)")
+
                     loadImages(for: newValue, geometry: geometry)
                     offset = -CGFloat(newValue) * geometry.size.width
-                    Logger.log("FullscreenImageView: selectedImageIndex changed to \(newValue)")
                 }
             }
             .ignoresSafeArea()
@@ -144,9 +158,9 @@ struct FullscreenImageView: View {
             }
         }
 
-        if let existingRequestID = imageRequestIDs[index] {
+        if let existingRequestID = imageRequestIDs[index], currentImage == nil {
             manager.cancelImageRequest(existingRequestID)
-            Logger.log("FullscreenImageView: Cancelled image request for index \(index)")
+            Logger.log("🛑 Cancelling in-progress request for index: \(index)")
         }
 
         let requestID = manager.requestImage(for: imageAssets[index], targetSize: targetSize, contentMode: .aspectFit, options: options) { (image, info) in
@@ -202,10 +216,16 @@ struct FullscreenImageView: View {
 
         loadImage(at: index, geometry: geometry, targetSize: targetSize) { image in
             DispatchQueue.main.async {
-                currentImage = image
-                Logger.log("Loaded current image for index: \(index)") // Added log entry
+                if let image = image {
+                    self.currentImage = image
+                    self.thumbnail = nil  // Ensure thumbnail disappears
+                    Logger.log("✅ Full-resolution image set for index: \(index)")
+                } else {
+                    Logger.log("❌ Failed to load current image for index: \(index)")
+                }
             }
         }
+
 
         if index < imageAssets.count - 1 {
             loadImage(at: index + 1, geometry: geometry, targetSize: targetSize) { image in
