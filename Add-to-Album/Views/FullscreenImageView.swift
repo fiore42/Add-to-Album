@@ -182,7 +182,7 @@ struct FullscreenImageView: View {
             return
         }
         
-        Logger.log("🔒 [loadImages] Locking isLoadingImages flag")
+        Logger.log("🔒 [loadImages] Locking isLoadingImages flag [index: \(index)]")
         isLoadingImages = true // ✅ Set the flag at the start
         
         let targetSize = CGSize(width: geometry.size.width * 1.2, height: geometry.size.height * 1.2)
@@ -260,6 +260,9 @@ struct FullscreenImageView: View {
             completion(cachedImage)
             return
         }
+        
+        Logger.log("☎️ [loadImage] Called and executing for index \(index)")
+
 
         let manager = PHImageManager.default()
         let options = PHImageRequestOptions()
