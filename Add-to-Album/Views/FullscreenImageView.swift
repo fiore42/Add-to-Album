@@ -177,6 +177,11 @@ struct FullscreenImageView: View {
             return
         }
         
+        if imageViewModel.currentImage != nil, leftImage != nil || index == 0, rightImage != nil || index == imageAssets.count - 1 {
+            Logger.log("💔 [loadImages] Image already loaded for index: \(index). Skipping redundant load.")
+            return
+        }
+        
         Logger.log("🔒 [loadImages] Locking isLoadingImages flag")
         isLoadingImages = true // ✅ Set the flag at the start
         
@@ -243,7 +248,7 @@ struct FullscreenImageView: View {
 
     private func loadImage(at index: Int, geometry: GeometryProxy, targetSize: CGSize, asset: PHAsset, completion: @escaping (UIImage?) -> Void) {
         let nsIndex = NSNumber(value: index)
-//    private func loadImage(at index: Int, geometry: GeometryProxy, targetSize: CGSize, completion: @escaping (UIImage?) -> Void) { // Add geometry parameter
+
         guard index >= 0 && index < imageAssets.count else {
             completion(nil)
             return
@@ -281,21 +286,5 @@ struct FullscreenImageView: View {
         }
     }
     
-    
-//    private func loadImage(at index: Int, geometry: GeometryProxy) { // Modified call
-//        guard index >= 0 && index < imageAssets.count else { // Check bounds
-//            Logger.log("📛 [loadImage] index out of bounds: \(index)")
-//            return // or handle the error as you see fit
-//        }
-//        let asset = imageAssets[index] // Get the PHAsset for the current index
-//
-//        let targetSize = CGSize(width: geometry.size.width * 1.2, height: geometry.size.height * 1.2)
-//        loadImage(at: index, geometry: geometry, targetSize: targetSize, asset: asset) { image in // Pass the asset
-//            DispatchQueue.main.async {
-//                currentImage = image
-//            }
-//        }
-//    }
-
 
 }
