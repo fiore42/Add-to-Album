@@ -5,6 +5,8 @@ class ImageViewModel: ObservableObject {
     @Published var currentImage: UIImage?
 }
 
+// Global Image Cache
+let imageCache = NSCache<NSNumber, UIImage>()
 
 // FullscreenImageView.swift
 struct FullscreenImageView: View {
@@ -14,16 +16,22 @@ struct FullscreenImageView: View {
     @State private var currentImage: UIImage?
     @State private var leftImage: UIImage?
     @State private var rightImage: UIImage?
-    @State private var imageRequestIDs: [Int: PHImageRequestID] = [:]
     @State private var thumbnail: UIImage?
     @State private var offset: CGFloat = 0
     @Environment(\.dismiss) var dismiss
     @State private var imageLoaded: Bool = false
-    @State private var reloadTrigger = false
     @StateObject private var imageViewModel = ImageViewModel()
     @State private var isLoadingImages: Bool = false // Track if loadImages is currently running
     @State private var isLoading: Bool = false // Track overall loading state
+    // Global Loading Tracker
+    var loadingImages = Set<Int>() // Use a Set for efficient checking
 
+    init(isPresented: Binding<Bool>, selectedImageIndex: Binding<Int>, imageAssets: [PHAsset]) { // Corrected init
+        self._isPresented = isPresented
+        self._selectedImageIndex = selectedImageIndex
+        self.imageAssets = imageAssets
+        imageCache.totalCostLimit = 100 * 1024 * 1024
+    }
 
     var body: some View {
         GeometryReader { geometry in
@@ -87,7 +95,7 @@ struct FullscreenImageView: View {
                     Button(action: {
                         isPresented = false
                         dismiss()
-                        Logger.log("[HStack - overlay] FullscreenImageView: Dismissed")
+                        Logger.log("[HStack - overlay] Dismissed")
                     }) {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 30, weight: .bold))
@@ -109,11 +117,11 @@ struct FullscreenImageView: View {
                             if translation > threshold && selectedImageIndex > 0 {
                                 selectedImageIndex -= 1
                                 offset = -CGFloat(selectedImageIndex) * geometry.size.width
-                                Logger.log("[HStack - onEnded] FullscreenImageView: Swiped Left to index \(selectedImageIndex)")
+                                Logger.log("[HStack - onEnded] Swiped Left to index \(selectedImageIndex)")
                             } else if translation < -threshold && selectedImageIndex < imageAssets.count - 1 {
                                 selectedImageIndex += 1
                                 offset = -CGFloat(selectedImageIndex) * geometry.size.width
-                                Logger.log("[HStack - onEnded] FullscreenImageView: Swiped Right to index \(selectedImageIndex)")
+                                Logger.log("[HStack - onEnded] Swiped Right to index \(selectedImageIndex)")
                             } else {
                                 offset = -CGFloat(selectedImageIndex) * geometry.size.width // Return to correct position
                             }
@@ -125,7 +133,7 @@ struct FullscreenImageView: View {
                         Logger.log("🔒 [HStack - onAppear] Locking isLoading flag")
                         isLoading = true
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                            Logger.log("✅ [HStack - onAppear] Call loadImages for: \(selectedImageIndex)")
+                            Logger.log("✅ [HStack - onAppear] Calling loadImages for index: \(selectedImageIndex)")
                             loadImages(for: selectedImageIndex, geometry: geometry)
                             Logger.log("🔓 [HStack - onAppear] Unlocking isLoading flag")
                             isLoading = false  // ✅ Set flag to prevent duplicate loads
@@ -140,7 +148,6 @@ struct FullscreenImageView: View {
                     Logger.log("🟢 [HStack - onChange] selectedImageIndex changed: \(oldValue) → \(newValue)")
                     Logger.log("🔍 [HStack - onChange] currentImage: \(currentImage != nil ? "Loaded" : "Nil")")
                     Logger.log("🔍 [HStack - onChange] Thumbnail: \(thumbnail != nil ? "Loaded" : "Nil")")
-                    Logger.log("🔍 [HStack - onChange] Image Cache contains: \(imageRequestIDs.keys)")
 
                     Logger.log("⚠️ [HStack - onChange] Attempt to call loadImages for: \(newValue)")
                     if !isLoading {
@@ -162,9 +169,81 @@ struct FullscreenImageView: View {
         }
     }
     
-    private func loadImage(at index: Int, geometry: GeometryProxy, targetSize: CGSize, completion: @escaping (UIImage?) -> Void) { // Add geometry parameter
+    
+    private func loadImages(for index: Int, geometry: GeometryProxy) {
+
+        guard !isLoadingImages else {  // ✅ Prevent multiple calls
+            Logger.log("⚠️ [loadImages] loadImages is already in progress. Skipping. [index: \(index)]")
+            return
+        }
+        
+        Logger.log("🔒 [loadImages] Locking isLoadingImages flag")
+        isLoadingImages = true // ✅ Set the flag at the start
+        
+        let targetSize = CGSize(width: geometry.size.width * 1.2, height: geometry.size.height * 1.2)
+
+        Logger.log("📥 [loadImages] loadImages executing for index: \(index)")
+
+        
+        if index > 0 {
+            Logger.log("☎️ [loadImages] Calling loadImage for index: \(index - 1)")
+
+            loadImage(at: index - 1, geometry: geometry, targetSize: targetSize, asset: imageAssets[index-1]) { image in
+                DispatchQueue.main.async {
+                    leftImage = image
+                    Logger.log("[loadImages] Loaded left image for index: \(index - 1)")
+                }
+            }
+        } else
+        {
+            leftImage = nil
+            Logger.log("❌ [loadImages] No left image for index: \(index)")
+        }
+
+        Logger.log("☎️ [loadImages] Calling loadImage for index: \(index)")
+
+        loadImage(at: index, geometry: geometry, targetSize: targetSize, asset: imageAssets[index]) { image in
+            DispatchQueue.main.async {
+                imageViewModel.currentImage = image
+                thumbnail = nil
+                Logger.log(image != nil ? "[loadImages] ✅ Full-resolution image set for index: \(index)" : "[loadImages] ❌ Failed to load full image for index: \(index)")
+            }
+        }
+
+        if index < imageAssets.count - 1 {
+            Logger.log("☎️ [loadImages] Calling loadImage for index: \(index + 1)")
+
+            loadImage(at: index + 1, geometry: geometry, targetSize: targetSize, asset: imageAssets[index+1]) { image in
+                DispatchQueue.main.async {
+                    rightImage = image
+                    Logger.log("[loadImages] Loaded right image for index: \(index + 1)")
+                }
+            }
+        } else
+        {
+            rightImage = nil
+            Logger.log("❌ [loadImages] No right image for index: \(index)")
+        }
+        
+        // ✅ When all images are loaded or failed, reset the flag
+        DispatchQueue.main.async {
+            self.isLoadingImages = false
+            Logger.log("🔓 [loadImages] Unlocking isLoadingImages flag")
+        }
+    }
+
+    private func loadImage(at index: Int, geometry: GeometryProxy, targetSize: CGSize, asset: PHAsset, completion: @escaping (UIImage?) -> Void) {
+        let nsIndex = NSNumber(value: index)
+//    private func loadImage(at index: Int, geometry: GeometryProxy, targetSize: CGSize, completion: @escaping (UIImage?) -> Void) { // Add geometry parameter
         guard index >= 0 && index < imageAssets.count else {
             completion(nil)
+            return
+        }
+        
+        // Check Cache First
+        if let cachedImage = imageCache.object(forKey: nsIndex) {
+            Logger.log("[loadImage] Retrieved image from cache for index \(index)")
+            completion(cachedImage)
             return
         }
 
@@ -172,116 +251,42 @@ struct FullscreenImageView: View {
         let options = PHImageRequestOptions()
         options.isSynchronous = false
 
-        // Load Thumbnail
-        let thumbnailTargetSize = CGSize(width: geometry.size.width / 3, height: geometry.size.height / 3) // Use geometry here
-        let _ = manager.requestImage(for: imageAssets[index], targetSize: thumbnailTargetSize, contentMode: .aspectFit, options: options) { (image, info) in
-            DispatchQueue.main.async {
-                if let image = image {
-                    thumbnail = image
-                    Logger.log("[loadImage] FullscreenImageView: Loaded thumbnail for index \(index)")
-                }
-            }
-        }
-
-        if let existingRequestID = imageRequestIDs[index], currentImage == nil {
-            manager.cancelImageRequest(existingRequestID)
-            Logger.log("🛑 [loadImage] Cancelling in-progress request for index: \(index)")
-        }
-
-        let requestID = manager.requestImage(for: imageAssets[index], targetSize: targetSize, contentMode: .aspectFit, options: options) { (image, info) in
+        manager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFit, options: options) { (image, info) in
             DispatchQueue.main.async {
                 if let info = info, let isCancelled = info[PHImageCancelledKey] as? Bool, isCancelled {
-                    Logger.log("[loadImage] FullscreenImageView: Image loading cancelled for index \(index)")
+                    Logger.log("[loadImage] Image loading cancelled for index \(index)")
                     return
                 }
+
                 if let image = image {
                     completion(image)
-                    thumbnail = nil // Remove the thumbnail once high-res is loaded
-                    Logger.log("[loadImage] FullscreenImageView: Loaded image for index \(index)")
+
+                    // Cache the Image with cost
+                    let imageData = image.jpegData(compressionQuality: 0.8) // Adjust compression
+                    let cost = imageData?.count ?? 0
+                    imageCache.setObject(image, forKey: nsIndex, cost: cost)
+
+                    Logger.log("[loadImage] Loaded and cached image for index \(index), cost: \(cost)")
                 }
-                imageRequestIDs.removeValue(forKey: index)
-            }
-        }
-        imageRequestIDs[index] = requestID
-    }
-
-    private func loadImages(for index: Int, geometry: GeometryProxy) {
-        guard !isLoadingImages else {  // ✅ Prevent multiple calls
-            Logger.log("⚠️ [loadImages] loadImages is already in progress. Skipping.")
-            return
-        }
-
-        Logger.log("🔒 [loadImages] Locking isLoadingImages flag")
-        isLoadingImages = true // ✅ Set the flag at the start
-
-        let targetSize = CGSize(width: geometry.size.width * 1.2, height: geometry.size.height * 1.2)
-
-        Logger.log("📥 [loadImages] loadImages called for index: \(index)")
-
-        // ✅ Fix Off-by-One Error: Ensure we correctly cancel previous requests
-        imageRequestIDs.forEach { key, requestID in
-            PHImageManager.default().cancelImageRequest(requestID)
-            Logger.log("🛑 [loadImages] Cancelled image request for index: \(key)")
-        }
-        imageRequestIDs.removeAll()
-
-        // ✅ Load the Current Image
-        Logger.log("☎️ [loadImages] Calling loadImage for index: \(index)")
-
-        loadImage(at: index, geometry: geometry, targetSize: targetSize) { image in
-            DispatchQueue.main.async {
-                imageViewModel.currentImage = image
-                thumbnail = nil
-                Logger.log(image != nil ? "✅ [loadImages] Loaded full image for index: \(index)" : "❌ [loadImages] Failed to load full image for index: \(index)")
-            }
-        }
-
-        // ✅ Load the Left Image (Only If Within Bounds)
-        if index > 0 {
-            Logger.log("☎️ [loadImages] Calling loadImage for index: \(index - 1)")
-
-            loadImage(at: index - 1, geometry: geometry, targetSize: targetSize) { image in
-                DispatchQueue.main.async {
-                    leftImage = image
-                    Logger.log("↩️ [loadImages] Loaded left image for index: \(index - 1)")
-                }
-            }
-        } else {
-            leftImage = nil
-            Logger.log("❌ [loadImages] No left image for index: \(index)")
-        }
-
-        // ✅ Load the Right Image (Only If Within Bounds)
-        if index < imageAssets.count - 1 {
-            Logger.log("☎️ [loadImages] Calling loadImage for index: \(index + 1)")
-
-            loadImage(at: index + 1, geometry: geometry, targetSize: targetSize) { image in
-                DispatchQueue.main.async {
-                    rightImage = image
-                    Logger.log("↪️ [loadImages] Loaded right image for index: \(index + 1)")
-                }
-            }
-        } else {
-            rightImage = nil
-            Logger.log("❌ [loadImages] No right image for index: \(index)")
-        }
-        
-        // ✅ When all images are loaded or failed, reset the flag
-                DispatchQueue.main.async {
-                    self.isLoadingImages = false
-                    Logger.log("🔓 [loadImages] Unlocking isLoadingImages flag")
-                }
-    }
-
-
-    private func loadImage(at index: Int, geometry: GeometryProxy) { // Modified call
-        let targetSize = CGSize(width: geometry.size.width * 1.2, height: geometry.size.height * 1.2)
-        loadImage(at: index, geometry: geometry, targetSize: targetSize) { image in // Pass geometry
-            DispatchQueue.main.async {
-                currentImage = image
             }
         }
     }
+    
+    
+//    private func loadImage(at index: Int, geometry: GeometryProxy) { // Modified call
+//        guard index >= 0 && index < imageAssets.count else { // Check bounds
+//            Logger.log("📛 [loadImage] index out of bounds: \(index)")
+//            return // or handle the error as you see fit
+//        }
+//        let asset = imageAssets[index] // Get the PHAsset for the current index
+//
+//        let targetSize = CGSize(width: geometry.size.width * 1.2, height: geometry.size.height * 1.2)
+//        loadImage(at: index, geometry: geometry, targetSize: targetSize, asset: asset) { image in // Pass the asset
+//            DispatchQueue.main.async {
+//                currentImage = image
+//            }
+//        }
+//    }
 
 
 }
