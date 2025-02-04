@@ -184,14 +184,18 @@ struct FullscreenImageView: View {
 
         Logger.log("📥 [loadImages] loadImages executing for index: \(index)")
 
+        let group = DispatchGroup() // Use a DispatchGroup to track async operations
         
         if index > 0 {
+            group.enter() // Enter the group before starting the async operation
+
             Logger.log("☎️ [loadImages] Calling loadImage for index: \(index - 1)")
 
             loadImage(at: index - 1, geometry: geometry, targetSize: targetSize, asset: imageAssets[index-1]) { image in
                 DispatchQueue.main.async {
                     leftImage = image
                     Logger.log("[loadImages] Loaded left image for index: \(index - 1)")
+                    group.leave() // Leave the group when the operation is complete
                 }
             }
         } else
@@ -200,23 +204,26 @@ struct FullscreenImageView: View {
             Logger.log("❌ [loadImages] No left image for index: \(index)")
         }
 
+        group.enter() // Enter the group for the main image load
         Logger.log("☎️ [loadImages] Calling loadImage for index: \(index)")
-
         loadImage(at: index, geometry: geometry, targetSize: targetSize, asset: imageAssets[index]) { image in
             DispatchQueue.main.async {
                 imageViewModel.currentImage = image
                 thumbnail = nil
                 Logger.log(image != nil ? "[loadImages] ✅ Full-resolution image set for index: \(index)" : "[loadImages] ❌ Failed to load full image for index: \(index)")
+                group.leave() // Leave the group when the operation is complete
+
             }
         }
 
         if index < imageAssets.count - 1 {
+            group.enter() // Enter the group
             Logger.log("☎️ [loadImages] Calling loadImage for index: \(index + 1)")
-
             loadImage(at: index + 1, geometry: geometry, targetSize: targetSize, asset: imageAssets[index+1]) { image in
                 DispatchQueue.main.async {
                     rightImage = image
                     Logger.log("[loadImages] Loaded right image for index: \(index + 1)")
+                    group.leave() // Leave the group
                 }
             }
         } else
@@ -225,11 +232,13 @@ struct FullscreenImageView: View {
             Logger.log("❌ [loadImages] No right image for index: \(index)")
         }
         
-        // ✅ When all images are loaded or failed, reset the flag
-        DispatchQueue.main.async {
+        
+        // Release the lock *only after all asynchronous operations are complete*
+        group.notify(queue: .main) { // Use notify to execute code when the group is empty
             self.isLoadingImages = false
             Logger.log("🔓 [loadImages] Unlocking isLoadingImages flag")
         }
+
     }
 
     private func loadImage(at index: Int, geometry: GeometryProxy, targetSize: CGSize, asset: PHAsset, completion: @escaping (UIImage?) -> Void) {
