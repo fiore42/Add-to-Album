@@ -51,7 +51,7 @@ struct FullscreenImageView: View {
                                 .transition(.opacity) // ✅ Smooth fade-in
                                 .onAppear {
                                             imageLoaded = true // Set the flag when the image is displayed
-                                            Logger.log("⚠️ Locking imageLoaded flag")
+                                            Logger.log("[Image - onAppear] 🔒 Locking imageLoaded flag")
                                         }
                         } else if let thumb = thumbnail {
 
@@ -61,7 +61,7 @@ struct FullscreenImageView: View {
                                 .frame(width: geometry.size.width, height: geometry.size.height)
                                 .transition(.opacity)
                                 .onAppear {
-                                    Logger.log("⚠️ Showing only thumbnail for index: \(selectedImageIndex)")
+                                    Logger.log("[Image - onAppear] ⚠️ Showing only thumbnail for index: \(selectedImageIndex)")
                                 }
                         } else {
                             ProgressView()
@@ -88,7 +88,7 @@ struct FullscreenImageView: View {
                     Button(action: {
                         isPresented = false
                         dismiss()
-                        Logger.log("FullscreenImageView: Dismissed")
+                        Logger.log("[HStack - overlay] FullscreenImageView: Dismissed")
                     }) {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 30, weight: .bold))
@@ -110,50 +110,50 @@ struct FullscreenImageView: View {
                             if translation > threshold && selectedImageIndex > 0 {
                                 selectedImageIndex -= 1
                                 offset = -CGFloat(selectedImageIndex) * geometry.size.width
-                                Logger.log("FullscreenImageView: Swiped Left to index \(selectedImageIndex)")
+                                Logger.log("[HStack - onEnded] FullscreenImageView: Swiped Left to index \(selectedImageIndex)")
                             } else if translation < -threshold && selectedImageIndex < imageAssets.count - 1 {
                                 selectedImageIndex += 1
                                 offset = -CGFloat(selectedImageIndex) * geometry.size.width
-                                Logger.log("FullscreenImageView: Swiped Right to index \(selectedImageIndex)")
+                                Logger.log("[HStack - onEnded] FullscreenImageView: Swiped Right to index \(selectedImageIndex)")
                             } else {
                                 offset = -CGFloat(selectedImageIndex) * geometry.size.width // Return to correct position
                             }
                         }
                 )
                 .onAppear {
-                    Logger.log("⚠️ Attempt to call loadImages for: \(selectedImageIndex)")
+                    Logger.log("⚠️ [HStack - onAppear] Attempt to call loadImages for: \(selectedImageIndex)")
                     if !isLoading {  // ✅ Ensure this block runs only once per appearance
-                        Logger.log("❌ Locking isLoading flag")
+                        Logger.log("🔒 [HStack - onAppear] Locking isLoading flag")
                         isLoading = true
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-                            Logger.log("✅ Call loadImages for: \(selectedImageIndex)")
+                            Logger.log("✅ [HStack - onAppear] Call loadImages for: \(selectedImageIndex)")
                             loadImages(for: selectedImageIndex, geometry: geometry)
-                            Logger.log("✅ Unlocking isLoading flag")
+                            Logger.log("🔓 [HStack - onAppear] Unlocking isLoading flag")
                             isLoading = false  // ✅ Set flag to prevent duplicate loads
                         }
                     } else {
-                        Logger.log("⏳ Skipping redundant loadImages for index \(selectedImageIndex)")
+                        Logger.log("⏳ [HStack - onAppear] Skipping redundant loadImages for index \(selectedImageIndex)")
                     }
                     offset = -CGFloat(selectedImageIndex) * geometry.size.width
                 }
 
                 .onChange(of: selectedImageIndex) { oldValue, newValue in
-                    Logger.log("🟢 selectedImageIndex changed: \(oldValue) → \(newValue)")
-                    Logger.log("🔍 currentImage: \(currentImage != nil ? "Loaded" : "Nil")")
-                    Logger.log("🔍 Thumbnail: \(thumbnail != nil ? "Loaded" : "Nil")")
-                    Logger.log("🔍 Image Cache contains: \(imageRequestIDs.keys)")
+                    Logger.log("🟢 [HStack - onChange] selectedImageIndex changed: \(oldValue) → \(newValue)")
+                    Logger.log("🔍 [HStack - onChange] currentImage: \(currentImage != nil ? "Loaded" : "Nil")")
+                    Logger.log("🔍 [HStack - onChange] Thumbnail: \(thumbnail != nil ? "Loaded" : "Nil")")
+                    Logger.log("🔍 [HStack - onChange] Image Cache contains: \(imageRequestIDs.keys)")
 
-                    Logger.log("⚠️ Attempt to call loadImages for: \(newValue)")
-                    if !isLoading {  
-                        Logger.log("❌ Locking isLoading flag")
+                    Logger.log("⚠️ [HStack - onChange] Attempt to call loadImages for: \(newValue)")
+                    if !isLoading {
+                        Logger.log("🔒 [HStack - onChange] Locking isLoading flag")
                         isLoading = true
-                        Logger.log("✅ Call loadImages for: \(newValue)")
+                        Logger.log("✅ [HStack - onChange] Call loadImages for: \(newValue)")
                         loadImages(for: newValue, geometry: geometry)
-                        Logger.log("✅ Unlocking isLoading flag")
+                        Logger.log("🔓 [HStack - onChange] Unlocking isLoading flag")
                         isLoading = false  // ✅ Set flag to prevent duplicate loads
                         offset = -CGFloat(newValue) * geometry.size.width
                     } else {
-                        Logger.log("⏳ Skipping redundant loadImages for index \(newValue)")
+                        Logger.log("⏳ [HStack - onChange] Skipping redundant loadImages for index \(newValue)")
                     }
                 }
                 .opacity(imageLoaded ? 1 : 0) // Fade-in effect
@@ -179,26 +179,26 @@ struct FullscreenImageView: View {
             DispatchQueue.main.async {
                 if let image = image {
                     thumbnail = image
-                    Logger.log("FullscreenImageView: Loaded thumbnail for index \(index)")
+                    Logger.log("[loadImage] FullscreenImageView: Loaded thumbnail for index \(index)")
                 }
             }
         }
 
         if let existingRequestID = imageRequestIDs[index], currentImage == nil {
             manager.cancelImageRequest(existingRequestID)
-            Logger.log("🛑 Cancelling in-progress request for index: \(index)")
+            Logger.log("🛑 [loadImage] Cancelling in-progress request for index: \(index)")
         }
 
         let requestID = manager.requestImage(for: imageAssets[index], targetSize: targetSize, contentMode: .aspectFit, options: options) { (image, info) in
             DispatchQueue.main.async {
                 if let info = info, let isCancelled = info[PHImageCancelledKey] as? Bool, isCancelled {
-                    Logger.log("FullscreenImageView: Image loading cancelled for index \(index)")
+                    Logger.log("[loadImage] FullscreenImageView: Image loading cancelled for index \(index)")
                     return
                 }
                 if let image = image {
                     completion(image)
                     thumbnail = nil // Remove the thumbnail once high-res is loaded
-                    Logger.log("FullscreenImageView: Loaded image for index \(index)")
+                    Logger.log("[loadImage] FullscreenImageView: Loaded image for index \(index)")
                 }
                 imageRequestIDs.removeValue(forKey: index)
             }
@@ -208,21 +208,21 @@ struct FullscreenImageView: View {
 
     private func loadImages(for index: Int, geometry: GeometryProxy) {
         guard !isLoadingImages else {  // ✅ Prevent multiple calls
-            Logger.log("⚠️ loadImages is already in progress. Skipping.")
+            Logger.log("⚠️ [loadImages] loadImages is already in progress. Skipping.")
             return
         }
 
-        Logger.log("⚠️ Locking isLoadingImages flag")
+        Logger.log("🔒 [loadImages] Locking isLoadingImages flag")
         isLoadingImages = true // ✅ Set the flag at the start
 
         let targetSize = CGSize(width: geometry.size.width * 1.2, height: geometry.size.height * 1.2)
 
-        Logger.log("📥 loadImages called for index: \(index)")
+        Logger.log("📥 [loadImages] loadImages called for index: \(index)")
 
         // ✅ Fix Off-by-One Error: Ensure we correctly cancel previous requests
         imageRequestIDs.forEach { key, requestID in
             PHImageManager.default().cancelImageRequest(requestID)
-            Logger.log("🛑 Cancelled image request for index: \(key)")
+            Logger.log("🛑 [loadImages] Cancelled image request for index: \(key)")
         }
         imageRequestIDs.removeAll()
 
@@ -231,7 +231,7 @@ struct FullscreenImageView: View {
             DispatchQueue.main.async {
                 imageViewModel.currentImage = image
                 thumbnail = nil
-                Logger.log(image != nil ? "✅ Loaded full image for index: \(index)" : "❌ Failed to load full image for index: \(index)")
+                Logger.log(image != nil ? "✅ [loadImages] Loaded full image for index: \(index)" : "❌ [loadImages] Failed to load full image for index: \(index)")
             }
         }
 
@@ -240,12 +240,12 @@ struct FullscreenImageView: View {
             loadImage(at: index - 1, geometry: geometry, targetSize: targetSize) { image in
                 DispatchQueue.main.async {
                     leftImage = image
-                    Logger.log("↩️ Loaded left image for index: \(index - 1)")
+                    Logger.log("↩️ [loadImages] Loaded left image for index: \(index - 1)")
                 }
             }
         } else {
             leftImage = nil
-            Logger.log("❌ No left image for index: \(index)")
+            Logger.log("❌ [loadImages] No left image for index: \(index)")
         }
 
         // ✅ Load the Right Image (Only If Within Bounds)
@@ -253,18 +253,18 @@ struct FullscreenImageView: View {
             loadImage(at: index + 1, geometry: geometry, targetSize: targetSize) { image in
                 DispatchQueue.main.async {
                     rightImage = image
-                    Logger.log("↪️ Loaded right image for index: \(index + 1)")
+                    Logger.log("↪️ [loadImages] Loaded right image for index: \(index + 1)")
                 }
             }
         } else {
             rightImage = nil
-            Logger.log("❌ No right image for index: \(index)")
+            Logger.log("❌ [loadImages] No right image for index: \(index)")
         }
         
         // ✅ When all images are loaded or failed, reset the flag
                 DispatchQueue.main.async {
                     self.isLoadingImages = false
-                    Logger.log("✅ Releasing isLoadingImages flag")
+                    Logger.log("🔓 [loadImages] Unlocking isLoadingImages flag")
                 }
     }
 
