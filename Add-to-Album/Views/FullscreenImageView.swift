@@ -186,62 +186,51 @@ struct FullscreenImageView: View {
     private func loadImages(for index: Int, geometry: GeometryProxy) {
         let targetSize = CGSize(width: geometry.size.width * 1.2, height: geometry.size.height * 1.2)
 
-        Logger.log("loadImages called for index: \(index)") // Added log entry
+        Logger.log("📥 loadImages called for index: \(index)")
 
-        // Cancel any existing requests
-        if let leftRequestID = imageRequestIDs[index - 1] {
-            PHImageManager.default().cancelImageRequest(leftRequestID)
-            imageRequestIDs.removeValue(forKey: index - 1)
-            Logger.log("Cancelled left image request for index: \(index - 1)") // Added log entry
+        // ✅ Fix Off-by-One Error: Ensure we correctly cancel previous requests
+        imageRequestIDs.forEach { key, requestID in
+            PHImageManager.default().cancelImageRequest(requestID)
+            Logger.log("🛑 Cancelled image request for index: \(key)")
         }
-        if let currentRequestID = imageRequestIDs[index] {
-            PHImageManager.default().cancelImageRequest(currentRequestID)
-            imageRequestIDs.removeValue(forKey: index)
-            Logger.log("Cancelled current image request for index: \(index)") // Added log entry
-        }
-        if let rightRequestID = imageRequestIDs[index + 1] {
-            PHImageManager.default().cancelImageRequest(rightRequestID)
-            imageRequestIDs.removeValue(forKey: index + 1)
-            Logger.log("Cancelled right image request for index: \(index + 1)") // Added log entry
+        imageRequestIDs.removeAll()
+
+        // ✅ Load the Current Image
+        loadImage(at: index, geometry: geometry, targetSize: targetSize) { image in
+            DispatchQueue.main.async {
+                imageViewModel.currentImage = image
+                thumbnail = nil
+                Logger.log(image != nil ? "✅ Loaded full image for index: \(index)" : "❌ Failed to load full image for index: \(index)")
+            }
         }
 
+        // ✅ Load the Left Image (Only If Within Bounds)
         if index > 0 {
             loadImage(at: index - 1, geometry: geometry, targetSize: targetSize) { image in
                 DispatchQueue.main.async {
                     leftImage = image
-                    Logger.log("Loaded left image for index: \(index - 1)") // Added log entry
+                    Logger.log("↩️ Loaded left image for index: \(index - 1)")
                 }
             }
         } else {
             leftImage = nil
-            Logger.log("No left image to load for index: \(index)") // Added log entry
+            Logger.log("❌ No left image for index: \(index)")
         }
 
-        loadImage(at: index, geometry: geometry, targetSize: targetSize) { image in
-            DispatchQueue.main.async {
-                imageViewModel.currentImage = image // Use imageViewModel to update
-                thumbnail = nil // Clear the thumbnail when the full image loads
-                if image != nil {
-                    Logger.log("✅ Full-resolution image set for index: \(index)")
-                } else {
-                    Logger.log("❌ Failed to load current image for index: \(index)")
-                }
-            }
-        }
-
-
+        // ✅ Load the Right Image (Only If Within Bounds)
         if index < imageAssets.count - 1 {
             loadImage(at: index + 1, geometry: geometry, targetSize: targetSize) { image in
                 DispatchQueue.main.async {
                     rightImage = image
-                    Logger.log("Loaded right image for index: \(index + 1)") // Added log entry
+                    Logger.log("↪️ Loaded right image for index: \(index + 1)")
                 }
             }
         } else {
             rightImage = nil
-            Logger.log("No right image to load for index: \(index)") // Added log entry
+            Logger.log("❌ No right image for index: \(index)")
         }
     }
+
 
     private func loadImage(at index: Int, geometry: GeometryProxy) { // Modified call
         let targetSize = CGSize(width: geometry.size.width * 1.2, height: geometry.size.height * 1.2)
