@@ -18,7 +18,8 @@ struct FullscreenImageView: View {
     @State private var loadingIndices = Set<Int>() // Track loading indices
 
     @State private var imageCache: [Int: UIImage] = [:] // ✅ Stores loaded images
-    
+    @State private var showingFullScreenImage = false
+
     enum ImageLoadState {
         case idle, loading, loaded, failed
     }
@@ -27,33 +28,23 @@ struct FullscreenImageView: View {
         GeometryReader { geometry in
             ZStack {
                 Color.black.ignoresSafeArea()
-                
+
                 HStack(spacing: 0) {
                     ForEach(imageAssets.indices, id: \.self) { index in
-                        if let image = getImage(for: index, geometry: geometry) { // Pass geometry here!
-                            Image(uiImage: image)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: geometry.size.width, height: geometry.size.height)
-                                .clipped()
-                        } else {
-                            Color.black // Placeholder to prevent gaps
-                                .frame(width: geometry.size.width, height: geometry.size.height)
-                        }
+                        Image(uiImage: getImage(for: index, geometry: geometry) ?? UIImage()) // Use placeholder
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: geometry.size.width, height: geometry.size.height)
+                            .clipped()
+                            .onTapGesture {
+                                showingFullScreenImage = true // Toggle the state
+                                loadImages(geometry: geometry) // Reload with correct target size
+                            }
                     }
                 }
-                
-                .offset(x: -CGFloat(selectedImageIndex) * geometry.size.width) // Use selectedImageIndex ONLY
+                .offset(x: -CGFloat(selectedImageIndex) * geometry.size.width + dragTranslation.width) // Offset with drag
                 .animation(.interactiveSpring(response: 0.4, dampingFraction: 0.8), value: selectedImageIndex)
-                // Black separator
-                if dragTranslation != .zero { // Only show when dragging
-                    Rectangle()
-                        .fill(Color.black)
-                        .frame(width: 20, height: geometry.size.height)
-                        .offset(x: dragTranslation.width > 0 ? dragTranslation.width - 20 : dragTranslation.width + 20)
-                        .animation(.interactiveSpring(), value: dragTranslation)
-                }
-                
+
                 // Back button
                 VStack {
                     HStack {
@@ -68,7 +59,19 @@ struct FullscreenImageView: View {
                 }
                 .padding(.top, 20)
                 .padding(.leading, 20)
-                
+
+                // Loading indicator (center of the screen)
+                if imageLoadState == .loading {
+                    ProgressView()
+                        .progressViewStyle(.circular) // Or your preferred style
+                        .scaleEffect(1.5) // Make it a bit larger
+                        .frame(maxWidth: .infinity, maxHeight: .infinity) // Center it
+                }
+                if imageLoadState == .failed && currentImage == nil {
+                    Text("Image failed to load").foregroundColor(.white)
+                }
+
+
             } // End of ZStack
             .gesture(
                 DragGesture()
@@ -87,11 +90,10 @@ struct FullscreenImageView: View {
                             }
                         }
                     }
-
             )
             .onAppear {
                 Logger.log("[🟢 onAppear] selectedImageIndex: \(selectedImageIndex)")
-                imageCache.removeAll() // ✅ Clear the cache when reopening fullscreen
+                imageCache.removeAll() // Clear the cache when reopening fullscreen
 
                 // ✅ Force a re-selection update to trigger `onChange`
                 let tempIndex = selectedImageIndex
@@ -109,17 +111,15 @@ struct FullscreenImageView: View {
                 Logger.log("[✅ onChange] Valid index: \(newValue), loading")
                 loadImages(geometry: geometry) // Only call loadImages if the index is valid
             }
-
         } // End of GeometryReader
     }
-
-    func getImage(for index: Int, geometry: GeometryProxy) -> UIImage? { // Add geometry parameter
-// check cache first, if not in cache, load image
+    
+    private func getImage(for index: Int, geometry: GeometryProxy) -> UIImage? {
         if let cachedImage = imageCache[index] {
-            return cachedImage // ✅ Load from cache if available
+            return cachedImage
         }
-        loadImageIfNeeded(for: index, geometry: geometry) // Pass geometry here!
-        return nil // ✅ Prevents crash, returns black placeholder
+        loadImageIfNeeded(for: index, geometry: geometry)
+        return nil
     }
 
     private func loadImageIfNeeded(for index: Int, geometry: GeometryProxy) { // Add geometry parameter
@@ -144,45 +144,54 @@ struct FullscreenImageView: View {
     private func loadImages(geometry: GeometryProxy) {
         let currentIndex = selectedImageIndex
 
-        // Check if already loading or invalid index
-        guard !loadingIndices.contains(currentIndex), currentIndex >= 0, currentIndex < imageAssets.count else {
-            Logger.log("[⚠️ loadImages] Skipped: Already loading or invalid index: \(currentIndex)")
-            return
-        }
+         guard !loadingIndices.contains(currentIndex), currentIndex >= 0, currentIndex < imageAssets.count else {
+             Logger.log("[⚠️ loadImages] Skipped: Already loading or invalid index: \(currentIndex)")
+             return
+         }
 
-        if let cachedImage = imageCache[currentIndex] {
-            Logger.log("[⚠️ loadImages] Image already cached for index: \(currentIndex), using cached image")
-            DispatchQueue.main.async {
-                self.currentImage = cachedImage
-                self.imageLoadState = .loaded // Update load state
-            }
-            return
-        }
+         let isFullScreen = showingFullScreenImage // Now available
+
+         let targetSize: CGSize
+         let options = PHImageRequestOptions()
+         options.isNetworkAccessAllowed = true
+
+         if isFullScreen {
+             targetSize = CGSize(width: geometry.size.width * 1.2, height: geometry.size.height * 1.2)
+             options.deliveryMode = .highQualityFormat
+         } else {
+             let thumbnailSize = CGSize(width: 200, height: 200)
+             targetSize = thumbnailSize
+             options.deliveryMode = .fastFormat
+         }
+
+         if let cachedImage = imageCache[currentIndex], isFullScreen == (cachedImage.size != targetSize) {
+             Logger.log("[⚠️ loadImages] Image already cached for index: \(currentIndex), using cached image")
+             DispatchQueue.main.async {
+                 self.currentImage = cachedImage
+                 self.imageLoadState = .loaded
+             }
+             return
+         }
 
         Logger.log("[📸 loadImages] selectedImageIndex: \(currentIndex), total assets: \(imageAssets.count)")
-        loadingIndices.insert(currentIndex) // Mark as loading
-        imageLoadState = .loading // Update load state
-
-        let targetSize = CGSize(width: geometry.size.width * 1.2, height: geometry.size.height * 1.2)
-        let options = PHImageRequestOptions()
-        options.isNetworkAccessAllowed = true
-        options.deliveryMode = .highQualityFormat // Or .fastFormat for thumbnails
+        loadingIndices.insert(currentIndex)
+        imageLoadState = .loading
 
         Logger.log("[🔵 Current Image] Loading image at index \(currentIndex)")
         loadImage(for: imageAssets[currentIndex], geometry: geometry, targetSize: targetSize, options: options) { image in
             DispatchQueue.main.async {
-                self.loadingIndices.remove(currentIndex) // Remove loading flag
+                self.loadingIndices.remove(currentIndex)
 
                 guard let image = image else {
                     Logger.log("[❌ Failed to load image for index: \(currentIndex)]")
-                    self.imageLoadState = .failed // Update load state
+                    self.imageLoadState = .failed
                     return
                 }
 
                 if self.selectedImageIndex == currentIndex {
                     self.currentImage = image
                     self.imageCache[currentIndex] = image
-                    self.imageLoadState = .loaded // Update load state
+                    self.imageLoadState = .loaded
                     Logger.log("[✅ Loaded Image] Index: \(currentIndex)")
                 } else {
                     Logger.log("[⚠️ Skipped outdated image load for index: \(currentIndex)]")
