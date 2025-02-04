@@ -1,6 +1,27 @@
 import SwiftUI
 import Photos
 
+class ImageViewModel: ObservableObject {
+    @Published var currentImage: UIImage?
+}
+
+//struct LogView: ViewModifier {
+//    let message: String
+//
+//    func body(content: Content) -> some View {
+//        content
+//            .onAppear {
+//                Logger.log(message)
+//            }
+//    }
+//}
+//
+//extension View {
+//    func log(_ message: String) -> some View {
+//        modifier(LogView(message: message))
+//    }
+//}
+
 // FullscreenImageView.swift
 struct FullscreenImageView: View {
     @Binding var isPresented: Bool
@@ -14,6 +35,9 @@ struct FullscreenImageView: View {
     @State private var offset: CGFloat = 0
     @Environment(\.dismiss) var dismiss
     @State private var imageLoaded: Bool = false
+    @State private var reloadTrigger = false
+    @StateObject private var imageViewModel = ImageViewModel()
+
 
     var body: some View {
         GeometryReader { geometry in
@@ -41,27 +65,29 @@ struct FullscreenImageView: View {
                     } else {
                         Color.clear.frame(width: geometry.size.width, height: geometry.size.height) // Placeholder
                     }
+                        if let img = imageViewModel.currentImage {
+                            Image(uiImage: img)
+//                                .log("🔍 Image Rendering: \(selectedImageIndex) - Full-resolution image found")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: geometry.size.width, height: geometry.size.height)
+                                .transition(.opacity) // ✅ Smooth fade-in
+                        } else if let thumb = thumbnail {
 
-                    if let img = currentImage {
-                        Image(uiImage: img)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: geometry.size.width, height: geometry.size.height)
-                            .transition(.opacity) // ✅ Smooth fade-in
-                    } else if let thumb = thumbnail {
-                        Image(uiImage: thumb)
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: geometry.size.width, height: geometry.size.height)
-                            .transition(.opacity)
-                            .onAppear {
-                                Logger.log("⚠️ Showing only thumbnail for index: \(selectedImageIndex)")
-                            }
-                    } else {
-                        ProgressView()
-                            .scaleEffect(1.5)
-                            .frame(width: geometry.size.width, height: geometry.size.height)
-                    }
+                            Image(uiImage: thumb)
+//                                .log("🔍 Image Rendering: \(selectedImageIndex) - Showing thumbnail")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: geometry.size.width, height: geometry.size.height)
+                                .onAppear {
+                                    Logger.log("⚠️ Showing only thumbnail for index: \(selectedImageIndex)")
+                                }
+                        } else {
+                            ProgressView()
+//                                .log("🔍 Image Rendering: \(selectedImageIndex) - No image available")
+                                .scaleEffect(1.5)
+                                .frame(width: geometry.size.width, height: geometry.size.height)
+                        }
 
 
                     if rightImage != nil {
@@ -215,10 +241,11 @@ struct FullscreenImageView: View {
         }
 
         loadImage(at: index, geometry: geometry, targetSize: targetSize) { image in
-            DispatchQueue.main.async {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { // ✅ Small delay to force UI update
                 if let image = image {
                     self.currentImage = image
                     self.thumbnail = nil  // Ensure thumbnail disappears
+                    self.reloadTrigger.toggle()
                     Logger.log("✅ Full-resolution image set for index: \(index)")
                 } else {
                     Logger.log("❌ Failed to load current image for index: \(index)")
@@ -272,5 +299,7 @@ struct FullscreenImageView: View {
             rightImage = nil
         }
     }
+    
+
 
 }
