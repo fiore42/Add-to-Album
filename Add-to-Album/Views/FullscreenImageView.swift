@@ -13,6 +13,7 @@ struct FullscreenImageView: View {
     @State private var thumbnail: UIImage?
     @State private var offset: CGFloat = 0
     @Environment(\.dismiss) var dismiss
+    @State private var imageLoaded: Bool = false
 
     var body: some View {
         GeometryReader { geometry in
@@ -105,14 +106,15 @@ struct FullscreenImageView: View {
                 )
                 .onAppear {
                     
-                    loadImages(for: selectedImageIndex, geometry: geometry) // COLOR CHANGE
-                    loadAdjacentImages(geometry: geometry)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) { // Small delay
+                        loadImages(for: selectedImageIndex, geometry: geometry)
+                        imageLoaded = true
+                    }
                     offset = -CGFloat(selectedImageIndex) * geometry.size.width // Initial offset
                     Logger.log("FullscreenImageView: Appeared for index \(selectedImageIndex)")
                 }
                 .onChange(of: selectedImageIndex) { oldValue, newValue in
                     loadImages(for: newValue, geometry: geometry)
-                    loadAdjacentImages(geometry: geometry)
                     offset = -CGFloat(newValue) * geometry.size.width
                     Logger.log("FullscreenImageView: selectedImageIndex changed to \(newValue)")
                 }
