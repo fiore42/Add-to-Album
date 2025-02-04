@@ -117,13 +117,17 @@ struct FullscreenImageView: View {
                         }
                 )
                 .onAppear {
-                    
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) { // Small delay
-                        loadImages(for: selectedImageIndex, geometry: geometry)
+                    if imageViewModel.currentImage == nil {  // ✅ Prevents duplicate calls
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+                            loadImages(for: selectedImageIndex, geometry: geometry)
+                        }
+                        Logger.log("📥 First time loading images for index \(selectedImageIndex)")
+                    } else {
+                        Logger.log("⏳ Skipping redundant load for index \(selectedImageIndex) (Already Loaded)")
                     }
-                    offset = -CGFloat(selectedImageIndex) * geometry.size.width // Initial offset
-                    Logger.log("FullscreenImageView: Appeared for index \(selectedImageIndex)")
+                    offset = -CGFloat(selectedImageIndex) * geometry.size.width
                 }
+
                 .onChange(of: selectedImageIndex) { oldValue, newValue in
                     Logger.log("🟢 selectedImageIndex changed: \(oldValue) → \(newValue)")
                     Logger.log("🔍 currentImage: \(currentImage != nil ? "Loaded" : "Nil")")
