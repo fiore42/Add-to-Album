@@ -109,7 +109,7 @@ struct FullscreenImageView: View {
                     offset = -CGFloat(selectedImageIndex) * geometry.size.width // Initial offset
                     Logger.log("FullscreenImageView: Appeared for index \(selectedImageIndex)")
                 }
-                .onChange(of: selectedImageIndex) { newValue in
+                .onChange(of: selectedImageIndex) { oldValue, newValue in
                     loadImage(at: newValue, geometry: geometry)
                     loadAdjacentImages(geometry: geometry)
                     offset = -CGFloat(newValue) * geometry.size.width
