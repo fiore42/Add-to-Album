@@ -22,7 +22,8 @@ struct FullscreenImageView: View {
     @State private var reloadTrigger = false
     @StateObject private var imageViewModel = ImageViewModel()
     @State private var isImageLoaded: Bool = false  // ✅ Track if `loadImages` has already run
-    
+    @State private var isLoadingImages: Bool = false // Track if loadImages is currently running
+
 
     var body: some View {
         GeometryReader { geometry in
@@ -49,6 +50,7 @@ struct FullscreenImageView: View {
                                 .transition(.opacity) // ✅ Smooth fade-in
                                 .onAppear {
                                             imageLoaded = true // Set the flag when the image is displayed
+                                            Logger.log("⚠️ Locking imageLoaded flag")
                                         }
                         } else if let thumb = thumbnail {
 
@@ -122,6 +124,8 @@ struct FullscreenImageView: View {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
                             loadImages(for: selectedImageIndex, geometry: geometry)
                             isImageLoaded = true  // ✅ Set flag to prevent duplicate loads
+                            Logger.log("⚠️ Locking isImageLoaded flag")
+
                         }
                         Logger.log("📥 First-time image load triggered for index \(selectedImageIndex)")
                     } else {
@@ -190,6 +194,14 @@ struct FullscreenImageView: View {
     }
 
     private func loadImages(for index: Int, geometry: GeometryProxy) {
+        guard !isLoadingImages else {  // ✅ Prevent multiple calls
+            Logger.log("⚠️ loadImages is already in progress. Skipping.")
+            return
+        }
+
+        Logger.log("⚠️ Locking isLoadingImages flag")
+        isLoadingImages = true // ✅ Set the flag at the start
+
         let targetSize = CGSize(width: geometry.size.width * 1.2, height: geometry.size.height * 1.2)
 
         Logger.log("📥 loadImages called for index: \(index)")
@@ -235,6 +247,12 @@ struct FullscreenImageView: View {
             rightImage = nil
             Logger.log("❌ No right image for index: \(index)")
         }
+        
+        // ✅ When all images are loaded or failed, reset the flag
+                DispatchQueue.main.async {
+                    self.isLoadingImages = false
+                    Logger.log("✅ Releasing isLoadingImages flag")
+                }
     }
 
 
