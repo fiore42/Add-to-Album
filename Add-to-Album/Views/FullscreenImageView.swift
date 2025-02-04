@@ -5,22 +5,6 @@ class ImageViewModel: ObservableObject {
     @Published var currentImage: UIImage?
 }
 
-//struct LogView: ViewModifier {
-//    let message: String
-//
-//    func body(content: Content) -> some View {
-//        content
-//            .onAppear {
-//                Logger.log(message)
-//            }
-//    }
-//}
-//
-//extension View {
-//    func log(_ message: String) -> some View {
-//        modifier(LogView(message: message))
-//    }
-//}
 
 // FullscreenImageView.swift
 struct FullscreenImageView: View {
@@ -42,19 +26,10 @@ struct FullscreenImageView: View {
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                Color.black
-                    .frame(height: 20)
-                    .offset(y: currentImage != nil ? 0 : -geometry.size.height)
-                    .animation(.default, value: currentImage != nil)
-
-                if currentImage == nil && thumbnail != nil { // Show thumbnail while loading high-res
-                    Image(uiImage: thumbnail!)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: geometry.size.width, height: geometry.size.height)
-                        .offset(y: currentImage != nil ? 0 : -geometry.size.height)
-                        .animation(.default, value: currentImage != nil)
-                }
+                 Color.black
+                     .frame(height: 20)
+                     .offset(y: imageViewModel.currentImage != nil ? 0 : -geometry.size.height) // Use imageViewModel
+                     .animation(.default, value: imageViewModel.currentImage != nil) // Use imageViewModel
 
                 HStack(spacing: 0) { // Use HStack for smooth transitions
                     if leftImage != nil {
@@ -67,24 +42,25 @@ struct FullscreenImageView: View {
                     }
                         if let img = imageViewModel.currentImage {
                             Image(uiImage: img)
-//                                .log("🔍 Image Rendering: \(selectedImageIndex) - Full-resolution image found")
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: geometry.size.width, height: geometry.size.height)
                                 .transition(.opacity) // ✅ Smooth fade-in
+                                .onAppear {
+                                            imageLoaded = true // Set the flag when the image is displayed
+                                        }
                         } else if let thumb = thumbnail {
 
                             Image(uiImage: thumb)
-//                                .log("🔍 Image Rendering: \(selectedImageIndex) - Showing thumbnail")
                                 .resizable()
                                 .scaledToFit()
                                 .frame(width: geometry.size.width, height: geometry.size.height)
+                                .transition(.opacity)
                                 .onAppear {
                                     Logger.log("⚠️ Showing only thumbnail for index: \(selectedImageIndex)")
                                 }
                         } else {
                             ProgressView()
-//                                .log("🔍 Image Rendering: \(selectedImageIndex) - No image available")
                                 .scaleEffect(1.5)
                                 .frame(width: geometry.size.width, height: geometry.size.height)
                         }
@@ -144,7 +120,6 @@ struct FullscreenImageView: View {
                     
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) { // Small delay
                         loadImages(for: selectedImageIndex, geometry: geometry)
-                        imageLoaded = true
                     }
                     offset = -CGFloat(selectedImageIndex) * geometry.size.width // Initial offset
                     Logger.log("FullscreenImageView: Appeared for index \(selectedImageIndex)")
@@ -158,6 +133,8 @@ struct FullscreenImageView: View {
                     loadImages(for: newValue, geometry: geometry)
                     offset = -CGFloat(newValue) * geometry.size.width
                 }
+                .opacity(imageLoaded ? 1 : 0) // Fade-in effect
+                .animation(.default, value: imageLoaded)
             }
             .ignoresSafeArea()
         }
@@ -241,11 +218,10 @@ struct FullscreenImageView: View {
         }
 
         loadImage(at: index, geometry: geometry, targetSize: targetSize) { image in
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { // ✅ Small delay to force UI update
-                if let image = image {
-                    self.currentImage = image
-                    self.thumbnail = nil  // Ensure thumbnail disappears
-                    self.reloadTrigger.toggle()
+            DispatchQueue.main.async {
+                imageViewModel.currentImage = image // Use imageViewModel to update
+                thumbnail = nil // Clear the thumbnail when the full image loads
+                if image != nil {
                     Logger.log("✅ Full-resolution image set for index: \(index)")
                 } else {
                     Logger.log("❌ Failed to load current image for index: \(index)")
@@ -275,31 +251,6 @@ struct FullscreenImageView: View {
             }
         }
     }
-
-    private func loadAdjacentImages(geometry: GeometryProxy) { // Modified call
-        let targetSize = CGSize(width: geometry.size.width * 1.2, height: geometry.size.height * 1.2)
-
-        if selectedImageIndex > 0 {
-            loadImage(at: selectedImageIndex - 1, geometry: geometry, targetSize: targetSize) { image in // Pass geometry
-                DispatchQueue.main.async {
-                    leftImage = image
-                }
-            }
-        } else {
-            leftImage = nil
-        }
-
-        if selectedImageIndex < imageAssets.count - 1 {
-            loadImage(at: selectedImageIndex + 1, geometry: geometry, targetSize: targetSize) { image in // Pass geometry
-                DispatchQueue.main.async {
-                    rightImage = image
-                }
-            }
-        } else {
-            rightImage = nil
-        }
-    }
-    
 
 
 }
