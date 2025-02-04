@@ -37,7 +37,7 @@ if /opt/homebrew/bin/git status --porcelain | grep -q .; then
     git commit -m "$COMMIT_MSG"
     # Push to GitHub
     git push origin main # Change 'main' to your default branch if needed
-    echo "✅ Code successfully pushed to GitHub."
+    echo "✅ Code successfully pushed to GitHub with message $COMMIT_MSG."
 else
     echo "✅ No changes detected. Nothing to commit."
 fi
