@@ -108,8 +108,13 @@ struct FullscreenImageView: View {
                     Logger.log("[⚠️ onChange] Invalid index: \(newValue), skipping")
                     return // Don't do anything if the index is invalid
                 }
-                Logger.log("[✅ onChange] Valid index: \(newValue), loading")
-                loadImages(geometry: geometry) // Only call loadImages if the index is valid
+                let preloadThreshold = 5 // Load 5 images ahead
+                let loadMoreIndex = newValue + preloadThreshold
+
+                if loadMoreIndex < imageAssets.count && loadMoreIndex >= 0 {
+                    Logger.log("[✅ onChange] calling loadImageIfNeeded: \(loadMoreIndex)")
+                    loadImageIfNeeded(for: loadMoreIndex, geometry: geometry)
+                }
             }
         } // End of GeometryReader
     }
@@ -122,20 +127,27 @@ struct FullscreenImageView: View {
         return nil
     }
 
-    private func loadImageIfNeeded(for index: Int, geometry: GeometryProxy) { // Add geometry parameter
-        guard imageCache[index] == nil else { return } // ✅ Prevent reloading
+    private func loadImageIfNeeded(for index: Int, geometry: GeometryProxy) {
+        guard index >= 0, index < imageAssets.count, imageCache[index] == nil, !loadingIndices.contains(index) else { return } // Check bounds and if already loaded
+
+        loadingIndices.insert(index)
 
         let asset = imageAssets[index]
-        let targetSize = CGSize(width: geometry.size.width * 1.2, height: geometry.size.height * 1.2)
+        let targetSize = CGSize(width: geometry.size.width * 1.2, height: geometry.size.height * 1.2) // Fullscreen size
         let options = PHImageRequestOptions()
         options.isNetworkAccessAllowed = true
-        options.deliveryMode = .fastFormat // Load a fast preview first
-        options.resizeMode = .fast // Prioritize speed over quality
+        options.deliveryMode = .highQualityFormat // High quality for fullscreen
+        options.resizeMode = .exact
 
         imageManager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFit, options: options) { image, _ in
-            if let image = image {
-                DispatchQueue.main.async {
-                    imageCache[index] = image
+            DispatchQueue.main.async {
+                self.loadingIndices.remove(index)
+                if let image = image {
+                    self.imageCache[index] = image
+                    if self.selectedImageIndex == index {
+                        self.currentImage = image
+                        self.imageLoadState = .loaded
+                    }
                 }
             }
         }
