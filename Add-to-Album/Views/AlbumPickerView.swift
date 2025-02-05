@@ -6,30 +6,35 @@ struct AlbumPickerView: View {
     @Environment(\.dismiss) var dismiss
     let albums: [PHAssetCollection] // ✅ Receive preloaded albums
     let index: Int
+    @State private var refreshTrigger = UUID() // Force refresh
 
     var body: some View {
         NavigationView {
             VStack {
-
-                    List(albums, id: \.localIdentifier) { album in // 'album' is available here
-                        Button(action: {
-                            Logger.log("📂 [AlbumPickerView] Opening Album PickerView for index \(index), Album: \(album)")
-                            
-                            let albumID = album.localIdentifier
-                            selectedAlbum = AlbumUtilities.formatAlbumName(album.localizedTitle ?? "Unknown")
-                            UserDefaultsManager.saveAlbum(selectedAlbum, at: index, albumID: albumID) // Save ID!
-                            dismiss() // 'dismiss' is available here
-                        }) {
-                            Text(album.localizedTitle ?? "Unknown")
-                        }
+                
+                List(albums, id: \.localIdentifier) { album in // 'album' is available here
+                    Button(action: {
+                        Logger.log("📂 [AlbumPickerView] Opening Album PickerView for index \(index), Album: \(album)")
+                        
+                        let albumID = album.localIdentifier
+                        selectedAlbum = AlbumUtilities.formatAlbumName(album.localizedTitle ?? "Unknown")
+                        UserDefaultsManager.saveAlbum(selectedAlbum, at: index, albumID: albumID) // Save ID!
+                        dismiss() // 'dismiss' is available here
+                    }) {
+                        Text(album.localizedTitle ?? "Unknown")
                     }
-                    .navigationTitle("Select Album")
+                }
+                .navigationTitle("Select Album")
             }
             .onAppear {
                 Logger.log("📸 [AlbumPickerView] albums count onAppear: \(albums.count)")
             }
             
         }
+        .onChange(of: albums) { oldValue, newValue in // When albums change
+            refreshTrigger = UUID() // Trigger a refresh
+        }
+        .id(refreshTrigger) // Apply the ID to the root view
 
     }
 

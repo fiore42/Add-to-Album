@@ -73,6 +73,9 @@ struct HamburgerMenuView: View {
                     }
                     .id(UUID())
             }
+//            else {
+//                Logger.log("📂 Album Picker selectedMenuIndex: \(selectedMenuIndex)")
+//            }
         }
 
     }
