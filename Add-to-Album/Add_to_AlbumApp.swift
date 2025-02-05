@@ -11,6 +11,7 @@ struct Add_to_AlbumApp: App {
         Logger.log("4. 05 Feb 2025 - 01:33 grid and full screen works - PhotoKit")
         Logger.log("5. 05 Feb 2025 - 01:42 introduced PHCachingImageManager")
         Logger.log("6. 05 Feb 2025 - 02:03 perfect grid and full screen view")
+        Logger.log("7. 05 Feb 2025 - 02:46 added swipe up and swipe down in full screen")
 
         Logger.log("🚀 App launched") // ✅ First debug print
     }
