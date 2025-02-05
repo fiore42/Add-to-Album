@@ -28,27 +28,32 @@ class UserDefaultsManager {
         Logger.log("⚠️ Invalid index \(index) for album ID retrieval")
         return nil
     }
-
-
     
-    static func saveAlbum(_ album: String, at index: Int, albumID: String?) {
-        var albums = getSavedAlbums()
-        var albumIDs = getSavedAlbumIDs()
-
-        if index >= 0 && index < 4 {
-            let cleanAlbumID = albumID?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "" // ✅ Trim and handle nil safely
-
-            albums[index] = album
-            albumIDs[index] = cleanAlbumID
-
-            UserDefaults.standard.set(albums, forKey: key)
-            UserDefaults.standard.set(albumIDs, forKey: idKey)
-
-            Logger.log("💾 Saving Album at index \(index): Name='\(album)', ID='\(cleanAlbumID)'")
-        } else {
-            Logger.log("⚠️ Attempted to save album at invalid index \(index)")
-        }
+    static func getSavedAlbumName(at index: Int) -> String {
+        let savedAlbumNames = UserDefaults.standard.array(forKey: "savedAlbumNames") as? [String] ?? []
+        return (index < savedAlbumNames.count) ? savedAlbumNames[index] : "No Album Selected"
     }
+
+
+    static func saveAlbum(_ name: String, at index: Int, albumID: String) {
+        var savedAlbumIDs = UserDefaults.standard.array(forKey: "savedAlbumIDs") as? [String] ?? []
+        var savedAlbumNames = UserDefaults.standard.array(forKey: "savedAlbumNames") as? [String] ?? []
+
+        // Ensure the arrays have enough space
+        while savedAlbumIDs.count <= index { savedAlbumIDs.append("") }
+        while savedAlbumNames.count <= index { savedAlbumNames.append("No Album Selected") }
+
+        // Update values
+        savedAlbumIDs[index] = albumID
+        savedAlbumNames[index] = name
+
+        // Save back to UserDefaults
+        UserDefaults.standard.set(savedAlbumIDs, forKey: "savedAlbumIDs")
+        UserDefaults.standard.set(savedAlbumNames, forKey: "savedAlbumNames")
+
+        Logger.log("💾 Saved Album: \(name) at index \(index)")
+    }
+
 
 
 }

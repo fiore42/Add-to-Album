@@ -60,25 +60,30 @@ struct AlbumUtilities {
             }
 
             let savedAlbumIDs = UserDefaultsManager.getSavedAlbumIDs().map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            let currentAlbumIDs = Set(photoObserverAlbums.map { $0.localIdentifier.trimmingCharacters(in: .whitespacesAndNewlines) })
+        // Create a mapping of album ID to current album name
+        let currentAlbumMap: [String: String] = Dictionary(uniqueKeysWithValues:
+            photoObserverAlbums.map { ($0.localIdentifier.trimmingCharacters(in: .whitespacesAndNewlines), $0.localizedTitle ?? "Unknown Album") }
+        )
 
 //            Logger.log("📂 All Current Album IDs: \(currentAlbumIDs)")
 //            Logger.log("💾 All Saved Album IDs: \(savedAlbumIDs)")
 
-            for (index, savedAlbumID) in savedAlbumIDs.enumerated() {
-                if savedAlbumID.isEmpty { continue }
+        for (index, savedAlbumID) in savedAlbumIDs.enumerated() {
+            if savedAlbumID.isEmpty { continue }
 
-//                Logger.log("🔎 Checking ID at index \(index): '\(savedAlbumID)' VS Current Album IDs: \(currentAlbumIDs)")
-
-                let albumStillExists = currentAlbumIDs.contains(savedAlbumID)
-
-                Logger.log("✅ Album at index \(index) exists in photo library: \(albumStillExists)")
-
-                if !albumStillExists {
-                    let resetName = "No Album Selected"
-                    UserDefaultsManager.saveAlbum(resetName, at: index, albumID: "")
-                    Logger.log("⚠️ Album Deleted - Resetting Entry \(index) to \(resetName)")
+            if let updatedName = currentAlbumMap[savedAlbumID] {
+                // ✅ Album exists, update name in UserDefaults if changed
+                let currentSavedName = UserDefaultsManager.getSavedAlbumName(at: index)
+                if currentSavedName != updatedName {
+                    UserDefaultsManager.saveAlbum(updatedName, at: index, albumID: savedAlbumID)
+                    Logger.log("🔄 Album Renamed - Updating Entry \(index) to \(updatedName)")
                 }
+            } else {
+                // ❌ Album no longer exists, reset
+                let resetName = "No Album Selected"
+                UserDefaultsManager.saveAlbum(resetName, at: index, albumID: "")
+                Logger.log("⚠️ Album Deleted - Resetting Entry \(index) to \(resetName)")
             }
+        }
         }
     }
