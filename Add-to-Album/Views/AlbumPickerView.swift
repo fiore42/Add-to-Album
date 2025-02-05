@@ -29,42 +29,42 @@ struct AlbumPickerView: View {
                 }
             }
         }
-        .onAppear {
-//moved to task
-        }
-        .task { // Use task instead of onAppear + if condition
-            if albums.isEmpty {
-                fetchAlbums()
-            }
-        }
+//        .onAppear {
+////moved to task
+//        }
+//        .task { // Use task instead of onAppear + if condition
+//            if albums.isEmpty {
+//                fetchAlbums()
+//            }
+//        }
         
     }
 
 
-    private func fetchAlbums() {
-        DispatchQueue.main.async {
-            self.isLoading = true // ✅ Ensures UI shows progress before fetching starts
-        }
-
-        let fetchOptions = PHFetchOptions()
-        let userAlbums = PHAssetCollection.fetchAssetCollections(
-            with: .album,
-            subtype: .any,
-            options: fetchOptions
-        )
-
-        var fetchedAlbums: [PHAssetCollection] = []
-        userAlbums.enumerateObjects { collection, _, _ in
-            fetchedAlbums.append(collection)
-        }
-
-        DispatchQueue.main.async {
-                self.albums = fetchedAlbums
-                self.isLoading = false
-                print("📸 Albums Loaded: \(self.albums.count)") // Debugging
-
-        }
-    }
+//    private func fetchAlbums() {
+//        DispatchQueue.main.async {
+//            self.isLoading = true // ✅ Ensures UI shows progress before fetching starts
+//        }
+//
+//        let fetchOptions = PHFetchOptions()
+//        let userAlbums = PHAssetCollection.fetchAssetCollections(
+//            with: .album,
+//            subtype: .any,
+//            options: fetchOptions
+//        )
+//
+//        var fetchedAlbums: [PHAssetCollection] = []
+//        userAlbums.enumerateObjects { collection, _, _ in
+//            fetchedAlbums.append(collection)
+//        }
+//
+//        DispatchQueue.main.async {
+//                self.albums = fetchedAlbums
+//                self.isLoading = false
+//                print("📸 Albums Loaded: \(self.albums.count)") // Debugging
+//
+//        }
+//    }
 
     private func formatAlbumName(_ name: String) -> String {
         let words = name.split(separator: " ")
