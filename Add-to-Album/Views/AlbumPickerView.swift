@@ -27,6 +27,9 @@ struct AlbumPickerView: View {
                 .navigationTitle("Select Album")
 
             }
+            .onAppear {
+                Logger.log("📸 [AlbumPickerView] albums: \(albums)")
+            }
             
         }
     }
