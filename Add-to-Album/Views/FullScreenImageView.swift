@@ -80,7 +80,7 @@ struct FullscreenImageView: View {
                     }
                     .tabViewStyle(PageTabViewStyle(indexDisplayMode: .always))
                     .indexViewStyle(PageIndexViewStyle(backgroundDisplayMode: .never))
-                    .onChange(of: selectedImageIndex) { newIndex in
+                    .onChange(of: selectedImageIndex) { oldIndex, newIndex in
                         handlePreloading(for: newIndex, targetSize: geometry.size)
                     }
 
