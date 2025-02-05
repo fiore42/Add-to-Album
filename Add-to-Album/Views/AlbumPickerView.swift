@@ -5,17 +5,12 @@ struct AlbumPickerView: View {
     @Binding var selectedAlbum: String
     @Environment(\.dismiss) var dismiss
     @State private var albums: [PHAssetCollection] = []
-    @State private var isLoading = true
+//    @State private var isLoading = true
 
     var body: some View {
         NavigationView {
             VStack {
-                if isLoading {
-                    ProgressView() // Show progress while loading
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(Color.black.opacity(0.1)) // Optional UI improvement
-                    
-                } else {
+
                     List(albums, id: \.localIdentifier) { album in
                         Button(action: {
                             selectedAlbum = formatAlbumName(album.localizedTitle ?? "Unknown")
@@ -26,7 +21,6 @@ struct AlbumPickerView: View {
                         }
                     }
                     .navigationTitle("Select Album")
-                }
             }
         }
 //        .onAppear {
