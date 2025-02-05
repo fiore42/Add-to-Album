@@ -18,22 +18,34 @@ class UserDefaultsManager {
 
     static func getAlbumID(at index: Int) -> String? {
         let albumIDs = getSavedAlbumIDs()
-        let id = albumIDs[index].isEmpty ? nil : albumIDs[index]
-        Logger.log("💾 Retrieved Album ID at index \(index): \(id ?? "nil")") // Added Log
-        return id
+
+        if index >= 0 && index < albumIDs.count {
+            let id = albumIDs[index]
+            Logger.log("💾 Retrieved Album ID at index \(index): '\(id)'") // ✅ Confirm retrieval format
+            return id.isEmpty ? nil : id
+        }
+
+        Logger.log("⚠️ Invalid index \(index) for album ID retrieval")
+        return nil
     }
+
 
     
     static func saveAlbum(_ album: String, at index: Int, albumID: String = "") {
-            var albums = getSavedAlbums()
-            albums[index] = album
-            UserDefaults.standard.set(albums, forKey: key)
+        var albums = getSavedAlbums()
+        var albumIDs = getSavedAlbumIDs()
 
-            var albumIDs = getSavedAlbumIDs()
-            albumIDs[index] = albumID // ✅ Save album ID as a String
+        if index >= 0 && index < 4 {
+            albums[index] = album
+            albumIDs[index] = albumID
+
+            UserDefaults.standard.set(albums, forKey: key)
             UserDefaults.standard.set(albumIDs, forKey: idKey)
 
-            Logger.log("💾 UserDefaults Updated: \(albums) with IDs: \(albumIDs)")
+            Logger.log("💾 Saving Album at index \(index): Name='\(album)', ID='\(albumID)'") // ✅ Confirm what's stored
+        } else {
+            Logger.log("⚠️ Attempted to save album at invalid index \(index)")
         }
+    }
 
 }
