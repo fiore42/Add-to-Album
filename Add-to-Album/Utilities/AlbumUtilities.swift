@@ -72,7 +72,7 @@ struct AlbumUtilities {
                 }
             } else {
                 Logger.log("⚠️ Album ID '\(savedAlbumID)' at index \(index) no longer exists in the photo library.")
-                UserDefaultsManager.saveAlbum("No Album Selected", at: index, albumID: "")
+                UserDefaultsManager.saveAlbum("", at: index, albumID: "")
                 hasChanges = true // ✅ Track changes to trigger UI update
                 
                 

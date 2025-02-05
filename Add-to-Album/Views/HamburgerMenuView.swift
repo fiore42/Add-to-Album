@@ -16,7 +16,8 @@ struct HamburgerMenuView: View {
                     selectedMenuIndex = index
                     isAlbumPickerPresented = true
                 }) {
-                    Text(selectedAlbums[index])
+                    Text(selectedAlbums[index].isEmpty ? "No Album Selected" : selectedAlbums[index])
+                        .foregroundColor(selectedAlbums[index].isEmpty ? .red : .primary)
                 }
             }
         } label: {

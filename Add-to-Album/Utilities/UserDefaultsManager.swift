@@ -5,7 +5,7 @@ class UserDefaultsManager {
     private static let key = "savedAlbumNames"
 
     static func getSavedAlbums() -> [String] {
-        let albums = UserDefaults.standard.array(forKey: key) as? [String] ?? Array(repeating: "No Album Selected", count: 4)
+        let albums = UserDefaults.standard.array(forKey: key) as? [String] ?? Array(repeating: "", count: 4)
         Logger.log("💾 Retrieved Albums from UserDefaults: \(albums)") // Added Log
         return albums
     }
@@ -33,12 +33,12 @@ class UserDefaultsManager {
     
     static func getSavedAlbumName(at index: Int) -> String {
 
-        let albums = UserDefaults.standard.array(forKey: key) as? [String] ?? Array(repeating: "No Album Selected", count: 4)
+        let albums = UserDefaults.standard.array(forKey: key) as? [String] ?? Array(repeating: "", count: 4)
 
         let savedAlbumNames = UserDefaults.standard.array(forKey: key) as? [String] ?? []
         Logger.log("❤️‍🔥 albums: \(albums) savedAlbumNames: \(savedAlbumNames)")
 
-        return (index < savedAlbumNames.count) ? savedAlbumNames[index] : "No Album Selected"
+        return (index < savedAlbumNames.count) ? savedAlbumNames[index] : ""
     }
 
 
@@ -48,7 +48,7 @@ class UserDefaultsManager {
 
         // Ensure the arrays have enough space
         while savedAlbumIDs.count <= index { savedAlbumIDs.append("") }
-        while savedAlbumNames.count <= index { savedAlbumNames.append("No Album Selected") }
+        while savedAlbumNames.count <= index { savedAlbumNames.append("") }
 
         // Log before saving
         Logger.log("💾 Before Saving: Name='\(name)', ID='\(albumID)', Index=\(index)")
