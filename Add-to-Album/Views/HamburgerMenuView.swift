@@ -29,14 +29,14 @@ struct HamburgerMenuView: View {
         .onAppear {
             updateSelectedAlbums() // ✅ Check if selected albums still exist
         }
-        .onChange(of: photoObserver.albums) { _ in
+        .onChange(of: photoObserver.albums) { oldValue, newValue in
             Logger.log("🔄 Album List Changed - Checking Selections")
             updateSelectedAlbums() // ✅ Update menu when albums change
         }
 
         .sheet(isPresented: $isAlbumPickerPresented) {
             if let index = selectedMenuIndex {
-                AlbumPickerView(selectedAlbum: $selectedAlbums[index], albums: photoObserver.albums)
+                AlbumPickerView(selectedAlbum: $selectedAlbums[index], albums: photoObserver.albums, index: index) // ✅ Pass index
                     .onDisappear {
                         if let index = selectedMenuIndex {
                             UserDefaultsManager.saveAlbum(selectedAlbums[index], at: index)
@@ -49,17 +49,23 @@ struct HamburgerMenuView: View {
 
     }
 
-    /// **Automatically Reset Deleted Albums to "No Album Selected"**
+    // **Automatically Reset Deleted Albums to "No Album Selected"**
     private func updateSelectedAlbums() {
+        let currentAlbumIDs = Set(photoObserver.albums.map { $0.localIdentifier }) // ✅ Store existing album IDs
+
         for i in 0..<selectedAlbums.count {
-            let savedAlbum = selectedAlbums[i]
-            let albumExists = photoObserver.albums.contains { $0.localizedTitle == savedAlbum }
-            if !albumExists {
-                selectedAlbums[i] = "No Album Selected" // ✅ Reset deleted albums
-                UserDefaultsManager.saveAlbum(selectedAlbums[i], at: i) // ✅ Persist change
-                Logger.log("⚠️ Album Deleted - Resetting Entry \(i) to No Album Selected")
+            // Retrieve the stored album's unique ID
+            if let savedAlbumID = UserDefaultsManager.getAlbumID(at: i) {
+                let albumStillExists = currentAlbumIDs.contains(savedAlbumID) // ✅ Check by unique ID
+                if !albumStillExists {
+                    selectedAlbums[i] = "No Album Selected" // ✅ Reset deleted albums
+                    UserDefaultsManager.saveAlbum(selectedAlbums[i], at: i)
+                    Logger.log("⚠️ Album Deleted - Resetting Entry \(i) to No Album Selected")
+                }
             }
         }
     }
+
+
     
 }

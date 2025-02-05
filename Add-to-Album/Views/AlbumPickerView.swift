@@ -5,6 +5,7 @@ struct AlbumPickerView: View {
     @Binding var selectedAlbum: String
     @Environment(\.dismiss) var dismiss
     let albums: [PHAssetCollection] // ✅ Receive preloaded albums
+    let index: Int
     
 //    @State private var albums: [PHAssetCollection] = []
 //    private var photoLibraryChangeObserver: PHPhotoLibraryChangeObserver?
@@ -15,21 +16,16 @@ struct AlbumPickerView: View {
                 
                 List(albums, id: \.localIdentifier) { album in
                     Button(action: {
+                        let albumID = album.localIdentifier // ✅ Ensure this is a String
                         selectedAlbum = AlbumUtilities.formatAlbumName(album.localizedTitle ?? "Unknown")
+                        UserDefaultsManager.saveAlbum(selectedAlbum, at: index, albumID: albumID) // ✅ Now `index` is correctly passed
                         dismiss()
                     }) {
                         Text(album.localizedTitle ?? "Unknown")
                     }
                 }
                 .navigationTitle("Select Album")
-//                .onAppear { // REPLACE the existing .onAppear with this:
-//                    AlbumUtilities.fetchAlbums { fetchedAlbums in
-//                        withAnimation {
-//                            self.albums = fetchedAlbums
-//                        }
-//                    }
-//                    Logger.log("✅ AlbumPickerView Opened with Albums Count: \(albums.count)") // Keep the logging
-//                }
+
             }
             
 //            .onDisappear { // ADD THIS: Remove observer
