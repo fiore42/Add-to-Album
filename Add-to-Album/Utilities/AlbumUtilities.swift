@@ -57,7 +57,7 @@ struct AlbumUtilities {
         
         for (index, savedAlbumID) in savedAlbumIDs.enumerated() {
             if savedAlbumID.isEmpty { continue }
-            Logger.log("🔄 Analysing: \(savedAlbumID) - \(currentAlbumMap[savedAlbumID])")
+//            Logger.log("🔄 Analysing: \(savedAlbumID) - \(currentAlbumMap[savedAlbumID])")
             
             if let updatedName = currentAlbumMap[savedAlbumID] {
                 let currentSavedName = UserDefaultsManager.getSavedAlbumName(at: index)
