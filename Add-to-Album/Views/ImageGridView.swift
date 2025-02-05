@@ -18,13 +18,14 @@ struct ImageGridView: View {
     
     var body: some View {
         NavigationStack {
-            VStack {
-                // Add Hamburger Menu at the top
-                HamburgerMenuView()
-
-                contentView
-            }
+            contentView
             .navigationTitle("Photo Grid")
+            .navigationBarTitleDisplayMode(.inline) // Ensures proper layout
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) { // Moves menu to top right
+                    HamburgerMenuView()
+                }
+            }
             .task {
                 Logger.log("🔍 Before Checking Permissions: \(viewModel.status)")
                 viewModel.checkPermissions()
