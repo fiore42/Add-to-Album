@@ -100,6 +100,7 @@ struct FullscreenImageView: View {
                     // Call FunctionBoxes and pass geometry
                     FunctionBoxes(
                         geometry: geometry,
+                        currentPhotoID: imageAssets[selectedImageIndex].localIdentifier,
                         selectedAlbums: $albumSelectionViewModel.selectedAlbums,
                         selectedAlbumIDs: $albumSelectionViewModel.selectedAlbumIDs
                     )
