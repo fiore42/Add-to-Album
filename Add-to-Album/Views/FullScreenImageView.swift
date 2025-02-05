@@ -65,7 +65,7 @@ struct FullscreenImageView: View {
                                 // Add a vertical black separator on the right edge of each image
                                 Rectangle()
                                     .fill(Color.black)
-                                    .frame(width: 2) // Adjust thickness
+                                    .frame(width: 10) // Adjust thickness
                                     .edgesIgnoringSafeArea(.all)
                                     .offset(x: geometry.size.width / 2 - 1) // Position at right edge
 
