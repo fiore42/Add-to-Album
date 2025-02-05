@@ -80,12 +80,13 @@ struct AlbumUtilities {
 
         for (index, savedAlbumID) in savedAlbumIDs.enumerated() {
             if savedAlbumID.isEmpty { continue }
+            Logger.log("🔄 Analysing: \(savedAlbumID) - \(currentAlbumMap[savedAlbumID])")
 
             if let updatedName = currentAlbumMap[savedAlbumID] {
                 let currentSavedName = UserDefaultsManager.getSavedAlbumName(at: index)
                 if currentSavedName != updatedName {
-                    UserDefaultsManager.saveAlbum(updatedName, at: index, albumID: savedAlbumID)
                     Logger.log("🔄 Album Renamed - Updating Entry \(index) to \(updatedName)")
+                    UserDefaultsManager.saveAlbum(updatedName, at: index, albumID: savedAlbumID)
                 } else {
                     Logger.log("🔄 Album name not changed: \(currentSavedName)")
                 }
