@@ -14,6 +14,6 @@ class UserDefaultsManager {
         var albums = getSavedAlbums()
         albums[index] = album
         UserDefaults.standard.set(albums, forKey: key)
-        UserDefaults.standard.synchronize() // ✅ Ensures immediate persistence
+        Logger.log("💾 UserDefaults Updated: \(albums)")
     }
 }
