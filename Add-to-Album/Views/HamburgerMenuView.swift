@@ -55,22 +55,31 @@ struct HamburgerMenuView: View {
         let currentAlbumIDs = Set(photoObserver.albums.map { $0.localIdentifier })
 
         for i in 0..<selectedAlbums.count {
+            Logger.log("🔍 Checking Album at index \(i)")  // Added log
             let savedAlbumID = UserDefaultsManager.getAlbumID(at: i)
+            Logger.log("💾 Retrieved Album ID at index \(i): \(savedAlbumID ?? "nil")") // Added log
 
             if let savedAlbumID = savedAlbumID {
                 let albumStillExists = currentAlbumIDs.contains(savedAlbumID)
+                Logger.log("✅ Album at index \(i) still exists: \(albumStillExists)") // Added log
 
                 if !albumStillExists {
                     selectedAlbums[i] = "No Album Selected"
-                    UserDefaultsManager.saveAlbum(selectedAlbums[i], at: i, albumID: "") // Clear ID
+                    UserDefaultsManager.saveAlbum(selectedAlbums[i], at: i, albumID: "")
                     Logger.log("⚠️ Album Deleted - Resetting Entry \(i) to No Album Selected")
-                } else if selectedAlbums[i] == "No Album Selected" { // Restore name
+                } else if selectedAlbums[i] == "No Album Selected" {
                     if let album = photoObserver.albums.first(where: { $0.localIdentifier == savedAlbumID }) {
                         selectedAlbums[i] = AlbumUtilities.formatAlbumName(album.localizedTitle ?? "Unknown")
                         UserDefaultsManager.saveAlbum(selectedAlbums[i], at: i, albumID: savedAlbumID)
-                        Logger.log("✅ Restored Album Name for Entry \(i)")
+                        Logger.log("✅ Restored Album Name for Entry \(i): \(selectedAlbums[i])") // Added log
+                    } else {
+                        Logger.log("❌ Could not restore album name at index \(i). Album not found in photoObserver.albums despite ID existing.") // Added log
                     }
+                } else {
+                    Logger.log("✅ Album at index \(i) already correctly set: \(selectedAlbums[i])") // Added log
                 }
+            } else {
+                Logger.log("⚠️ No saved Album ID at index \(i)") // Added log
             }
         }
     }
