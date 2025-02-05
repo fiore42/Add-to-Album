@@ -6,14 +6,14 @@ class UserDefaultsManager {
 
     static func getSavedAlbums() -> [String] {
         let albums = UserDefaults.standard.array(forKey: key) as? [String] ?? Array(repeating: "", count: 4)
-        Logger.log("💾 Retrieved Albums from UserDefaults: \(albums)") // Added Log
+        Logger.log("💾 [UserDefaults] Retrieved Albums: \(albums)") // Added Log
         return albums
     }
 
 
     static func getSavedAlbumIDs() -> [String] {
         let savedAlbumIDs = UserDefaults.standard.array(forKey: idKey) as? [String] ?? []
-        Logger.log("💾 DEBUG: Retrieved Album IDs from UserDefaults: \(savedAlbumIDs)")
+        Logger.log("💾 [UserDefaults] Retrieved Album IDs: \(savedAlbumIDs)")
         return savedAlbumIDs
     }
 
@@ -23,11 +23,11 @@ class UserDefaultsManager {
 
         if index >= 0 && index < albumIDs.count {
             let id = albumIDs[index].trimmingCharacters(in: .whitespacesAndNewlines)
-            Logger.log("💾 Retrieved Album ID at index \(index): '\(id)'")
+            Logger.log("💾 [UserDefaults] Retrieved Album ID at index \(index): '\(id)'")
             return id.isEmpty ? nil : id // ✅ Return nil instead of empty string
         }
 
-        Logger.log("⚠️ Invalid index \(index) for album ID retrieval")
+        Logger.log("⚠️ [UserDefaults] Invalid index \(index) for album ID retrieval")
         return nil
     }
     
@@ -36,7 +36,7 @@ class UserDefaultsManager {
         let albums = UserDefaults.standard.array(forKey: key) as? [String] ?? Array(repeating: "", count: 4)
 
         let savedAlbumNames = UserDefaults.standard.array(forKey: key) as? [String] ?? []
-        Logger.log("❤️‍🔥 albums: \(albums) savedAlbumNames: \(savedAlbumNames)")
+        Logger.log("❤️‍🔥 [UserDefaults] albums: \(albums) savedAlbumNames: \(savedAlbumNames)")
 
         return (index < savedAlbumNames.count) ? savedAlbumNames[index] : ""
     }
@@ -51,10 +51,10 @@ class UserDefaultsManager {
         while savedAlbumNames.count <= index { savedAlbumNames.append("") }
 
         // Log before saving
-        Logger.log("💾 Before Saving: Name='\(name)', ID='\(albumID)', Index=\(index)")
+        Logger.log("💾 [UserDefaults] Before Saving: Name='\(name)', ID='\(albumID)', Index=\(index)")
 
         if albumID.isEmpty {
-            Logger.log("⚠️ Attempted to save album with empty ID at index \(index). AKA deleting!")
+            Logger.log("⚠️ [UserDefaults] Attempted to save album with empty ID at index \(index). AKA deleting!")
         }
         savedAlbumIDs[index] = albumID
         savedAlbumNames[index] = name
@@ -64,7 +64,7 @@ class UserDefaultsManager {
         UserDefaults.standard.set(savedAlbumIDs, forKey: idKey)
         UserDefaults.standard.set(savedAlbumNames, forKey: key)
 
-        Logger.log("💾 Saved Album: \(name) at index \(index) with ID: \(albumID)")
+        Logger.log("💾 [UserDefaults] Saved Album: \(name) at index \(index) with ID: \(albumID)")
     }
 
 

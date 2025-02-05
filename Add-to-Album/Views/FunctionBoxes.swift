@@ -42,11 +42,15 @@ struct FunctionBoxes: View {
         }
         .ignoresSafeArea()
         .onAppear {
-            Logger.log("📂 FunctionBoxes appeared. Initial Albums: \(selectedAlbums)")
+            Logger.log("📂 [FunctionBoxes] appeared. selectedAlbums: \(selectedAlbums) selectedAlbumIDs: \(selectedAlbumIDs)")
         }
-        .onChange(of: selectedAlbums) { _, newValue in
-            Logger.log("🔄 FunctionBoxes updated with new Albums: \(newValue)")
+        .onChange(of: selectedAlbums) { oldValue, newValue in
+            Logger.log("🔄 [FunctionBoxes] selectedAlbums Updated! Old: \(oldValue) -> New: \(newValue)")
         }
+        .onChange(of: selectedAlbumIDs) { oldValue, newValue in
+            Logger.log("🔄 [FunctionBoxes] selectedAlbumIDs Updated! Old: \(oldValue) -> New: \(newValue)")
+        }
+
     }
 
     private func functionBox(text: String, albumID: String, alignment: Alignment) -> some View {
@@ -95,6 +99,7 @@ struct FunctionBox: View {
         .background(Color.black.opacity(0.5))
         .cornerRadius(10)
         .onTapGesture {
+            Logger.log("📂 [FunctionBox] Toggling photo \(photoID) in album \(albumID)")
             albumManager.togglePhotoInAlbum(photoID: photoID, albumID: albumID)
         }
     }
