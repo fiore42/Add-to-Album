@@ -5,6 +5,7 @@ class ImageGridViewModel: ObservableObject {
     @Published var status: PhotoPermissionStatus = .notDetermined
     @Published var imageAssets: [PHAsset] = [] // Only PHAssets are stored
     @Published internal var isLoadingBatch = false // Make it internal
+    @Published var isCheckingPermissions: Bool = true
 
 
     private let imageManager = ImageManager() // Assuming this handles permission requests and asset fetching
@@ -14,11 +15,14 @@ class ImageGridViewModel: ObservableObject {
 //    private var isLoadingBatch = false
 
     func checkPermissions() {
+        Logger.log("🔍 Checking Permissions...")
         let current = imageManager.getPhotoPermissionStatus()
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return } // Prevents memory leaks
 
             self.status = current
+            self.isCheckingPermissions = false // Hide splash screen once check is done
+
             Logger.log("📊 Current Photo Library Status: \(self.status)")
 
             if current == .granted || current == .limited {

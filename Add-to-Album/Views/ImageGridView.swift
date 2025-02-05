@@ -43,15 +43,48 @@ struct ImageGridView: View {
 
     
     private var contentView: some View {
-        switch viewModel.status {
-        case .granted, .limited:
-            AnyView(imageGridView) // Wrap in AnyView
-        case .notDetermined:
-            AnyView(permissionRequestView) // Wrap in AnyView
-        case .denied, .restricted:
-            AnyView(accessDeniedView) // Wrap in AnyView
-        }
+        AnyView(
+            Group {
+                if viewModel.isCheckingPermissions {
+                    splashScreenView // Show splash screen
+                } else {
+                    switch viewModel.status {
+                    case .granted, .limited:
+                        imageGridView
+                    case .notDetermined:
+                        permissionRequestView
+                    case .denied, .restricted:
+                        accessDeniedView
+                    }
+                }
+            }
+        )
     }
+
+    private var splashScreenView: some View {
+        VStack {
+            Spacer()
+            ProgressView("Checking Permissions...")
+                .progressViewStyle(CircularProgressViewStyle())
+                .font(.title2)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black.opacity(0.8)) // Dark splash screen
+        .ignoresSafeArea()
+    }
+
+    
+//    private var contentView: some View {
+//        switch viewModel.status {
+//        case .granted, .limited:
+//            AnyView(imageGridView) // Wrap in AnyView
+//        case .notDetermined:
+//            AnyView(permissionRequestView) // Wrap in AnyView
+//        case .denied, .restricted:
+//            AnyView(accessDeniedView) // Wrap in AnyView
+//        }
+//    }
 
 
     private var imageGridView: some View {
