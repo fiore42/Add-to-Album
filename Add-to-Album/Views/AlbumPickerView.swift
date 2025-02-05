@@ -41,10 +41,9 @@ struct AlbumPickerView: View {
         }
 
         DispatchQueue.main.async {
-            withAnimation { // ✅ Ensures UI refresh
                 self.albums = fetchedAlbums
                 self.isLoading = false
-            }
+
         }
     }
 
