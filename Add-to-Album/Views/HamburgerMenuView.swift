@@ -11,9 +11,9 @@ struct HamburgerMenuView: View {
 
     @StateObject private var photoObserver = PhotoLibraryObserver() // ✅ Use album observer
 
-    @State private var selectedAlbums: [String] = UserDefaultsManager.getSavedAlbums()
+//    @State private var selectedAlbums: [String] = UserDefaultsManager.getSavedAlbums()
     @State private var selectedAlbumEntry: SelectedAlbumEntry? // ✅ Track selected album
-    @State private var albums: [PHAssetCollection] = [] // ✅ Preloaded albums
+//    @State private var albums: [PHAssetCollection] = [] // ✅ Preloaded albums
     
     var body: some View {
 
@@ -24,8 +24,8 @@ struct HamburgerMenuView: View {
                     selectedAlbumEntry = SelectedAlbumEntry(index: index)
                 }) {
                     Label {
-                        Text(selectedAlbums[index].isEmpty ? "⛔️ No Album Selected" : AlbumUtilities.formatAlbumName(selectedAlbums[index]))
-                            .foregroundColor(selectedAlbums[index].isEmpty ? .red : .primary)
+                        Text(albumSelectionViewModel.selectedAlbums[index].isEmpty ? "⛔️ No Album Selected" : AlbumUtilities.formatAlbumName(albumSelectionViewModel.selectedAlbums[index]))
+                            .foregroundColor(albumSelectionViewModel.selectedAlbums[index].isEmpty ? .red : .primary)
                     } icon: {
                         Image(systemName: "photo") // Optional album icon
                     }
@@ -40,7 +40,7 @@ struct HamburgerMenuView: View {
         }
         .onAppear {
             Logger.log("📸 HamburgerMenuView onAppear triggered")
-            Logger.log("📂 Initial Selected Albums: \(selectedAlbums)")
+            Logger.log("📂 Initial Selected Albums: \(albumSelectionViewModel.selectedAlbums)")
             // Remove existing observers before adding a new one to avoid duplicate triggers.
             NotificationCenter.default.removeObserver(self, name: .albumListUpdated, object: nil)
 
@@ -50,8 +50,8 @@ struct HamburgerMenuView: View {
                 queue: .main
             ) { _ in
                 Logger.log("🔄 UI Refresh: Reloading albums in Hamburger Menu")
-                self.selectedAlbums = UserDefaultsManager.getSavedAlbums()
-                Logger.log("📂 Updated Selected Albums: \(self.selectedAlbums)")
+                albumSelectionViewModel.selectedAlbums = UserDefaultsManager.getSavedAlbums()
+                Logger.log("📂 Updated Selected Albums: \(albumSelectionViewModel.selectedAlbums)")
             }
         }
         .onChange(of: photoObserver.albums) { oldValue, newValue in
@@ -74,15 +74,15 @@ struct HamburgerMenuView: View {
     private func albumPickerSheet(for selectedEntry: SelectedAlbumEntry) -> some View {
         let index = selectedEntry.index
         return AlbumPickerView(
-            selectedAlbum: $selectedAlbums[index],
+            selectedAlbum: $albumSelectionViewModel.selectedAlbums[index],
             albums: photoObserver.albums,
             index: index
         )
         .onDisappear {
-            Logger.log("📂 Album Picker Closed. Selected Album: \(selectedAlbums[index]) at index \(index)")
+            Logger.log("📂 Album Picker Closed. Selected Album: \(albumSelectionViewModel.selectedAlbums[index]) at index \(index)")
             let albumID = UserDefaultsManager.getAlbumID(at: index) ?? ""
-            UserDefaultsManager.saveAlbum(selectedAlbums[index], at: index, albumID: albumID)
-            Logger.log("💾 Saved Album: \(selectedAlbums[index]) at index \(index), ID: \(albumID)")
+            UserDefaultsManager.saveAlbum(albumSelectionViewModel.selectedAlbums[index], at: index, albumID: albumID)
+            Logger.log("💾 Saved Album: \(albumSelectionViewModel.selectedAlbums[index]) at index \(index), ID: \(albumID)")
         }
     }
     
