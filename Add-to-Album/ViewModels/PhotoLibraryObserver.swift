@@ -37,7 +37,3 @@ class PhotoLibraryObserver: NSObject, PHPhotoLibraryChangeObserver, ObservableOb
         }
     }
 }
-
-extension Notification.Name {
-    static let albumsUpdated = Notification.Name("albumsUpdated")
-}
