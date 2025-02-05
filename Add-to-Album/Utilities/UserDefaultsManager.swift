@@ -10,11 +10,13 @@ class UserDefaultsManager {
         return albums
     }
 
+
     static func getSavedAlbumIDs() -> [String] {
-        let ids = UserDefaults.standard.array(forKey: idKey) as? [String] ?? Array(repeating: "", count: 4)
-        Logger.log("💾 Retrieved Album IDs from UserDefaults: \(ids)") // Added Log
-        return ids
+        let savedAlbumIDs = UserDefaults.standard.array(forKey: "savedAlbumIDs") as? [String] ?? []
+        Logger.log("💾 DEBUG: Retrieved Album IDs from UserDefaults: \(savedAlbumIDs)")
+        return savedAlbumIDs
     }
+
 
     static func getAlbumID(at index: Int) -> String? {
         let albumIDs = getSavedAlbumIDs()
@@ -53,6 +55,7 @@ class UserDefaultsManager {
         } else {
             Logger.log("⚠️ Attempted to save album with empty ID at index \(index). Skipping save.")
         }
+        
 
         // Save back to UserDefaults
         UserDefaults.standard.set(savedAlbumIDs, forKey: "savedAlbumIDs")
