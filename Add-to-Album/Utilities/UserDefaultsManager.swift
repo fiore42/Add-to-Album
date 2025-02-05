@@ -32,7 +32,12 @@ class UserDefaultsManager {
     }
     
     static func getSavedAlbumName(at index: Int) -> String {
+
+        let albums = UserDefaults.standard.array(forKey: key) as? [String] ?? Array(repeating: "No Album Selected", count: 4)
+
         let savedAlbumNames = UserDefaults.standard.array(forKey: "savedAlbumNames") as? [String] ?? []
+        Logger.log("❤️‍🔥 albums: \(albums) savedAlbumNames: \(savedAlbumNames)")
+
         return (index < savedAlbumNames.count) ? savedAlbumNames[index] : "No Album Selected"
     }
 
@@ -48,7 +53,6 @@ class UserDefaultsManager {
         // Log before saving
         Logger.log("💾 Before Saving: Name='\(name)', ID='\(albumID)', Index=\(index)")
 
-        // Only save if the album ID is not empty
         if albumID.isEmpty {
             Logger.log("⚠️ Attempted to save album with empty ID at index \(index). AKA deleting!")
         }
