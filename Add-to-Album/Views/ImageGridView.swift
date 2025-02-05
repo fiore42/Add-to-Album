@@ -7,9 +7,9 @@ struct ImageGridView: View {
     @State private var isPresented = false
     @State private var selectedImageIndex = 0
     
-    @State private var selectedAlbums: [String] = UserDefaultsManager.getSavedAlbums() // Load saved albums
-    @State private var isAlbumPickerPresented = false
-    @State private var selectedMenuIndex: Int? = nil // Track which menu item is being selected
+//    @State private var selectedAlbums: [String] = UserDefaultsManager.getSavedAlbums() // Load saved albums
+//    @State private var isAlbumPickerPresented = false
+//    @State private var selectedMenuIndex: Int? = nil // Track which menu item is being selected
 
     private let spacing: CGFloat = 4
     private var columns: [GridItem] {

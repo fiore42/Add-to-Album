@@ -29,10 +29,18 @@ struct HamburgerMenuView: View {
         }
         .onAppear {
             fetchAlbums() // ✅ Preload albums when menu appears
+            Logger.log("📁 Loaded Saved Albums: \(selectedAlbums)")
+
         }
         .sheet(isPresented: $isAlbumPickerPresented) {
             if let index = selectedMenuIndex, !albums.isEmpty {
                 AlbumPickerView(selectedAlbum: $selectedAlbums[index], albums: albums)
+                    .onDisappear {
+                        if let index = selectedMenuIndex {
+                            UserDefaultsManager.saveAlbum(selectedAlbums[index], at: index)
+                            Logger.log("💾 Saved Album: \(selectedAlbums[index]) at index \(index)")
+                        }
+                    }
                     .id(UUID()) // ✅ Force SwiftUI to create a new instance every time
             }
         }
