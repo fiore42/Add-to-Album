@@ -24,36 +24,36 @@ struct AlbumUtilities {
     
 
 
-    static func fetchAlbums(completion: @escaping ([PHAssetCollection]) -> Void) {
-        let fetchOptions = PHFetchOptions()
-        let userAlbums = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: fetchOptions)
-        
-        Logger.log("📸 fetchAlbums called")
-
-
-        var fetchedAlbums: [PHAssetCollection] = []
-        userAlbums.enumerateObjects { collection, _, _ in
-            fetchedAlbums.append(collection)
-        }
-
-        DispatchQueue.main.async {
-            Logger.log("📸 Albums Fetched: \(fetchedAlbums.count)")
-            completion(fetchedAlbums)
-            NotificationCenter.default.post(name: albumsUpdated, object: fetchedAlbums)
-            
-            // ✅ Call updateSelectedAlbums AFTER the fetch is complete
-            PHPhotoLibrary.shared().performChanges { // Ensures the library is consistent
-                Logger.log("📸 fetchAlbums calling updateSelectedAlbums")
-                 self.updateSelectedAlbums(photoObserverAlbums: fetchedAlbums)
-            } completionHandler: { success, error in
-                if let error = error {
-                    Logger.log("Error performing photo library changes: \(error)")
-                } else {
-                     Logger.log("Photo library changes completed.")
-                }
-            }
-        }
-    }
+//    static func fetchAlbums(completion: @escaping ([PHAssetCollection]) -> Void) {
+//        let fetchOptions = PHFetchOptions()
+//        let userAlbums = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: fetchOptions)
+//        
+//        Logger.log("📸 fetchAlbums called")
+//
+//
+//        var fetchedAlbums: [PHAssetCollection] = []
+//        userAlbums.enumerateObjects { collection, _, _ in
+//            fetchedAlbums.append(collection)
+//        }
+//
+//        DispatchQueue.main.async {
+//            Logger.log("📸 Albums Fetched: \(fetchedAlbums.count)")
+//            completion(fetchedAlbums)
+//            NotificationCenter.default.post(name: albumsUpdated, object: fetchedAlbums)
+//            
+//            // ✅ Call updateSelectedAlbums AFTER the fetch is complete
+//            PHPhotoLibrary.shared().performChanges { // Ensures the library is consistent
+//                Logger.log("📸 fetchAlbums calling updateSelectedAlbums")
+//                 self.updateSelectedAlbums(photoObserverAlbums: fetchedAlbums)
+//            } completionHandler: { success, error in
+//                if let error = error {
+//                    Logger.log("Error performing photo library changes: \(error)")
+//                } else {
+//                     Logger.log("Photo library changes completed.")
+//                }
+//            }
+//        }
+//    }
 
                 
     static let albumsUpdated = Notification.Name("AlbumsUpdated")

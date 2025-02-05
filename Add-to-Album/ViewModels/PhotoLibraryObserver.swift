@@ -14,20 +14,22 @@ class PhotoLibraryObserver: NSObject, PHPhotoLibraryChangeObserver, ObservableOb
     }
 
     func fetchAlbums() {
-        let fetchOptions = PHFetchOptions()
-        let userAlbums = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: fetchOptions)
+         let fetchOptions = PHFetchOptions()
+         let userAlbums = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: fetchOptions)
 
-        var fetchedAlbums: [PHAssetCollection] = []
-        userAlbums.enumerateObjects { collection, _, _ in
-            fetchedAlbums.append(collection)
-        }
+         var fetchedAlbums: [PHAssetCollection] = []
+         userAlbums.enumerateObjects { collection, _, _ in
+             fetchedAlbums.append(collection)
+         }
 
-        DispatchQueue.main.async {
-            self.albums = fetchedAlbums
-            Logger.log("📸 Albums Updated: \(self.albums.count)")
-        }
-    }
-
+         DispatchQueue.main.async {
+             self.albums = fetchedAlbums
+             Logger.log("📸 Albums Updated: \(self.albums.count)")
+             
+             // ✅ Automatically update selected albums when fetching completes
+            AlbumUtilities.updateSelectedAlbums(photoObserverAlbums: self.albums)
+         }
+     }
     func photoLibraryDidChange(_ changeInstance: PHChange) {
         DispatchQueue.main.async {
             Logger.log("🔄 Detected Changes in Photo Library - Refreshing Albums")
