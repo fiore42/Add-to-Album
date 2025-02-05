@@ -7,7 +7,7 @@ struct HamburgerMenuView: View {
     @State private var isAlbumPickerPresented = false
     @State private var selectedMenuIndex: Int? = nil // Track which menu item is selected
     @State private var albums: [PHAssetCollection] = [] // ✅ Preloaded albums
-
+    @State private var isAlbumPickerReady = false
     
     var body: some View {
         Menu {
@@ -53,13 +53,14 @@ struct HamburgerMenuView: View {
             Logger.log("📸 HamburgerMenuView onChange calling updateSelectedAlbums")
             Logger.log("📂 Old Albums Count: \(oldValue.count), New Albums Count: \(newValue.count)")
             AlbumUtilities.updateSelectedAlbums(photoObserverAlbums: photoObserver.albums)
+            isAlbumPickerReady = !newValue.isEmpty // Set to true when albums are loaded
+
         }
 
 
         .sheet(isPresented: $isAlbumPickerPresented) {
             if let index = selectedMenuIndex {
-                let currentAlbums = photoObserver.albums // Ensure albums are captured
-                AlbumPickerView(selectedAlbum: $selectedAlbums[index], albums: photoObserver.albums, index: index)
+                AlbumPickerView(selectedAlbum: $selectedAlbums[index], albums: photoObserver.albums, index: index, isReady: $isAlbumPickerReady)
                     .onDisappear {
                         Logger.log("📂 Album Picker Closed. Selected Album: \(selectedAlbums[index]) at index \(index)")
                         if let index = selectedMenuIndex {

@@ -6,26 +6,29 @@ struct AlbumPickerView: View {
     @Environment(\.dismiss) var dismiss
     let albums: [PHAssetCollection] // ✅ Receive preloaded albums
     let index: Int
+    @Binding var isReady: Bool
     
 
     var body: some View {
         NavigationView {
             VStack {
-                
-                List(albums, id: \.localIdentifier) { album in // 'album' is available here
-                    Button(action: {
-                        Logger.log("📂 [AlbumPickerView] Opening Album PickerView for index \(index), Album: \(album)")
-
-                        let albumID = album.localIdentifier
-                        selectedAlbum = AlbumUtilities.formatAlbumName(album.localizedTitle ?? "Unknown")
-                        UserDefaultsManager.saveAlbum(selectedAlbum, at: index, albumID: albumID) // Save ID!
-                        dismiss() // 'dismiss' is available here
-                    }) {
-                        Text(album.localizedTitle ?? "Unknown")
+                if !isReady {
+                    ProgressView()
+                } else {
+                    List(albums, id: \.localIdentifier) { album in // 'album' is available here
+                        Button(action: {
+                            Logger.log("📂 [AlbumPickerView] Opening Album PickerView for index \(index), Album: \(album)")
+                            
+                            let albumID = album.localIdentifier
+                            selectedAlbum = AlbumUtilities.formatAlbumName(album.localizedTitle ?? "Unknown")
+                            UserDefaultsManager.saveAlbum(selectedAlbum, at: index, albumID: albumID) // Save ID!
+                            dismiss() // 'dismiss' is available here
+                        }) {
+                            Text(album.localizedTitle ?? "Unknown")
+                        }
                     }
+                    .navigationTitle("Select Album")
                 }
-                .navigationTitle("Select Album")
-
             }
             .onAppear {
                 Logger.log("📸 [AlbumPickerView] albums: \(albums.count)")
