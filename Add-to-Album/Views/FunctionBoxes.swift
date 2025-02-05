@@ -58,7 +58,7 @@ struct FunctionBoxes: View {
             return AnyView(EmptyView()) // ✅ Makes it disappear when the album name is empty
         } else {
             return AnyView(
-                FunctionBox(text: text, albumID: albumID, photoID: currentPhotoID, albumManager: albumManager)
+                FunctionBoxView(text: text, albumID: albumID, photoID: currentPhotoID, albumManager: albumManager)
                     .frame(width: geometry.size.width * 0.35, height: geometry.size.height * 0.05)
                     .background(Color.black.opacity(0.5))
                     .cornerRadius(10)
@@ -76,12 +76,13 @@ struct FunctionBoxes: View {
     }
 }
 
-struct FunctionBox: View {
+struct FunctionBoxView: View {
     let text: String
     let albumID: String
     let photoID: String
     @ObservedObject var albumManager: AlbumManager // ✅ Inject AlbumManager
     
+    @State private var isInAlbum: Bool = false
 
     var body: some View {
         HStack {
@@ -93,7 +94,9 @@ struct FunctionBox: View {
 
             // ✅ Shows green if photo is in album, red if not
             Circle()
-                .fill(albumManager.isPhotoInAlbum(photoID: photoID, albumID: albumID) ? Color.green : Color.red)
+                .fill(isInAlbum ? Color.green : Color.red)
+
+//                .fill(albumManager.isPhotoInAlbum(photoID: photoID, albumID: albumID) ? Color.green : Color.red)
                 .frame(width: 12, height: 12)
 
         }
@@ -104,8 +107,12 @@ struct FunctionBox: View {
             Logger.log("📂 [FunctionBox] Toggling photo \(photoID) in album \(albumID)")
             albumManager.togglePhotoInAlbum(photoID: photoID, albumID: albumID)
         }
+        .onAppear {
+            isInAlbum = albumManager.isPhotoInAlbum(photoID: photoID, albumID: albumID)
+        }
         .onReceive(albumManager.$albumChanges) { _ in
-            Logger.log("🔄 [FunctionBox] Detected External Album Change, refreshing UI")
+            isInAlbum = albumManager.isPhotoInAlbum(photoID: photoID, albumID: albumID)
+            Logger.log("🔄 [FunctionBox] UI updated after album change")
         }
     }
 

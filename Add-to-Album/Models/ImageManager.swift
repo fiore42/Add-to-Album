@@ -2,8 +2,9 @@ import Photos
 import UIKit
 
 class ImageManager {
+
     func getPhotoPermissionStatus() -> PhotoPermissionStatus {
-        switch PHPhotoLibrary.authorizationStatus(for: .readWrite) { // Request readWrite access
+        switch PHPhotoLibrary.authorizationStatus() {
         case .authorized: return .granted
         case .limited: return .limited
         case .denied: return .denied
@@ -14,7 +15,7 @@ class ImageManager {
     }
 
     func requestPhotoPermissions(completion: @escaping (Bool) -> Void) {
-        PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in // Request readWrite access
+        PHPhotoLibrary.requestAuthorization { status in
             DispatchQueue.main.async {
                 completion(status == .authorized || status == .limited)
             }
@@ -27,29 +28,30 @@ class ImageManager {
         return PHAsset.fetchAssets(with: .image, options: fetchOptions)
     }
 
-    func fetchThumbnails(for assets: [PHAsset], targetSize: CGSize, completion: @escaping ([UIImage]) -> Void) {
+    /// ✅ **Parallelized Image Fetching (Super Fast)**
+    func fetchThumbnails(for assets: [PHAsset], completion: @escaping ([UIImage]) -> Void) {
+        let targetSize = CGSize(width: 150, height: 150)
         let options = PHImageRequestOptions()
-        options.deliveryMode = .opportunistic // Or .highQualityFormat if needed
-        options.isNetworkAccessAllowed = true // If you need to fetch from iCloud
-        options.resizeMode = .exact // Or .none if you want the original size
+        options.deliveryMode = .opportunistic
+        options.isNetworkAccessAllowed = true
 
-        let imageManager = PHCachingImageManager() // Use PHCachingImageManager for efficiency
+        DispatchQueue.global(qos: .userInitiated).async {
+            let imageManager = PHCachingImageManager()
+            var tempImages = [UIImage]()
+            let group = DispatchGroup()
 
-        var thumbnails: [UIImage] = Array(repeating: UIImage(), count: assets.count) // Initialize with placeholders
-
-        for (index, asset) in assets.enumerated() {
-            imageManager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFill, options: options) { image, info in
-                DispatchQueue.main.async {
+            for asset in assets {
+                group.enter()
+                imageManager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFill, options: options) { image, _ in
                     if let image = image {
-                        thumbnails[index] = image
-                    } else {
-                        // Handle cases where image loading fails (e.g., iCloud not available)
-                        print("Failed to load thumbnail for asset: \(asset)")
+                        tempImages.append(image)
                     }
-                    if index == assets.count - 1 { // All requests are done
-                        completion(thumbnails)
-                    }
+                    group.leave()
                 }
+            }
+
+            group.notify(queue: .main) {
+                completion(tempImages)
             }
         }
     }
