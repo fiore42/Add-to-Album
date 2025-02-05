@@ -7,11 +7,9 @@ struct ImageGridView: View {
     @State private var isPresented = false
     @State private var selectedImageIndex = 0
     private let spacing: CGFloat = 2
-    private let columns: [GridItem] = [
-        GridItem(.flexible()),
-        GridItem(.flexible()),
-        GridItem(.flexible())
-    ]
+    private var columns: [GridItem] {
+        Array(repeating: GridItem(.flexible(), spacing: spacing), count: 3)
+    }
 
     var body: some View {
         NavigationView {
@@ -22,7 +20,15 @@ struct ImageGridView: View {
                         ScrollView {
                             LazyVGrid(columns: columns, spacing: spacing) {
                                 ForEach(viewModel.imageAssets.indices, id: \.self) { index in
-                                    ImageGridItem(asset: viewModel.imageAssets[index], index: index, geometry: geometry, viewModel: viewModel, isPresented: $isPresented, selectedImageIndex: $selectedImageIndex)
+                                    ImageGridItem(
+                                        asset: viewModel.imageAssets[index],
+                                        index: index,
+                                        geometry: geometry,
+                                        viewModel: viewModel,
+                                        isPresented: $isPresented,
+                                        selectedImageIndex: $selectedImageIndex,
+                                        spacing: spacing
+                                    )
                                 }
                             }
                             .padding(.horizontal, spacing)
@@ -80,6 +86,7 @@ struct ImageGridItem: View {
     @ObservedObject var viewModel: ImageGridViewModel // Make sure you observe the view model here
     @Binding var isPresented: Bool
     @Binding var selectedImageIndex: Int
+    let spacing: CGFloat 
 
     var body: some View {
         ImageCellView(asset: asset)
@@ -99,7 +106,7 @@ struct ImageGridItem: View {
 
     private func cellSize() -> CGFloat {
         let columns: CGFloat = 3
-        let totalSpacing: CGFloat = 2 * (columns - 1) + (2 * 2) // Spacing * (columns - 1) + (spacing * 2)
+        let totalSpacing: CGFloat = spacing * (columns - 1) + (spacing * 2)
         return (geometry.size.width - totalSpacing) / columns
     }
 }
