@@ -7,7 +7,7 @@ struct ImageGridView: View {
     @State private var isPresented = false
     @State private var selectedImageIndex = 0
     
-    private let spacing: CGFloat = 4
+    private let spacing: CGFloat = 5
     private var columns: [GridItem] {
         Array(repeating: GridItem(.flexible(), spacing: spacing), count: 3)
     }
