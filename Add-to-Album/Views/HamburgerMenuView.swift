@@ -56,19 +56,20 @@ struct HamburgerMenuView: View {
             $0.localIdentifier.trimmingCharacters(in: .whitespacesAndNewlines)
         })
 
-        Logger.log("📂 All Current Album IDs: \(currentAlbumIDs)") // Log all current IDs
-
         let savedAlbumIDs = UserDefaultsManager.getSavedAlbumIDs().map {
             $0.trimmingCharacters(in: .whitespacesAndNewlines)
         }
 
-        Logger.log("💾 All Saved Album IDs: \(savedAlbumIDs)") // Log all stored IDs
+        // ✅ Log all album IDs along with type and length
+        Logger.log("📂 All Current Album IDs: \(currentAlbumIDs.map { "\($0) (Type: \($0.debugDescription), Length: \($0.count))" })")
+
+        Logger.log("💾 All Saved Album IDs: \(savedAlbumIDs.map { "\($0) (Type: \($0.debugDescription), Length: \($0.count))" })")
 
         for i in 0..<selectedAlbums.count {
             Logger.log("🔍 Checking Album at index \(i)")
 
             if let savedAlbumID = UserDefaultsManager.getAlbumID(at: i)?.trimmingCharacters(in: .whitespacesAndNewlines) {
-                Logger.log("💾 Retrieved Album ID at index \(i): '\(savedAlbumID)'")
+                Logger.log("💾 Retrieved Album ID at index \(i): '\(savedAlbumID)' (Type: \(type(of: savedAlbumID)), Length: \(savedAlbumID.count))")
 
                 let albumStillExists = currentAlbumIDs.contains(where: {
                     $0.localizedStandardCompare(savedAlbumID) == .orderedSame
@@ -78,7 +79,7 @@ struct HamburgerMenuView: View {
 
                 if !albumStillExists {
                     selectedAlbums[i] = "No Album Selected"
-                    UserDefaultsManager.saveAlbum(selectedAlbums[i], at: i, albumID: nil)
+                    UserDefaultsManager.saveAlbum(selectedAlbums[i], at: i, albumID: "")
                     Logger.log("⚠️ Album Deleted - Resetting Entry \(i) to No Album Selected")
                 } else {
                     Logger.log("✅ Album ID Matched: \(savedAlbumID)")
@@ -88,6 +89,7 @@ struct HamburgerMenuView: View {
             }
         }
     }
+
 
 
 
