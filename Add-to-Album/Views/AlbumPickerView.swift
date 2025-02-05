@@ -28,7 +28,7 @@ struct AlbumPickerView: View {
 
             }
             .onAppear {
-                Logger.log("📸 [AlbumPickerView] albums: \(albums)")
+                Logger.log("📸 [AlbumPickerView] albums: \(albums.count)")
             }
             
         }
