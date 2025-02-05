@@ -1,8 +1,8 @@
 import Foundation
 
 class UserDefaultsManager {
-    private static let key = "selectedAlbums"
-    private static let idKey = "selectedAlbumIDs" // ✅ Store album IDs
+    private static let idKey = "savedAlbumIDs" // ✅ Store album IDs
+    private static let key = "savedAlbumNames"
 
     static func getSavedAlbums() -> [String] {
         let albums = UserDefaults.standard.array(forKey: key) as? [String] ?? Array(repeating: "No Album Selected", count: 4)
@@ -12,7 +12,7 @@ class UserDefaultsManager {
 
 
     static func getSavedAlbumIDs() -> [String] {
-        let savedAlbumIDs = UserDefaults.standard.array(forKey: "savedAlbumIDs") as? [String] ?? []
+        let savedAlbumIDs = UserDefaults.standard.array(forKey: idKey) as? [String] ?? []
         Logger.log("💾 DEBUG: Retrieved Album IDs from UserDefaults: \(savedAlbumIDs)")
         return savedAlbumIDs
     }
@@ -35,7 +35,7 @@ class UserDefaultsManager {
 
         let albums = UserDefaults.standard.array(forKey: key) as? [String] ?? Array(repeating: "No Album Selected", count: 4)
 
-        let savedAlbumNames = UserDefaults.standard.array(forKey: "savedAlbumNames") as? [String] ?? []
+        let savedAlbumNames = UserDefaults.standard.array(forKey: key) as? [String] ?? []
         Logger.log("❤️‍🔥 albums: \(albums) savedAlbumNames: \(savedAlbumNames)")
 
         return (index < savedAlbumNames.count) ? savedAlbumNames[index] : "No Album Selected"
@@ -43,8 +43,8 @@ class UserDefaultsManager {
 
 
     static func saveAlbum(_ name: String, at index: Int, albumID: String) {
-        var savedAlbumIDs = UserDefaults.standard.array(forKey: "savedAlbumIDs") as? [String] ?? []
-        var savedAlbumNames = UserDefaults.standard.array(forKey: "savedAlbumNames") as? [String] ?? []
+        var savedAlbumIDs = UserDefaults.standard.array(forKey: idKey) as? [String] ?? []
+        var savedAlbumNames = UserDefaults.standard.array(forKey: key) as? [String] ?? []
 
         // Ensure the arrays have enough space
         while savedAlbumIDs.count <= index { savedAlbumIDs.append("") }
@@ -61,8 +61,8 @@ class UserDefaultsManager {
         
 
         // Save back to UserDefaults
-        UserDefaults.standard.set(savedAlbumIDs, forKey: "savedAlbumIDs")
-        UserDefaults.standard.set(savedAlbumNames, forKey: "savedAlbumNames")
+        UserDefaults.standard.set(savedAlbumIDs, forKey: idKey)
+        UserDefaults.standard.set(savedAlbumNames, forKey: key)
 
         Logger.log("💾 Saved Album: \(name) at index \(index) with ID: \(albumID)")
     }
