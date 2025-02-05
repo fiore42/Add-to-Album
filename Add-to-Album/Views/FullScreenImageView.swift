@@ -40,6 +40,9 @@ struct FullscreenImageView: View {
 
     @ObservedObject var imageGridViewModel: ImageGridViewModel
     
+    @State private var positionTopBottom: CGFloat = 0.2 // 20% from top and bottom
+    @State private var positionLeftRight: CGFloat = 0.1 // 10% from left and right
+    
     var body: some View {
             GeometryReader { geometry in
                 ZStack {
@@ -83,6 +86,40 @@ struct FullscreenImageView: View {
                     .onChange(of: selectedImageIndex) { oldIndex, newIndex in
                         handlePreloading(for: newIndex, targetSize: geometry.size)
                     }
+                    
+                    // Overlay with four semi-transparent boxes
+                            VStack {
+                                Spacer()
+
+                                HStack {
+                                    FunctionBox(text: "test test 1")
+                                        .frame(width: geometry.size.width * 0.3, height: geometry.size.height * 0.1)
+                                        .position(x: geometry.size.width * positionLeftRight, y: geometry.size.height * positionTopBottom)
+
+                                    Spacer()
+
+                                    FunctionBox(text: "test test 2")
+                                        .frame(width: geometry.size.width * 0.3, height: geometry.size.height * 0.1)
+                                        .position(x: geometry.size.width * (1 - positionLeftRight), y: geometry.size.height * positionTopBottom)
+                                }
+
+                                Spacer()
+
+                                HStack {
+                                    FunctionBox(text: "test test 3")
+                                        .frame(width: geometry.size.width * 0.3, height: geometry.size.height * 0.1)
+                                        .position(x: geometry.size.width * positionLeftRight, y: geometry.size.height * (1 - positionTopBottom))
+
+                                    Spacer()
+
+                                    FunctionBox(text: "test test 4")
+                                        .frame(width: geometry.size.width * 0.3, height: geometry.size.height * 0.1)
+                                        .position(x: geometry.size.width * (1 - positionLeftRight), y: geometry.size.height * (1 - positionTopBottom))
+                                }
+
+                                Spacer()
+                            }
+                            .ignoresSafeArea()
 
                     VStack {
                         HStack {
