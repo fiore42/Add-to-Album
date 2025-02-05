@@ -9,10 +9,10 @@ struct AlbumPickerView: View {
     var body: some View {
         NavigationView {
             VStack {
-                Text("Albums Count: \(albums.count)") // ✅ Debug UI
-                    .font(.headline)
-                    .foregroundColor(.red)
-                    .padding()
+//                Text("Albums Count: \(albums.count)") // ✅ Debug UI
+//                    .font(.headline)
+//                    .foregroundColor(.red)
+//                    .padding()
                 if albums.isEmpty {
                     Text("⚠️ No Albums Available")
                         .foregroundColor(.gray)
