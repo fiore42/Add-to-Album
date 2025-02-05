@@ -38,8 +38,16 @@ struct AlbumUtilities {
             completion(fetchedAlbums)
             NotificationCenter.default.post(name: albumsUpdated, object: fetchedAlbums)
             
-            // ✅ Automatically update selected albums when fetching completes
-            updateSelectedAlbums(photoObserverAlbums: fetchedAlbums)
+            // ✅ Call updateSelectedAlbums AFTER the fetch is complete
+            PHPhotoLibrary.shared().performChanges { // Ensures the library is consistent
+                 self.updateSelectedAlbums(photoObserverAlbums: fetchedAlbums)
+            } completionHandler: { success, error in
+                if let error = error {
+                    Logger.log("Error performing photo library changes: \(error)")
+                } else {
+                     Logger.log("Photo library changes completed.")
+                }
+            }
         }
     }
 
