@@ -103,8 +103,8 @@ struct FullscreenImageView: View {
                         }
                         Spacer()
                     }
-                    .padding(.top, 50)
-                    .padding(.leading)
+//                    .padding(.top, 50)
+//                    .padding(.leading)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 }
             }
