@@ -21,7 +21,8 @@ struct Add_to_AlbumApp: App {
     }
     var body: some Scene {
         WindowGroup {
-            ImageGridView(albumSelectionViewModel: albumSelectionViewModel)
+            ImageGridView()
+                .environmentObject(albumSelectionViewModel) // ✅ Inject ViewModel
         }
     }
 }

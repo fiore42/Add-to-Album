@@ -7,24 +7,21 @@ struct SelectedAlbumEntry: Identifiable {
 }
 
 struct HamburgerMenuView: View {
+    @EnvironmentObject var albumSelectionViewModel: AlbumSelectionViewModel // ✅ Get shared ViewModel
+
     @StateObject private var photoObserver = PhotoLibraryObserver() // ✅ Use album observer
-    @StateObject private var albumSelectionViewModel = AlbumSelectionViewModel() // ✅ Create shared ViewModel
+
     @State private var selectedAlbums: [String] = UserDefaultsManager.getSavedAlbums()
     @State private var selectedAlbumEntry: SelectedAlbumEntry? // ✅ Track selected album
     @State private var albums: [PHAssetCollection] = [] // ✅ Preloaded albums
     
     var body: some View {
-        NavigationView {
-            VStack {
-                
-                ImageGridView(albumSelectionViewModel: albumSelectionViewModel) // ✅ Pass it down
-            }
-        }
+
         Menu {
             ForEach(0..<4, id: \.self) { index in
                 Button(action: {
                     Logger.log("📂 [HamburgerMenuView] Opening Album Picker for index \(index)")
-                    selectedAlbumEntry = SelectedAlbumEntry(index: index) // ✅ Assign the selected entry
+                    selectedAlbumEntry = SelectedAlbumEntry(index: index)
                 }) {
                     Label {
                         Text(selectedAlbums[index].isEmpty ? "⛔️ No Album Selected" : AlbumUtilities.formatAlbumName(selectedAlbums[index]))
@@ -69,23 +66,24 @@ struct HamburgerMenuView: View {
 
 
         // ✅ Use .sheet(item:) to handle album picker
-        .sheet(item: $selectedAlbumEntry) { selectedEntry in
-            AlbumPickerView(
-                selectedAlbum: $selectedAlbums[selectedEntry.index],
-                albums: photoObserver.albums,
-                index: selectedEntry.index
-            )
-            .onDisappear {
-                let index = selectedEntry.index
-                Logger.log("📂 Album Picker Closed. Selected Album: \(selectedAlbums[index]) at index \(index)")
-                let albumID = UserDefaultsManager.getAlbumID(at: index) ?? ""
-                UserDefaultsManager.saveAlbum(selectedAlbums[index], at: index, albumID: albumID)
-                Logger.log("💾 Saved Album: \(selectedAlbums[index]) at index \(index), ID: \(albumID)")
-            }
-        }
+        .sheet(item: $selectedAlbumEntry, content: albumPickerSheet)
 
 
     }
 
+    private func albumPickerSheet(for selectedEntry: SelectedAlbumEntry) -> some View {
+        let index = selectedEntry.index
+        return AlbumPickerView(
+            selectedAlbum: $selectedAlbums[index],
+            albums: photoObserver.albums,
+            index: index
+        )
+        .onDisappear {
+            Logger.log("📂 Album Picker Closed. Selected Album: \(selectedAlbums[index]) at index \(index)")
+            let albumID = UserDefaultsManager.getAlbumID(at: index) ?? ""
+            UserDefaultsManager.saveAlbum(selectedAlbums[index], at: index, albumID: albumID)
+            Logger.log("💾 Saved Album: \(selectedAlbums[index]) at index \(index), ID: \(albumID)")
+        }
+    }
     
 }

@@ -4,7 +4,7 @@ import Photos
 
 struct ImageGridView: View {
 
-    @ObservedObject var albumSelectionViewModel: AlbumSelectionViewModel // ✅ Injected
+    @EnvironmentObject var albumSelectionViewModel: AlbumSelectionViewModel // ✅ Get ViewModel from environment
 
     @StateObject private var viewModel = ImageGridViewModel()
     @State private var isPresented = false
