@@ -19,6 +19,7 @@ struct HamburgerMenuView: View {
                     Text(selectedAlbums[index].isEmpty ? "No Album Selected" : selectedAlbums[index])
                         .foregroundColor(selectedAlbums[index].isEmpty ? .red : .primary)
                 }
+                .buttonStyle(PlainButtonStyle()) // Ensures the default button style doesn’t override text color
             }
         } label: {
             Image(systemName: "line.3.horizontal")
