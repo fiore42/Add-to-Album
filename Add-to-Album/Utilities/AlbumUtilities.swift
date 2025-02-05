@@ -86,6 +86,8 @@ struct AlbumUtilities {
                 if currentSavedName != updatedName {
                     UserDefaultsManager.saveAlbum(updatedName, at: index, albumID: savedAlbumID)
                     Logger.log("🔄 Album Renamed - Updating Entry \(index) to \(updatedName)")
+                } else {
+                    Logger.log("🔄 Album name not changed: \(currentSavedName)")
                 }
             } else {
                 Logger.log("⚠️ Album ID '\(savedAlbumID)' at index \(index) no longer exists in the photo library.")
