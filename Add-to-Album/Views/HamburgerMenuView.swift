@@ -40,8 +40,6 @@ struct HamburgerMenuView: View {
             // Remove existing observers before adding a new one to avoid duplicate triggers.
             NotificationCenter.default.removeObserver(self, name: .albumListUpdated, object: nil)
 
-//            Logger.log("📸 HamburgerMenuView onAppear calling updateSelectedAlbums")
-//            AlbumUtilities.updateSelectedAlbums(photoObserverAlbums: photoObserver.albums)
             NotificationCenter.default.addObserver(
                 forName: .albumListUpdated,
                 object: nil,
@@ -53,7 +51,8 @@ struct HamburgerMenuView: View {
             }
         }
         .onChange(of: photoObserver.albums) { oldValue, newValue in
-            guard oldValue != newValue else { return } // ✅ Prevents unnecessary updates
+            // do not run if the value jumps from 0 to x, when x > 1
+            guard oldValue != newValue, !(oldValue.count == 0 && newValue.count > 1) else { return }
             Logger.log("🔄 Album List Changed - Checking Selections")
             Logger.log("📸 HamburgerMenuView onChange calling updateSelectedAlbums")
             Logger.log("📂 Old Albums Count: \(oldValue.count), New Albums Count: \(newValue.count)")
