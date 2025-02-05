@@ -84,6 +84,7 @@ struct AlbumUtilities {
 
             if let updatedName = currentAlbumMap[savedAlbumID] {
                 let currentSavedName = UserDefaultsManager.getSavedAlbumName(at: index)
+                Logger.log("🔄 Analysing index: \(index) updatedName: \(updatedName) currentSavedName: \(currentSavedName)")
                 if currentSavedName != updatedName {
                     Logger.log("🔄 Album Renamed - Updating Entry \(index) to \(updatedName)")
                     UserDefaultsManager.saveAlbum(updatedName, at: index, albumID: savedAlbumID)
