@@ -1,3 +1,3 @@
-05 Feb 2025 - 04:38 album names attached to 4 functions
+05 Feb 2025 - 18:57 the menu entries work - save, retrive, follow
 
-next just attach the album names from the hamburger menu to functions boxes and trigger the toggle of the menu
+but there is still a bug when loading the the first time the list of albums
