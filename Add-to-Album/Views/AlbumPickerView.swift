@@ -28,7 +28,10 @@ struct AlbumPickerView: View {
             }
         }
         .onAppear {
-            if albums.isEmpty { // ✅ Ensures fetch only happens once
+//moved to task 
+        }
+        .task { // Use task instead of onAppear + if condition
+            if albums.isEmpty {
                 fetchAlbums()
             }
         }
