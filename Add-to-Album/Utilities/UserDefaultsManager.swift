@@ -49,12 +49,11 @@ class UserDefaultsManager {
         Logger.log("💾 Before Saving: Name='\(name)', ID='\(albumID)', Index=\(index)")
 
         // Only save if the album ID is not empty
-        if !albumID.isEmpty {
-            savedAlbumIDs[index] = albumID
-            savedAlbumNames[index] = name
-        } else {
-            Logger.log("⚠️ Attempted to save album with empty ID at index \(index). Skipping save.")
+        if albumID.isEmpty {
+            Logger.log("⚠️ Attempted to save album with empty ID at index \(index). AKA deleting!")
         }
+        savedAlbumIDs[index] = albumID
+        savedAlbumNames[index] = name
         
 
         // Save back to UserDefaults
