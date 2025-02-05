@@ -47,43 +47,38 @@ struct AlbumUtilities {
     static let albumsUpdated = Notification.Name("AlbumsUpdated")
     
     static func updateSelectedAlbums(photoObserverAlbums: [PHAssetCollection]) {
-            Logger.log("📂 Checking album state: \(photoObserverAlbums.count) albums found")
+        Logger.log("📂 Checking album state: \(photoObserverAlbums.count) albums found")
 
-            if photoObserverAlbums.isEmpty {
-                let hasSavedAlbums = UserDefaultsManager.getSavedAlbumIDs().contains { !$0.isEmpty }
-                if hasSavedAlbums {
-                    Logger.log("⏳ Photo library may still be loading - Deferring updateSelectedAlbums")
-                    return
-                } else {
-                    Logger.log("⚠️ No albums exist in the photo library - Proceeding with updateSelectedAlbums")
-                }
+        if photoObserverAlbums.isEmpty {
+            let hasSavedAlbums = UserDefaultsManager.getSavedAlbumIDs().contains { !$0.isEmpty }
+            if hasSavedAlbums {
+                Logger.log("⏳ Photo library may still be loading - Deferring updateSelectedAlbums")
+                return
+            } else {
+                Logger.log("⚠️ No albums exist in the photo library - Proceeding with updateSelectedAlbums")
             }
+        }
 
-            let savedAlbumIDs = UserDefaultsManager.getSavedAlbumIDs().map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        let savedAlbumIDs = UserDefaultsManager.getSavedAlbumIDs().map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        
         // Create a mapping of album ID to current album name
         let currentAlbumMap: [String: String] = Dictionary(uniqueKeysWithValues:
             photoObserverAlbums.map { ($0.localIdentifier.trimmingCharacters(in: .whitespacesAndNewlines), $0.localizedTitle ?? "Unknown Album") }
         )
 
-//            Logger.log("📂 All Current Album IDs: \(currentAlbumIDs)")
-//            Logger.log("💾 All Saved Album IDs: \(savedAlbumIDs)")
-
         for (index, savedAlbumID) in savedAlbumIDs.enumerated() {
             if savedAlbumID.isEmpty { continue }
 
             if let updatedName = currentAlbumMap[savedAlbumID] {
-                // ✅ Album exists, update name in UserDefaults if changed
                 let currentSavedName = UserDefaultsManager.getSavedAlbumName(at: index)
                 if currentSavedName != updatedName {
                     UserDefaultsManager.saveAlbum(updatedName, at: index, albumID: savedAlbumID)
                     Logger.log("🔄 Album Renamed - Updating Entry \(index) to \(updatedName)")
                 }
             } else {
-                // ❌ Album no longer exists, reset
-                let resetName = "No Album Selected"
-                UserDefaultsManager.saveAlbum(resetName, at: index, albumID: "")
-                Logger.log("⚠️ Album Deleted - Resetting Entry \(index) to \(resetName)")
+                Logger.log("⚠️ Album ID '\(savedAlbumID)' at index \(index) no longer exists in the photo library.")
             }
         }
-        }
+    }
+
     }

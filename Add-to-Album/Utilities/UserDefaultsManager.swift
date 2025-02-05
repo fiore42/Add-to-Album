@@ -43,16 +43,24 @@ class UserDefaultsManager {
         while savedAlbumIDs.count <= index { savedAlbumIDs.append("") }
         while savedAlbumNames.count <= index { savedAlbumNames.append("No Album Selected") }
 
-        // Update values
-        savedAlbumIDs[index] = albumID
-        savedAlbumNames[index] = name
+        // Log before saving
+        Logger.log("💾 Before Saving: Name='\(name)', ID='\(albumID)', Index=\(index)")
+
+        // Only save if the album ID is not empty
+        if !albumID.isEmpty {
+            savedAlbumIDs[index] = albumID
+            savedAlbumNames[index] = name
+        } else {
+            Logger.log("⚠️ Attempted to save album with empty ID at index \(index). Skipping save.")
+        }
 
         // Save back to UserDefaults
         UserDefaults.standard.set(savedAlbumIDs, forKey: "savedAlbumIDs")
         UserDefaults.standard.set(savedAlbumNames, forKey: "savedAlbumNames")
 
-        Logger.log("💾 Saved Album: \(name) at index \(index)")
+        Logger.log("💾 Saved Album: \(name) at index \(index) with ID: \(albumID)")
     }
+
 
 
 
