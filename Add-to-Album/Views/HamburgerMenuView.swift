@@ -7,9 +7,6 @@ struct HamburgerMenuView: View {
     @State private var isAlbumPickerPresented = false
     @State private var selectedMenuIndex: Int? = nil // Track which menu item is selected
     @State private var albums: [PHAssetCollection] = [] // ✅ Preloaded albums
-    @State private var isAlbumPickerReady = false
-    @State private var initialLoadComplete = false // Tracks initial load
-
     
     var body: some View {
         Menu {
@@ -37,12 +34,6 @@ struct HamburgerMenuView: View {
         .onAppear {
             Logger.log("📸 HamburgerMenuView onAppear triggered")
             Logger.log("📂 Initial Selected Albums: \(selectedAlbums)")
-
-            // Check if albums are already loaded. If so, set isAlbumPickerReady
-            if !photoObserver.albums.isEmpty {
-                isAlbumPickerReady = true
-                initialLoadComplete = true // Mark initial load as complete
-            }
             
 //            Logger.log("📸 HamburgerMenuView onAppear calling updateSelectedAlbums")
 //            AlbumUtilities.updateSelectedAlbums(photoObserverAlbums: photoObserver.albums)
@@ -61,14 +52,14 @@ struct HamburgerMenuView: View {
             Logger.log("📸 HamburgerMenuView onChange calling updateSelectedAlbums")
             Logger.log("📂 Old Albums Count: \(oldValue.count), New Albums Count: \(newValue.count)")
             AlbumUtilities.updateSelectedAlbums(photoObserverAlbums: photoObserver.albums)
-            isAlbumPickerReady = !newValue.isEmpty // Set to true when albums are loaded
 
         }
 
 
         .sheet(isPresented: $isAlbumPickerPresented) {
             if let index = selectedMenuIndex {
-                AlbumPickerView(selectedAlbum: $selectedAlbums[index], albums: photoObserver.albums, index: index, isReady: $isAlbumPickerReady)
+                let currentAlbums = photoObserver.albums
+                AlbumPickerView(selectedAlbum: $selectedAlbums[index], albums: photoObserver.albums, index: index)
                     .onDisappear {
                         Logger.log("📂 Album Picker Closed. Selected Album: \(selectedAlbums[index]) at index \(index)")
                         if let index = selectedMenuIndex {

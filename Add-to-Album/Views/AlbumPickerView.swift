@@ -6,14 +6,15 @@ struct AlbumPickerView: View {
     @Environment(\.dismiss) var dismiss
     let albums: [PHAssetCollection] // ✅ Receive preloaded albums
     let index: Int
-    @Binding var isReady: Bool
-    
+    @State private var currentAlbums: [PHAssetCollection] = []
 
     var body: some View {
         NavigationView {
             VStack {
-                if !isReady {
-                    ProgressView()
+                if currentAlbums.isEmpty {
+                    Text("📂 Loading albums...") // 🟢 Show a loading message
+                        .foregroundColor(.gray)
+                        .padding()
                 } else {
                     List(albums, id: \.localIdentifier) { album in // 'album' is available here
                         Button(action: {
@@ -31,7 +32,17 @@ struct AlbumPickerView: View {
                 }
             }
             .onAppear {
-                Logger.log("📸 [AlbumPickerView] albums: \(albums.count)")
+                Logger.log("📸 [AlbumPickerView] albums count onAppear: \(albums.count)")
+                self.currentAlbums = albums
+                
+                // ✅ Listen for updates from PhotoLibraryObserver
+                NotificationCenter.default.addObserver(forName: .albumsUpdated, object: nil, queue: .main) { _ in
+                    Logger.log("📸 [AlbumPickerView] Albums updated via Notification")
+                    self.currentAlbums = albums
+                }
+            }
+            .onDisappear {
+                NotificationCenter.default.removeObserver(self, name: .albumsUpdated, object: nil)
             }
             
         }
