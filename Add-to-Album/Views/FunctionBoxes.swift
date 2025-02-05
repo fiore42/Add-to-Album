@@ -81,6 +81,7 @@ struct FunctionBox: View {
     let albumID: String
     let photoID: String
     @ObservedObject var albumManager: AlbumManager // ✅ Inject AlbumManager
+    
 
     var body: some View {
         HStack {
@@ -94,6 +95,7 @@ struct FunctionBox: View {
             Circle()
                 .fill(albumManager.isPhotoInAlbum(photoID: photoID, albumID: albumID) ? Color.green : Color.red)
                 .frame(width: 12, height: 12)
+
         }
         .padding()
         .background(Color.black.opacity(0.5))
@@ -102,6 +104,10 @@ struct FunctionBox: View {
             Logger.log("📂 [FunctionBox] Toggling photo \(photoID) in album \(albumID)")
             albumManager.togglePhotoInAlbum(photoID: photoID, albumID: albumID)
         }
+        .onReceive(albumManager.$albumChanges) { _ in
+            Logger.log("🔄 [FunctionBox] Detected External Album Change, refreshing UI")
+        }
     }
+
 }
 
