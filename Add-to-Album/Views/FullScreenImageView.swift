@@ -39,6 +39,8 @@ struct FullscreenImageView: View {
     @State private var previousIndex: Int = -1
 
     @ObservedObject var imageGridViewModel: ImageGridViewModel
+    @ObservedObject var albumSelectionViewModel: AlbumSelectionViewModel // ✅ Injected
+
     
     @State private var positionTopBottom: CGFloat = 0.2 // 20% from top and bottom
     @State private var positionLeftRight: CGFloat = 0.1 // 10% from left and right
@@ -96,7 +98,11 @@ struct FullscreenImageView: View {
                     }
                     
                     // Call FunctionBoxes and pass geometry
-                    FunctionBoxes(geometry: geometry)
+                    FunctionBoxes(
+                        geometry: geometry,
+                        selectedAlbums: $albumSelectionViewModel.selectedAlbums,
+                        selectedAlbumIDs: $albumSelectionViewModel.selectedAlbumIDs
+                    )
 
                     VStack {
                         HStack {

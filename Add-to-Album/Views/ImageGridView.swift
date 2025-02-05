@@ -3,6 +3,9 @@ import Photos
 
 
 struct ImageGridView: View {
+
+    @ObservedObject var albumSelectionViewModel: AlbumSelectionViewModel // ✅ Injected
+
     @StateObject private var viewModel = ImageGridViewModel()
     @State private var isPresented = false
     @State private var selectedImageIndex = 0
@@ -33,7 +36,8 @@ struct ImageGridView: View {
                 isPresented: $isPresented,
                 selectedImageIndex: $selectedImageIndex,
                 imageAssets: viewModel.imageAssets,
-                imageGridViewModel: viewModel
+                imageGridViewModel: viewModel,
+                albumSelectionViewModel: albumSelectionViewModel // ✅ Pass it down
             )
         }
     }
@@ -72,6 +76,7 @@ struct ImageGridView: View {
     }
 
     private var imageGridView: some View {
+
         GeometryReader { geometry in
             ScrollView {
                 LazyVGrid(columns: columns, spacing: spacing) {
@@ -151,6 +156,7 @@ struct ImageGridView: View {
 
 
 struct ImageGridItem: View {
+
     let asset: PHAsset
     let index: Int
     let geometry: GeometryProxy

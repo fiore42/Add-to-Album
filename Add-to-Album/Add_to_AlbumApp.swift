@@ -3,6 +3,8 @@ import SwiftUI
 @main
 struct Add_to_AlbumApp: App {
     
+    @StateObject private var albumSelectionViewModel = AlbumSelectionViewModel() // ✅ Global State
+    
     init() {
         Logger.log("Project History:")
         Logger.log("1. 03 Feb 2025 - 19:30 the thumbnail view works")
@@ -19,7 +21,7 @@ struct Add_to_AlbumApp: App {
     }
     var body: some Scene {
         WindowGroup {
-            ImageGridView()
+            ImageGridView(albumSelectionViewModel: albumSelectionViewModel)
         }
     }
 }

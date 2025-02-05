@@ -7,27 +7,36 @@ struct FunctionBoxes: View {
 
     let geometry: GeometryProxy
 
+    @Binding var selectedAlbums: [String] // ✅ Connected to the menu
+    @Binding var selectedAlbumIDs: [String] // ✅ Store Album IDs for further logic
+    
     var body: some View {
         VStack {
             Spacer()
             
             HStack {
-                functionBox(text: "test test 1", alignment: .topLeading)
+                functionBox(text: selectedAlbums.indices.contains(0) ? selectedAlbums[0] : "No Album", alignment: .topLeading)
                 Spacer()
-                functionBox(text: "test test 2", alignment: .topTrailing)
+                functionBox(text: selectedAlbums.indices.contains(1) ? selectedAlbums[1] : "No Album", alignment: .topTrailing)
             }
 
             Spacer()
 
             HStack {
-                functionBox(text: "test test 3", alignment: .bottomLeading)
+                functionBox(text: selectedAlbums.indices.contains(2) ? selectedAlbums[2] : "No Album", alignment: .bottomLeading)
                 Spacer()
-                functionBox(text: "test test 4", alignment: .bottomTrailing)
+                functionBox(text: selectedAlbums.indices.contains(3) ? selectedAlbums[3] : "No Album", alignment: .bottomTrailing)
             }
 
             Spacer()
         }
         .ignoresSafeArea()
+        .onAppear {
+            Logger.log("📂 FunctionBoxes appeared. Initial Albums: \(selectedAlbums)")
+        }
+        .onChange(of: selectedAlbums) { _, newValue in
+            Logger.log("🔄 FunctionBoxes updated with new Albums: \(newValue)")
+        }
     }
 
     private func functionBox(text: String, alignment: Alignment) -> some View {

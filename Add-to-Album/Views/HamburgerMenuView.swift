@@ -8,11 +8,18 @@ struct SelectedAlbumEntry: Identifiable {
 
 struct HamburgerMenuView: View {
     @StateObject private var photoObserver = PhotoLibraryObserver() // ✅ Use album observer
+    @StateObject private var albumSelectionViewModel = AlbumSelectionViewModel() // ✅ Create shared ViewModel
     @State private var selectedAlbums: [String] = UserDefaultsManager.getSavedAlbums()
     @State private var selectedAlbumEntry: SelectedAlbumEntry? // ✅ Track selected album
     @State private var albums: [PHAssetCollection] = [] // ✅ Preloaded albums
     
     var body: some View {
+        NavigationView {
+            VStack {
+                
+                ImageGridView(albumSelectionViewModel: albumSelectionViewModel) // ✅ Pass it down
+            }
+        }
         Menu {
             ForEach(0..<4, id: \.self) { index in
                 Button(action: {
