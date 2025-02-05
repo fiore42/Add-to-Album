@@ -28,13 +28,17 @@ struct HamburgerMenuView: View {
             Logger.log("🔄 isAlbumPickerPresented changed: \(newValue)")
         }
         .onAppear {
-            fetchAlbums() // ✅ Preload albums when menu appears
+            AlbumUtilities.fetchAlbums { fetchedAlbums in // Provide the closure here
+                withAnimation { // If you want animation
+                    self.albums = fetchedAlbums // Update your local albums array
+                }
+            }
             Logger.log("📁 Loaded Saved Albums: \(selectedAlbums)")
-
         }
         .sheet(isPresented: $isAlbumPickerPresented) {
             if let index = selectedMenuIndex, !albums.isEmpty {
-                AlbumPickerView(selectedAlbum: $selectedAlbums[index], albums: albums)
+                AlbumPickerView(selectedAlbum: $selectedAlbums[index])
+//                AlbumPickerView(selectedAlbum: $selectedAlbums[index], albums: albums)
                     .onDisappear {
                         if let index = selectedMenuIndex {
                             UserDefaultsManager.saveAlbum(selectedAlbums[index], at: index)
@@ -47,22 +51,4 @@ struct HamburgerMenuView: View {
 
     }
 
-    private func fetchAlbums() {
-        let fetchOptions = PHFetchOptions()
-        let userAlbums: PHFetchResult<PHAssetCollection> = PHAssetCollection.fetchAssetCollections(
-            with: .album,
-            subtype: .any,
-            options: fetchOptions
-        )
-
-        var fetchedAlbums: [PHAssetCollection] = []
-        userAlbums.enumerateObjects { collection, _, _ in
-            fetchedAlbums.append(collection)
-        }
-
-        DispatchQueue.main.async {
-            self.albums = fetchedAlbums
-            Logger.log("📸 Albums Preloaded in HamburgerMenuView: \(self.albums.count)")
-        }
-    }
 }
