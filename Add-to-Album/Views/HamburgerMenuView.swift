@@ -69,14 +69,14 @@ struct HamburgerMenuView: View {
         let savedAlbumIDs = UserDefaultsManager.getSavedAlbumIDs().map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
         let currentAlbumIDs = Set(photoObserver.albums.map { $0.localIdentifier.trimmingCharacters(in: .whitespacesAndNewlines) })
 
-        Logger.log("📂 All Current Album IDs: \(currentAlbumIDs)")
-        Logger.log("💾 All Saved Album IDs: \(savedAlbumIDs)")
+//        Logger.log("📂 All Current Album IDs: \(currentAlbumIDs)")
+//        Logger.log("💾 All Saved Album IDs: \(savedAlbumIDs)")
 
         // ✅ Loop through selected albums efficiently
         for (index, savedAlbumID) in savedAlbumIDs.enumerated() {
             if savedAlbumID.isEmpty { continue }  // Skip empty entries
 
-            Logger.log("🔎 Checking ID at index \(index): '\(savedAlbumID)' VS Current Album IDs: \(currentAlbumIDs)")
+//            Logger.log("🔎 Checking ID at index \(index): '\(savedAlbumID)' VS Current Album IDs: \(currentAlbumIDs)")
 
             let albumStillExists = currentAlbumIDs.contains(savedAlbumID)
 
