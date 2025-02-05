@@ -26,6 +26,8 @@ struct ImageGridView: View {
             }
             .navigationTitle("Photo Grid")
             .task {
+                Logger.log("🔍 Checking Permissions: \(viewModel.status)")
+
                 viewModel.checkPermissions()
             }
         }
