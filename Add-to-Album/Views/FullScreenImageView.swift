@@ -12,6 +12,8 @@ struct FullscreenImageView: View {
     @Environment(\.dismiss) var dismiss
     @StateObject private var imageViewModel = ImageViewModel()
     @State private var imageLoadStates: [PHAsset: LoadingState] = [:]
+    @ObservedObject var imageGridViewModel: ImageGridViewModel // ADD THIS: Observe the ImageGridViewModel
+
 
     enum LoadingState {
         case idle
@@ -19,11 +21,17 @@ struct FullscreenImageView: View {
         case success
         case failure
     }
-
-    init(isPresented: Binding<Bool>, selectedImageIndex: Binding<Int>, imageAssets: [PHAsset]) {
+    
+    init(
+        isPresented: Binding<Bool>,
+        selectedImageIndex: Binding<Int>,
+        imageAssets: [PHAsset],
+        imageGridViewModel: ImageGridViewModel
+    ) {
         self._isPresented = isPresented
         self._selectedImageIndex = selectedImageIndex
         self.imageAssets = imageAssets
+        self.imageGridViewModel = imageGridViewModel // Initialize the new property
     }
 
     var body: some View {
@@ -54,6 +62,9 @@ struct FullscreenImageView: View {
                         .tag(index)
                         .onAppear {
                             loadImage(for: imageAssets[index], targetSize: geometry.size)
+                            if index == imageAssets.count - 5 && !imageGridViewModel.isLoadingBatch { // Load 5 elements before the end
+                                imageGridViewModel.loadNextBatch()
+                            }
                         }
                     }
                 }

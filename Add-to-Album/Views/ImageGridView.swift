@@ -59,7 +59,8 @@ struct ImageGridView: View {
             FullscreenImageView(
                 isPresented: $isPresented,
                 selectedImageIndex: $selectedImageIndex,
-                imageAssets: viewModel.imageAssets // Pass imageAssets
+                imageAssets: viewModel.imageAssets,
+                imageGridViewModel: viewModel
             )
         }
     }
