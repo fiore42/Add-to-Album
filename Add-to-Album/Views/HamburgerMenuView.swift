@@ -58,6 +58,7 @@ struct HamburgerMenuView: View {
 
         .sheet(isPresented: $isAlbumPickerPresented) {
             if let index = selectedMenuIndex {
+                let currentAlbums = photoObserver.albums // Ensure albums are captured
                 AlbumPickerView(selectedAlbum: $selectedAlbums[index], albums: photoObserver.albums, index: index)
                     .onDisappear {
                         Logger.log("📂 Album Picker Closed. Selected Album: \(selectedAlbums[index]) at index \(index)")
