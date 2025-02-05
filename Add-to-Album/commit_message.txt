@@ -1,3 +1,4 @@
-05 Feb 2025 - 18:57 the menu entries work - save, retrive, follow
+05 Feb 2025 - 21:51 the menu entries work - save, retrive, follow
 
-but there is still a bug when loading the the first time the list of albums
+before trying this approach:
+https://stackoverflow.com/questions/64798211/swiftui-sheet-cannot-show-correct-values-in-first-time
