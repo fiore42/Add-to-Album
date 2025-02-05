@@ -1,4 +1,36 @@
-05 Feb 2025 - 22:01 hamburger menu fixed - loads albums first time
+05 Feb 2025 - 22:36 trying to be triggered only once when albums change but failed 
 
-before trying this approach:
-https://stackoverflow.com/questions/64798211/swiftui-sheet-cannot-show-correct-values-in-first-time
+////    https://stackoverflow.com/questions/42657266/phphotolibrary-photolibrarydidchange-called-multiple-times-in-swift
+//
+//       func photoLibraryDidChange(_ changeInstance: PHChange) {
+//           let fetchOptions = PHFetchOptions()
+//           let fetchResult = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: fetchOptions)
+//
+//           // Get change details specifically for albums
+//           if let albumChanges = changeInstance.changeDetails(for: fetchResult) {
+//               let insertedAlbums = albumChanges.insertedObjects
+//               let removedAlbums = albumChanges.removedObjects
+//               let changedAlbums = albumChanges.changedObjects.filter {
+//                   return changeInstance.changeDetails(for: $0)?.assetContentChanged == true
+//               }
+//
+//               if albumChanges.hasIncrementalChanges {
+//                   Logger.log("🔄 Detected Changes in Photo Library:")
+//
+//                   if !insertedAlbums.isEmpty {
+//                       Logger.log("➕ New Albums Added: \(insertedAlbums.map { $0.localizedTitle ?? "Unknown" })")
+//                   }
+//                   if !removedAlbums.isEmpty {
+//                       Logger.log("❌ Albums Removed: \(removedAlbums.map { $0.localizedTitle ?? "Unknown" })")
+//                   }
+//                   if !changedAlbums.isEmpty {
+//                       Logger.log("✏️ Albums Renamed/Updated: \(changedAlbums.map { $0.localizedTitle ?? "Unknown" })")
+//                   }
+//
+//                   DispatchQueue.main.async {
+//                       self.fetchAlbums() // ✅ Refresh only when albums are changed
+//                   }
+//               }
+//           }
+//       }
+//

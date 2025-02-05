@@ -13,6 +13,7 @@ struct Add_to_AlbumApp: App {
         Logger.log("6. 05 Feb 2025 - 02:03 perfect grid and full screen view")
         Logger.log("7. 05 Feb 2025 - 02:47 added overlays / swipe up and swipe down in full screen")
         Logger.log("8. 05 Feb 2025 - 19:15 correctly handles album changes and deletion")
+        Logger.log("9. 05 Feb 2025 - 22:36 now shows the album list from the first tap")
 
         Logger.log("🚀 App launched") // ✅ First debug print
     }
