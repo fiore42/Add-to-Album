@@ -87,39 +87,8 @@ struct FullscreenImageView: View {
                         handlePreloading(for: newIndex, targetSize: geometry.size)
                     }
                     
-                    // Overlay with four semi-transparent boxes
-                            VStack {
-                                Spacer()
-
-                                HStack {
-                                    FunctionBox(text: "test test 1")
-                                        .frame(width: geometry.size.width * 0.3, height: geometry.size.height * 0.1)
-                                        .position(x: geometry.size.width * positionLeftRight, y: geometry.size.height * positionTopBottom)
-
-                                    Spacer()
-
-                                    FunctionBox(text: "test test 2")
-                                        .frame(width: geometry.size.width * 0.3, height: geometry.size.height * 0.1)
-                                        .position(x: geometry.size.width * (1 - positionLeftRight), y: geometry.size.height * positionTopBottom)
-                                }
-
-                                Spacer()
-
-                                HStack {
-                                    FunctionBox(text: "test test 3")
-                                        .frame(width: geometry.size.width * 0.3, height: geometry.size.height * 0.1)
-                                        .position(x: geometry.size.width * positionLeftRight, y: geometry.size.height * (1 - positionTopBottom))
-
-                                    Spacer()
-
-                                    FunctionBox(text: "test test 4")
-                                        .frame(width: geometry.size.width * 0.3, height: geometry.size.height * 0.1)
-                                        .position(x: geometry.size.width * (1 - positionLeftRight), y: geometry.size.height * (1 - positionTopBottom))
-                                }
-
-                                Spacer()
-                            }
-                            .ignoresSafeArea()
+                    // Call FunctionBoxes and pass geometry
+                    FunctionBoxes(geometry: geometry)
 
                     VStack {
                         HStack {
