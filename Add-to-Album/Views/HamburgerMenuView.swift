@@ -28,6 +28,14 @@ struct HamburgerMenuView: View {
         .onAppear {
 //            Logger.log("📸 HamburgerMenuView onAppear calling updateSelectedAlbums")
 //            AlbumUtilities.updateSelectedAlbums(photoObserverAlbums: photoObserver.albums)
+            NotificationCenter.default.addObserver(
+                forName: .albumListUpdated,
+                object: nil,
+                queue: .main
+            ) { _ in
+                Logger.log("🔄 UI Refresh: Reloading albums in Hamburger Menu")
+                self.selectedAlbums = UserDefaultsManager.getSavedAlbums()
+            }
         }
         .onChange(of: photoObserver.albums) { oldValue, newValue in
             Logger.log("🔄 Album List Changed - Checking Selections")
