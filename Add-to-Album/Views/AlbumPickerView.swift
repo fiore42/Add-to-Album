@@ -9,25 +9,32 @@ struct AlbumPickerView: View {
 
     var body: some View {
         NavigationView {
-            Group { // Use a Group to handle loading state
-                if isLoading {
-                    ProgressView() // Show progress while loading
-                } else {
-                    List(albums, id: \.localIdentifier) { album in
-                        Button(action: {
-                            selectedAlbum = formatAlbumName(album.localizedTitle ?? "Unknown")
-                            UserDefaultsManager.saveAlbums([selectedAlbum])
-                            dismiss()
-                        }) {
-                            Text(album.localizedTitle ?? "Unknown")
-                        }
+            if isLoading {
+                ProgressView() // Show progress while loading
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.black.opacity(0.1)) // Optional UI improvement
+                
+            } else {
+                List(albums, id: \.localIdentifier) { album in
+                    Button(action: {
+                        selectedAlbum = formatAlbumName(album.localizedTitle ?? "Unknown")
+                        UserDefaultsManager.saveAlbums([selectedAlbum])
+                        dismiss()
+                    }) {
+                        Text(album.localizedTitle ?? "Unknown")
                     }
-                    .navigationTitle("Select Album")
                 }
+                .navigationTitle("Select Album")
             }
-            .onAppear(perform: fetchAlbums)
         }
+        .onAppear {
+            if albums.isEmpty { // ✅ Ensures fetch only happens once
+                fetchAlbums()
+            }
+        }
+        
     }
+
 
     private func fetchAlbums() {
         isLoading = true // Set loading to true *before* fetching
