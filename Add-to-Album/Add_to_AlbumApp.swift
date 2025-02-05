@@ -8,6 +8,7 @@ struct Add_to_AlbumApp: App {
         Logger.log("1. 03 Feb 2025 - 19:30 the thumbnail view works")
         Logger.log("2. 03 Feb 2025 - 21:59 the full screen view almost works")
         Logger.log("3. 04 Feb 2025 - 11:58 high screen photos work fast")
+        Logger.log("4. 05 Feb 2025 - 01:33 grid and full screen works - PhotoKit")
         Logger.log("🚀 App launched") // ✅ First debug print
     }
     var body: some Scene {
