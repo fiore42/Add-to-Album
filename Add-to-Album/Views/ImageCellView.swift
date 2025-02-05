@@ -1,34 +1,30 @@
 import SwiftUI
 import Photos
 
+// ImageCellView (handles thumbnail loading)
 struct ImageCellView: View {
     let asset: PHAsset
-    @State private var image: UIImage?
+    @State private var thumbnail: UIImage?
 
     var body: some View {
         Group {
-            if let image = image {
-                Image(uiImage: image)
+            if let thumbnail = thumbnail {
+                Image(uiImage: thumbnail)
                     .resizable()
                     .scaledToFill()
             } else {
-                ProgressView() // Show progress while loading
+                ProgressView() // Placeholder
             }
         }
         .onAppear {
-            loadImage(for: asset)
-        }
-    }
-
-    private func loadImage(for asset: PHAsset) {
-        let manager = PHImageManager.default()
-        let targetSize = CGSize(width: 200, height: 200) // Adjust as needed
-        let options = PHImageRequestOptions()
-        options.isSynchronous = false
-
-        manager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFill, options: options) { image, info in
-            DispatchQueue.main.async {
-                self.image = image
+            let targetSize = CGSize(width: 200, height: 200) // Adjust as needed
+            let manager = PHImageManager.default()
+            let options = PHImageRequestOptions()
+            options.isSynchronous = false
+            manager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFill, options: options) { image, _ in
+                DispatchQueue.main.async {
+                    self.thumbnail = image
+                }
             }
         }
     }

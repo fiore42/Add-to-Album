@@ -1,23 +1,21 @@
-
 import SwiftUI
 import Photos
 
 class ImageGridViewModel: ObservableObject {
     @Published var status: PhotoPermissionStatus = .notDetermined
-    @Published var images: [UIImage] = []
-    @Published var imageAssets: [PHAsset] = [] // ✅ Fix: Now stores PHAssets
-    
-    private let imageManager = ImageManager()
+    @Published var imageAssets: [PHAsset] = [] // Only PHAssets are stored
+    @Published internal var isLoadingBatch = false // Make it internal
+
+
+    private let imageManager = ImageManager() // Assuming this handles permission requests and asset fetching
     private var allAssets: PHFetchResult<PHAsset>?
     private var currentIndex = 0
     private let batchSize = 30
-    private var isLoadingBatch = false
+//    private var isLoadingBatch = false
 
-    /// **Step 1:** Check Permissions & Load Photos
     func checkPermissions() {
         let current = imageManager.getPhotoPermissionStatus()
         status = current
-        Logger.log("🔍 Current permission status: \(current)")
 
         if current == .granted || current == .limited {
             fetchAssetsIfNeeded()
@@ -34,12 +32,10 @@ class ImageGridViewModel: ObservableObject {
             }
         }
     }
-    
-    /// **Step 2:** Fetch Assets Once
+
     private func fetchAssetsIfNeeded() {
         guard allAssets == nil else { return }
 
-        Logger.log("📸 Fetching assets...")
         allAssets = imageManager.fetchAllAssets()
         currentIndex = 0
 
@@ -48,10 +44,8 @@ class ImageGridViewModel: ObservableObject {
         }
     }
 
-    /// **Step 3:** Load Next Batch (Efficiently)
     func loadNextBatch() {
         guard !isLoadingBatch, let allAssets = allAssets, currentIndex < allAssets.count else {
-            Logger.log("⚠️ No more images or already loading")
             return
         }
 
@@ -61,22 +55,13 @@ class ImageGridViewModel: ObservableObject {
         let assetsToLoad = (currentIndex..<endIndex).map { allAssets.object(at: $0) }
         currentIndex = endIndex
 
-        Logger.log("📥 Requesting thumbnails [\(currentIndex) to \(endIndex)]")
-
-        // ✅ Fix: Now stores PHAssets for fullscreen preview
+        // Append PHAssets directly (no need to convert to UIImage for the grid)
         DispatchQueue.main.async {
             self.imageAssets.append(contentsOf: assetsToLoad)
-        }
-
-        imageManager.fetchThumbnails(for: assetsToLoad, maxConcurrentRequests: 4) { [weak self] images in
-            DispatchQueue.main.async {
-                self?.images.append(contentsOf: images)
-                self?.isLoadingBatch = false
-            }
+            self.isLoadingBatch = false // Release the lock *after* appending the assets.
         }
     }
 }
 
-enum PermissionStatus {
-    case notDetermined, granted, limited, denied, restricted
-}
+
+

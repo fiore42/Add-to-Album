@@ -1,4 +1,6 @@
 import SwiftUI
+import Photos
+
 
 struct ImageGridView: View {
     @StateObject private var viewModel = ImageGridViewModel()
@@ -19,21 +21,8 @@ struct ImageGridView: View {
                     GeometryReader { geometry in
                         ScrollView {
                             LazyVGrid(columns: columns, spacing: spacing) {
-                                ForEach(viewModel.imageAssets.indices, id: \.self) { index in // Use imageAssets
-                                    ImageCellView(asset: viewModel.imageAssets[index]) // Pass the PHAsset
-                                        .aspectRatio(1, contentMode: .fit)
-                                        .frame(width: cellSize(geometry: geometry), height: cellSize(geometry: geometry))
-                                        .clipped()
-                                        .onTapGesture {
-                                            Logger.log("🖼 Thumbnail tapped for index: \(index)")
-                                            selectedImageIndex = index
-                                            isPresented = true
-                                        }
-                                        .onAppear {
-                                            if index == viewModel.imageAssets.count - 1 { // Use imageAssets
-                                                viewModel.loadNextBatch()
-                                            }
-                                        }
+                                ForEach(viewModel.imageAssets.indices, id: \.self) { index in
+                                    ImageGridItem(asset: viewModel.imageAssets[index], index: index, geometry: geometry, viewModel: viewModel, isPresented: $isPresented, selectedImageIndex: $selectedImageIndex)
                                 }
                             }
                             .padding(.horizontal, spacing)
@@ -78,6 +67,38 @@ struct ImageGridView: View {
     private func cellSize(geometry: GeometryProxy) -> CGFloat {
         let columns: CGFloat = 3
         let totalSpacing: CGFloat = spacing * (columns - 1) + (spacing * 2)
+        return (geometry.size.width - totalSpacing) / columns
+    }
+}
+
+
+struct ImageGridItem: View {
+    let asset: PHAsset
+    let index: Int
+    let geometry: GeometryProxy
+    @ObservedObject var viewModel: ImageGridViewModel // Make sure you observe the view model here
+    @Binding var isPresented: Bool
+    @Binding var selectedImageIndex: Int
+
+    var body: some View {
+        ImageCellView(asset: asset)
+            .aspectRatio(1, contentMode: .fit)
+            .frame(width: cellSize(), height: cellSize())
+            .clipped()
+            .onTapGesture {
+                selectedImageIndex = index
+                isPresented = true
+            }
+            .onAppear {
+                if index == viewModel.imageAssets.count - 5 && !viewModel.isLoadingBatch {
+                    viewModel.loadNextBatch()
+                }
+            }
+    }
+
+    private func cellSize() -> CGFloat {
+        let columns: CGFloat = 3
+        let totalSpacing: CGFloat = 2 * (columns - 1) + (2 * 2) // Spacing * (columns - 1) + (spacing * 2)
         return (geometry.size.width - totalSpacing) / columns
     }
 }

@@ -2,10 +2,8 @@ import Photos
 import UIKit
 
 class ImageManager {
-    private let imageRequestQueue = DispatchQueue(label: "imageRequestQueue", attributes: .concurrent)
-
     func getPhotoPermissionStatus() -> PhotoPermissionStatus {
-        switch PHPhotoLibrary.authorizationStatus() {
+        switch PHPhotoLibrary.authorizationStatus(for: .readWrite) { // Request readWrite access
         case .authorized: return .granted
         case .limited: return .limited
         case .denied: return .denied
@@ -16,7 +14,7 @@ class ImageManager {
     }
 
     func requestPhotoPermissions(completion: @escaping (Bool) -> Void) {
-        PHPhotoLibrary.requestAuthorization { status in
+        PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in // Request readWrite access
             DispatchQueue.main.async {
                 completion(status == .authorized || status == .limited)
             }
@@ -29,35 +27,29 @@ class ImageManager {
         return PHAsset.fetchAssets(with: .image, options: fetchOptions)
     }
 
-    /// ✅ **Optimized Image Fetching with Controlled Parallelism**
-    func fetchThumbnails(for assets: [PHAsset], maxConcurrentRequests: Int, completion: @escaping ([UIImage]) -> Void) {
-        let targetSize = CGSize(width: 150, height: 150)
+    func fetchThumbnails(for assets: [PHAsset], targetSize: CGSize, completion: @escaping ([UIImage]) -> Void) {
         let options = PHImageRequestOptions()
-        options.deliveryMode = .fastFormat // 🔥 Load faster, lower quality if needed
-        options.isNetworkAccessAllowed = true
-        options.resizeMode = .fast
+        options.deliveryMode = .opportunistic // Or .highQualityFormat if needed
+        options.isNetworkAccessAllowed = true // If you need to fetch from iCloud
+        options.resizeMode = .exact // Or .none if you want the original size
 
-        DispatchQueue.global(qos: .userInitiated).async {
-            let imageManager = PHCachingImageManager()
-            var tempImages = [UIImage](repeating: UIImage(), count: assets.count)
-            let group = DispatchGroup()
-            let semaphore = DispatchSemaphore(value: maxConcurrentRequests) // Limits concurrent requests
+        let imageManager = PHCachingImageManager() // Use PHCachingImageManager for efficiency
 
-            for (index, asset) in assets.enumerated() {
-                group.enter()
-                semaphore.wait() // Ensures we don't open too many threads
+        var thumbnails: [UIImage] = Array(repeating: UIImage(), count: assets.count) // Initialize with placeholders
 
-                imageManager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFill, options: options) { image, _ in
+        for (index, asset) in assets.enumerated() {
+            imageManager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFill, options: options) { image, info in
+                DispatchQueue.main.async {
                     if let image = image {
-                        tempImages[index] = image
+                        thumbnails[index] = image
+                    } else {
+                        // Handle cases where image loading fails (e.g., iCloud not available)
+                        print("Failed to load thumbnail for asset: \(asset)")
                     }
-                    semaphore.signal() // Allow another request
-                    group.leave()
+                    if index == assets.count - 1 { // All requests are done
+                        completion(thumbnails)
+                    }
                 }
-            }
-
-            group.notify(queue: .main) {
-                completion(tempImages)
             }
         }
     }
