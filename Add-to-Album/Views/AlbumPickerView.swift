@@ -6,7 +6,7 @@ struct AlbumPickerView: View {
     @Environment(\.dismiss) var dismiss
     let albums: [PHAssetCollection] // ✅ Receive preloaded albums
     let index: Int
-    @State private var refreshTrigger = UUID() // Force refresh
+//    @State private var refreshTrigger = UUID() // Force refresh
 
     var body: some View {
         NavigationView {
@@ -31,10 +31,10 @@ struct AlbumPickerView: View {
             }
             
         }
-        .onChange(of: albums) { oldValue, newValue in // When albums change
-            refreshTrigger = UUID() // Trigger a refresh
-        }
-        .id(refreshTrigger) // Apply the ID to the root view
+//        .onChange(of: albums) { oldValue, newValue in // When albums change
+//            refreshTrigger = UUID() // Trigger a refresh
+//        }
+//        .id(refreshTrigger) // Apply the ID to the root view
 
     }
 

@@ -71,7 +71,7 @@ struct HamburgerMenuView: View {
                             Logger.log("💾 Saved Album: \(selectedAlbums[index]) at index \(index), ID: \(albumID ?? "nil")")
                         }
                     }
-                    .id(UUID())
+//                    .id(UUID())
             }
 //            else {
 //                Logger.log("📂 Album Picker selectedMenuIndex: \(selectedMenuIndex)")
