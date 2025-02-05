@@ -24,15 +24,22 @@ struct HamburgerMenuView: View {
                 .frame(width: 24, height: 20)
                 .foregroundColor(.white)
         }
+        .onChange(of: isAlbumPickerPresented) { oldValue, newValue in
+            Logger.log("🔄 isAlbumPickerPresented changed: \(newValue)")
+        }
         .onAppear {
             fetchAlbums() // ✅ Preload albums when menu appears
         }
         .sheet(isPresented: $isAlbumPickerPresented) {
-            if let index = selectedMenuIndex {
+            if let index = selectedMenuIndex, !albums.isEmpty {
 //                Logger.log("📂 Opening AlbumPickerView for index \(index). Passing Albums Count: \(albums.count)")
-                AlbumPickerView(selectedAlbum: $selectedAlbums[index], albums: albums) // ✅ Pass preloaded albums
+                AlbumPickerView(selectedAlbum: $selectedAlbums[index], albums: albums)
+                    .id(UUID()) // ✅ Force SwiftUI to create a new instance every time
+//            } else {
+//                Logger.log("⚠️ Prevented Opening AlbumPickerView - Albums Not Loaded!")
             }
         }
+
     }
 
     private func fetchAlbums() {
