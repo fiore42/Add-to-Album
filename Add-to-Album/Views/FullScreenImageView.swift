@@ -39,7 +39,7 @@ struct FullscreenImageView: View {
     @State private var previousIndex: Int = -1
 
     @ObservedObject var imageGridViewModel: ImageGridViewModel
-    @ObservedObject var albumSelectionViewModel: AlbumSelectionViewModel // ✅ Injected
+    @EnvironmentObject var albumSelectionViewModel: AlbumSelectionViewModel // ✅ Get ViewModel from environment
 
     
     @State private var positionTopBottom: CGFloat = 0.2 // 20% from top and bottom

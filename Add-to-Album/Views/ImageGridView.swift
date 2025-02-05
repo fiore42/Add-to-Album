@@ -36,8 +36,7 @@ struct ImageGridView: View {
                 isPresented: $isPresented,
                 selectedImageIndex: $selectedImageIndex,
                 imageAssets: viewModel.imageAssets,
-                imageGridViewModel: viewModel,
-                albumSelectionViewModel: albumSelectionViewModel // ✅ Pass it down
+                imageGridViewModel: viewModel
             )
         }
     }
