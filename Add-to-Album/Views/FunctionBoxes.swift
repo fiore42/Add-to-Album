@@ -31,7 +31,7 @@ struct FunctionBoxes: View {
 
     private func functionBox(text: String, alignment: Alignment) -> some View {
         FunctionBox(text: text)
-            .frame(width: geometry.size.width * 0.3, height: geometry.size.height * 0.1)
+            .frame(width: geometry.size.width * 0.3, height: geometry.size.height * 0.05)
             .background(Color.black.opacity(0.5))
             .cornerRadius(10)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
