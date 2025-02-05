@@ -8,6 +8,8 @@ struct HamburgerMenuView: View {
     @State private var selectedMenuIndex: Int? = nil // Track which menu item is selected
     @State private var albums: [PHAssetCollection] = [] // ✅ Preloaded albums
     @State private var isAlbumPickerReady = false
+    @State private var initialLoadComplete = false // Tracks initial load
+
     
     var body: some View {
         Menu {
@@ -36,6 +38,12 @@ struct HamburgerMenuView: View {
             Logger.log("📸 HamburgerMenuView onAppear triggered")
             Logger.log("📂 Initial Selected Albums: \(selectedAlbums)")
 
+            // Check if albums are already loaded. If so, set isAlbumPickerReady
+            if !photoObserver.albums.isEmpty {
+                isAlbumPickerReady = true
+                initialLoadComplete = true // Mark initial load as complete
+            }
+            
 //            Logger.log("📸 HamburgerMenuView onAppear calling updateSelectedAlbums")
 //            AlbumUtilities.updateSelectedAlbums(photoObserverAlbums: photoObserver.albums)
             NotificationCenter.default.addObserver(
