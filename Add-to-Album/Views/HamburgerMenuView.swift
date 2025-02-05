@@ -34,7 +34,7 @@ struct HamburgerMenuView: View {
         .frame(maxWidth: .infinity, alignment: .trailing) // Ensure it's aligned right
         .sheet(isPresented: $isAlbumPickerPresented) {
             if let index = selectedMenuIndex {
-                AlbumPickerView(selectedAlbum: $selectedAlbums[index])
+                AlbumPickerView(selectedAlbum: $selectedAlbums[index], albums: albums) // ✅ Pass preloaded albums
             }
         }
     }
