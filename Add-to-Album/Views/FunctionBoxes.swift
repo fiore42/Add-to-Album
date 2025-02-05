@@ -40,19 +40,25 @@ struct FunctionBoxes: View {
     }
 
     private func functionBox(text: String, alignment: Alignment) -> some View {
-        FunctionBox(text: text)
-            .frame(width: geometry.size.width * 0.35, height: geometry.size.height * 0.05)
-            .background(Color.black.opacity(0.5))
-            .cornerRadius(10)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
-            .padding(
-                EdgeInsets(
-                    top: alignment == .topLeading || alignment == .topTrailing ? geometry.size.height * positionTop : 0,
-                    leading: alignment == .topLeading || alignment == .bottomLeading ? geometry.size.width * positionLeftRight : 0,
-                    bottom: alignment == .bottomLeading || alignment == .bottomTrailing ? geometry.size.height * positionBottom : 0,
-                    trailing: alignment == .topTrailing || alignment == .bottomTrailing ? geometry.size.width * positionLeftRight : 0
-                )
+        if text.isEmpty {
+            return AnyView(EmptyView()) // ✅ Makes it disappear when the album name is empty
+        } else {
+            return AnyView(
+                FunctionBox(text: text)
+                    .frame(width: geometry.size.width * 0.35, height: geometry.size.height * 0.05)
+                    .background(Color.black.opacity(0.5))
+                    .cornerRadius(10)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
+                    .padding(
+                        EdgeInsets(
+                            top: alignment == .topLeading || alignment == .topTrailing ? geometry.size.height * positionTop : 0,
+                            leading: alignment == .topLeading || alignment == .bottomLeading ? geometry.size.width * positionLeftRight : 0,
+                            bottom: alignment == .bottomLeading || alignment == .bottomTrailing ? geometry.size.height * positionBottom : 0,
+                            trailing: alignment == .topTrailing || alignment == .bottomTrailing ? geometry.size.width * positionLeftRight : 0
+                        )
+                    )
             )
+        }
     }
 }
 
