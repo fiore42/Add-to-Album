@@ -54,7 +54,15 @@ struct HamburgerMenuView: View {
     private func updateSelectedAlbums() {
         let currentAlbumIDs = Set(photoObserver.albums.map {
             $0.localIdentifier.trimmingCharacters(in: .whitespacesAndNewlines)
-        }) // ✅ Store cleaned IDs
+        })
+
+        Logger.log("📂 All Current Album IDs: \(currentAlbumIDs)") // Log all current IDs
+
+        let savedAlbumIDs = UserDefaultsManager.getSavedAlbumIDs().map {
+            $0.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        Logger.log("💾 All Saved Album IDs: \(savedAlbumIDs)") // Log all stored IDs
 
         for i in 0..<selectedAlbums.count {
             Logger.log("🔍 Checking Album at index \(i)")
@@ -64,7 +72,7 @@ struct HamburgerMenuView: View {
 
                 let albumStillExists = currentAlbumIDs.contains(where: {
                     $0.localizedStandardCompare(savedAlbumID) == .orderedSame
-                }) // ✅ Safe string comparison
+                })
 
                 Logger.log("✅ Album at index \(i) exists in photo library: \(albumStillExists)")
 
@@ -73,25 +81,14 @@ struct HamburgerMenuView: View {
                     UserDefaultsManager.saveAlbum(selectedAlbums[i], at: i, albumID: nil)
                     Logger.log("⚠️ Album Deleted - Resetting Entry \(i) to No Album Selected")
                 } else {
-                    if selectedAlbums[i] == "No Album Selected" {
-                        if let album = photoObserver.albums.first(where: {
-                            $0.localIdentifier.localizedStandardCompare(savedAlbumID) == .orderedSame
-                        }) {
-                            selectedAlbums[i] = AlbumUtilities.formatAlbumName(album.localizedTitle ?? "Unknown")
-                            UserDefaultsManager.saveAlbum(selectedAlbums[i], at: i, albumID: savedAlbumID)
-                            Logger.log("✅ Restored Album Name for Entry \(i): \(selectedAlbums[i])")
-                        } else {
-                            Logger.log("❌ Could not restore album name at index \(i). Album not found in photoObserver.albums despite ID existing.")
-                        }
-                    } else {
-                        Logger.log("✅ Album at index \(i) already correctly set: \(selectedAlbums[i])")
-                    }
+                    Logger.log("✅ Album ID Matched: \(savedAlbumID)")
                 }
             } else {
                 Logger.log("⚠️ No saved Album ID at index \(i)")
             }
         }
     }
+
 
 
 
