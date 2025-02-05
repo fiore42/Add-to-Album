@@ -65,10 +65,18 @@ struct FullscreenImageView: View {
                                             imageViewModel.loadImage(for: imageAssets[index], targetSize: geometry.size)
                                         }
                                 }
-                                // Add a vertical black separator on the right edge of each image
+
+                                // Left separator
                                 Rectangle()
                                     .fill(Color.black)
-                                    .frame(width: 30) // Adjust thickness
+                                    .frame(width: 20) // Adjust thickness
+                                    .edgesIgnoringSafeArea(.all)
+                                    .offset(x: -geometry.size.width / 2 + 1) // Position at left edge
+
+                                // Right separator
+                                Rectangle()
+                                    .fill(Color.black)
+                                    .frame(width: 20) // Adjust thickness
                                     .edgesIgnoringSafeArea(.all)
                                     .offset(x: geometry.size.width / 2 - 1) // Position at right edge
 
