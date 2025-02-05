@@ -53,7 +53,6 @@ struct HamburgerMenuView: View {
     // **Automatically Reset Deleted Albums to "No Album Selected"**
     private func updateSelectedAlbums() {
         let currentAlbumIDs = Set(photoObserver.albums.map { String($0.localIdentifier) })
-
         let savedAlbumIDs = UserDefaultsManager.getSavedAlbumIDs().map { String($0) }
 
         // ✅ Log all album IDs along with type and length
@@ -66,7 +65,12 @@ struct HamburgerMenuView: View {
 
             if let savedAlbumID = UserDefaultsManager.getAlbumID(at: i)?.trimmingCharacters(in: .whitespacesAndNewlines) {
                 let castedSavedAlbumID = String(savedAlbumID) // ✅ Ensure it's a String
+
                 Logger.log("💾 Retrieved Album ID at index \(i): '\(castedSavedAlbumID)' (Type: \(type(of: castedSavedAlbumID)), Length: \(castedSavedAlbumID.count))")
+                
+                // 🚨 Add full log BEFORE the comparison 🚨
+                Logger.log("🔍 Checking if saved album ID exists in current albums...")
+                Logger.log("🔎 Comparing: '\(castedSavedAlbumID)' VS Current Album IDs: \(currentAlbumIDs)")
 
                 let albumStillExists = currentAlbumIDs.contains(castedSavedAlbumID)
 
@@ -84,6 +88,7 @@ struct HamburgerMenuView: View {
             }
         }
     }
+
 
 
 
