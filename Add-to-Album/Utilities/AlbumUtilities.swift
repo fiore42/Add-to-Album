@@ -27,6 +27,9 @@ struct AlbumUtilities {
     static func fetchAlbums(completion: @escaping ([PHAssetCollection]) -> Void) {
         let fetchOptions = PHFetchOptions()
         let userAlbums = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: fetchOptions)
+        
+        Logger.log("📸 fetchAlbums called")
+
 
         var fetchedAlbums: [PHAssetCollection] = []
         userAlbums.enumerateObjects { collection, _, _ in
@@ -40,6 +43,7 @@ struct AlbumUtilities {
             
             // ✅ Call updateSelectedAlbums AFTER the fetch is complete
             PHPhotoLibrary.shared().performChanges { // Ensures the library is consistent
+                Logger.log("📸 fetchAlbums calling updateSelectedAlbums")
                  self.updateSelectedAlbums(photoObserverAlbums: fetchedAlbums)
             } completionHandler: { success, error in
                 if let error = error {

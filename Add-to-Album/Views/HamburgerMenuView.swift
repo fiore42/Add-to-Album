@@ -26,11 +26,12 @@ struct HamburgerMenuView: View {
                 .foregroundColor(.white)
         }
         .onAppear {
+            Logger.log("📸 HamburgerMenuView onAppear calling updateSelectedAlbums")
             AlbumUtilities.updateSelectedAlbums(photoObserverAlbums: photoObserver.albums)
-
         }
         .onChange(of: photoObserver.albums) { oldValue, newValue in
             Logger.log("🔄 Album List Changed - Checking Selections")
+            Logger.log("📸 HamburgerMenuView onChange calling updateSelectedAlbums")
             AlbumUtilities.updateSelectedAlbums(photoObserverAlbums: photoObserver.albums)
         }
 
