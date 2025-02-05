@@ -23,6 +23,7 @@ class UserDefaultsManager {
         return albumIDs[index].isEmpty ? nil : albumIDs[index]
     }
 
+    
     static func saveAlbum(_ album: String, at index: Int, albumID: String = "") {
             var albums = getSavedAlbums()
             albums[index] = album

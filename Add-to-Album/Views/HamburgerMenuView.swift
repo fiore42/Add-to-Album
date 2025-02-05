@@ -15,7 +15,6 @@ struct HamburgerMenuView: View {
                 Button(action: {
                     selectedMenuIndex = index
                     isAlbumPickerPresented = true
-                    Logger.log("📂 Menu Item \(index) Tapped. Albums Count: \(albums.count)")
                 }) {
                     Text(selectedAlbums[index])
                 }
@@ -34,16 +33,18 @@ struct HamburgerMenuView: View {
             updateSelectedAlbums() // ✅ Update menu when albums change
         }
 
+
         .sheet(isPresented: $isAlbumPickerPresented) {
             if let index = selectedMenuIndex {
-                AlbumPickerView(selectedAlbum: $selectedAlbums[index], albums: photoObserver.albums, index: index) // ✅ Pass index
+                AlbumPickerView(selectedAlbum: $selectedAlbums[index], albums: photoObserver.albums, index: index)
                     .onDisappear {
                         if let index = selectedMenuIndex {
-                            UserDefaultsManager.saveAlbum(selectedAlbums[index], at: index)
+                            let albumID = UserDefaultsManager.getAlbumID(at: index) // Use the existing function!
+                            UserDefaultsManager.saveAlbum(selectedAlbums[index], at: index, albumID: albumID ?? "")
                             Logger.log("💾 Saved Album: \(selectedAlbums[index]) at index \(index)")
                         }
                     }
-                    .id(UUID()) // ✅ Force SwiftUI to recreate the modal
+                    .id(UUID())
             }
         }
 
@@ -51,16 +52,24 @@ struct HamburgerMenuView: View {
 
     // **Automatically Reset Deleted Albums to "No Album Selected"**
     private func updateSelectedAlbums() {
-        let currentAlbumIDs = Set(photoObserver.albums.map { $0.localIdentifier }) // ✅ Store existing album IDs
+        let currentAlbumIDs = Set(photoObserver.albums.map { $0.localIdentifier })
 
         for i in 0..<selectedAlbums.count {
-            // Retrieve the stored album's unique ID
-            if let savedAlbumID = UserDefaultsManager.getAlbumID(at: i) {
-                let albumStillExists = currentAlbumIDs.contains(savedAlbumID) // ✅ Check by unique ID
+            let savedAlbumID = UserDefaultsManager.getAlbumID(at: i)
+
+            if let savedAlbumID = savedAlbumID {
+                let albumStillExists = currentAlbumIDs.contains(savedAlbumID)
+
                 if !albumStillExists {
-                    selectedAlbums[i] = "No Album Selected" // ✅ Reset deleted albums
-                    UserDefaultsManager.saveAlbum(selectedAlbums[i], at: i)
+                    selectedAlbums[i] = "No Album Selected"
+                    UserDefaultsManager.saveAlbum(selectedAlbums[i], at: i, albumID: "") // Clear ID
                     Logger.log("⚠️ Album Deleted - Resetting Entry \(i) to No Album Selected")
+                } else if selectedAlbums[i] == "No Album Selected" { // Restore name
+                    if let album = photoObserver.albums.first(where: { $0.localIdentifier == savedAlbumID }) {
+                        selectedAlbums[i] = AlbumUtilities.formatAlbumName(album.localizedTitle ?? "Unknown")
+                        UserDefaultsManager.saveAlbum(selectedAlbums[i], at: i, albumID: savedAlbumID)
+                        Logger.log("✅ Restored Album Name for Entry \(i)")
+                    }
                 }
             }
         }

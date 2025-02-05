@@ -7,19 +7,17 @@ struct AlbumPickerView: View {
     let albums: [PHAssetCollection] // ✅ Receive preloaded albums
     let index: Int
     
-//    @State private var albums: [PHAssetCollection] = []
-//    private var photoLibraryChangeObserver: PHPhotoLibraryChangeObserver?
 
     var body: some View {
         NavigationView {
             VStack {
                 
-                List(albums, id: \.localIdentifier) { album in
+                List(albums, id: \.localIdentifier) { album in // 'album' is available here
                     Button(action: {
-                        let albumID = album.localIdentifier // ✅ Ensure this is a String
+                        let albumID = album.localIdentifier
                         selectedAlbum = AlbumUtilities.formatAlbumName(album.localizedTitle ?? "Unknown")
-                        UserDefaultsManager.saveAlbum(selectedAlbum, at: index, albumID: albumID) // ✅ Now `index` is correctly passed
-                        dismiss()
+                        UserDefaultsManager.saveAlbum(selectedAlbum, at: index, albumID: albumID) // Save ID!
+                        dismiss() // 'dismiss' is available here
                     }) {
                         Text(album.localizedTitle ?? "Unknown")
                     }
@@ -28,17 +26,6 @@ struct AlbumPickerView: View {
 
             }
             
-//            .onDisappear { // ADD THIS: Remove observer
-//                if let observer = photoLibraryChangeObserver {
-//                    PHPhotoLibrary.shared().unregister(observer)
-//                }
-//            }
-//            .onChange(of: selectedAlbum) {oldvalue, newValue in // ADD THIS: Reset selectedAlbum
-//                let savedAlbums = UserDefaultsManager.getSavedAlbums()
-//                if !savedAlbums.contains(newValue) {
-//                    selectedAlbum = "No Album Selected"
-//                }
-//            }
         }
     }
 
