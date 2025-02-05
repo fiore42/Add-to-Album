@@ -26,9 +26,13 @@ struct AlbumPickerView: View {
         let fetchOptions = PHFetchOptions()
         let userAlbums = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: fetchOptions)
 
-        albums = []
+        var fetchedAlbums: [PHAssetCollection] = []
         userAlbums.enumerateObjects { collection, _, _ in
-            albums.append(collection)
+            fetchedAlbums.append(collection)
+        }
+
+        DispatchQueue.main.async {
+            self.albums = fetchedAlbums // ✅ Updating in the main thread ensures UI refresh
         }
     }
 
