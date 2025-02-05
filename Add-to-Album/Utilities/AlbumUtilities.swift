@@ -36,8 +36,11 @@ struct AlbumUtilities {
             DispatchQueue.main.async {
                 Logger.log("📸 Albums Fetched: \(fetchedAlbums.count)")
                 completion(fetchedAlbums) // Call completion with fetched albums
+                // Notify observers about album changes
+                NotificationCenter.default.post(name: AlbumUtilities.albumsUpdated, object: fetchedAlbums) 
+
             }
         }
                 
-
+    static let albumsUpdated = Notification.Name("AlbumsUpdated")
 }
