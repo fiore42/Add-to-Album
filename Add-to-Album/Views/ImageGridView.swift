@@ -6,7 +6,7 @@ struct ImageGridView: View {
     @StateObject private var viewModel = ImageGridViewModel()
     @State private var isPresented = false
     @State private var selectedImageIndex = 0
-    private let spacing: CGFloat = 2
+    private let spacing: CGFloat = 4
     private var columns: [GridItem] {
         Array(repeating: GridItem(.flexible(), spacing: spacing), count: 3)
     }
