@@ -13,7 +13,7 @@ struct HamburgerMenuView: View {
         Menu {
             ForEach(0..<4, id: \.self) { index in
                 Button(action: {
-                    Logger.log("📂 Opening Album Picker for index \(index)")
+                    Logger.log("📂 [HamburgerMenuView] Opening Album Picker for index \(index)")
                     selectedMenuIndex = index
                     isAlbumPickerPresented = true
                 }) {
