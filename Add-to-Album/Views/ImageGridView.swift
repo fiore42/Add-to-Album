@@ -7,10 +7,6 @@ struct ImageGridView: View {
     @State private var isPresented = false
     @State private var selectedImageIndex = 0
     
-//    @State private var selectedAlbums: [String] = UserDefaultsManager.getSavedAlbums() // Load saved albums
-//    @State private var isAlbumPickerPresented = false
-//    @State private var selectedMenuIndex: Int? = nil // Track which menu item is being selected
-
     private let spacing: CGFloat = 4
     private var columns: [GridItem] {
         Array(repeating: GridItem(.flexible(), spacing: spacing), count: 3)
@@ -74,19 +70,6 @@ struct ImageGridView: View {
         .background(Color.black.opacity(0.8)) // Dark splash screen
         .ignoresSafeArea()
     }
-
-    
-//    private var contentView: some View {
-//        switch viewModel.status {
-//        case .granted, .limited:
-//            AnyView(imageGridView) // Wrap in AnyView
-//        case .notDetermined:
-//            AnyView(permissionRequestView) // Wrap in AnyView
-//        case .denied, .restricted:
-//            AnyView(accessDeniedView) // Wrap in AnyView
-//        }
-//    }
-
 
     private var imageGridView: some View {
         GeometryReader { geometry in
@@ -158,67 +141,6 @@ struct ImageGridView: View {
             UIApplication.shared.open(url)
         }
     }
-
-
-//    var body: some View {
-//        NavigationView {
-//            Group {
-//                switch viewModel.status {
-//                case .granted, .limited:
-//                    GeometryReader { geometry in
-//                        ScrollView {
-//                            LazyVGrid(columns: columns, spacing: spacing) {
-//                                ForEach(viewModel.imageAssets.indices, id: \.self) { index in
-//                                    ImageGridItem(
-//                                        asset: viewModel.imageAssets[index],
-//                                        index: index,
-//                                        geometry: geometry,
-//                                        viewModel: viewModel,
-//                                        isPresented: $isPresented,
-//                                        selectedImageIndex: $selectedImageIndex,
-//                                        spacing: spacing
-//                                    )
-//                                }
-//                            }
-//                            .padding(.horizontal, spacing)
-//                            .padding(.top, spacing)
-//                        }
-//                    }
-//
-//                case .notDetermined:
-//                    VStack {
-//                        Text("We need access to your photos.")
-//                            .multilineTextAlignment(.center)
-//                            .padding()
-//                        Button("Request Permission") {
-//                            viewModel.requestPermission()
-//                        }
-//                        .padding()
-//                        .background(Color.blue)
-//                        .foregroundColor(.white)
-//                        .cornerRadius(8)
-//                    }
-//
-//                case .denied, .restricted:
-//                    Text("Photo access denied. Please update settings.")
-//                        .multilineTextAlignment(.center)
-//                        .padding()
-//                }
-//            }
-//            .navigationTitle("Photo Grid")
-//            .onAppear {
-//                viewModel.checkPermissions()
-//            }
-//        }
-//        .fullScreenCover(isPresented: $isPresented) {
-//            FullscreenImageView(
-//                isPresented: $isPresented,
-//                selectedImageIndex: $selectedImageIndex,
-//                imageAssets: viewModel.imageAssets,
-//                imageGridViewModel: viewModel
-//            )
-//        }
-//    }
 
     private func cellSize(geometry: GeometryProxy) -> CGFloat {
         let columns: CGFloat = 3
