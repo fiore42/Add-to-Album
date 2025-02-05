@@ -2,7 +2,7 @@ import SwiftUI
 import Photos
 
 class ImageViewModel: ObservableObject {
-    @Published var currentImage: UIImage?
+    @Published var images: [PHAsset: UIImage] = [:]
 }
 
 struct FullscreenImageView: View {
@@ -12,26 +12,10 @@ struct FullscreenImageView: View {
     @Environment(\.dismiss) var dismiss
     @StateObject private var imageViewModel = ImageViewModel()
     @State private var imageLoadStates: [PHAsset: LoadingState] = [:]
-    @ObservedObject var imageGridViewModel: ImageGridViewModel // ADD THIS: Observe the ImageGridViewModel
-
+    @ObservedObject var imageGridViewModel: ImageGridViewModel
 
     enum LoadingState {
-        case idle
-        case loading
-        case success
-        case failure
-    }
-    
-    init(
-        isPresented: Binding<Bool>,
-        selectedImageIndex: Binding<Int>,
-        imageAssets: [PHAsset],
-        imageGridViewModel: ImageGridViewModel
-    ) {
-        self._isPresented = isPresented
-        self._selectedImageIndex = selectedImageIndex
-        self.imageAssets = imageAssets
-        self.imageGridViewModel = imageGridViewModel // Initialize the new property
+        case idle, loading, success, failure
     }
 
     var body: some View {
@@ -44,14 +28,17 @@ struct FullscreenImageView: View {
                         ZStack {
                             Color.black.ignoresSafeArea()
 
-                            if imageLoadStates[imageAssets[index]] == .loading || imageLoadStates[imageAssets[index]] == .idle {
-                                ProgressView()
-                                    .scaleEffect(1.5)
-                            } else if let image = imageViewModel.currentImage, imageLoadStates[imageAssets[index]] == .success {
+                            if let image = imageViewModel.images[imageAssets[index]] {
                                 Image(uiImage: image)
                                     .resizable()
                                     .scaledToFit()
                                     .transition(.opacity)
+                            } else if imageLoadStates[imageAssets[index]] == .loading || imageLoadStates[imageAssets[index]] == .idle {
+                                ProgressView()
+                                    .scaleEffect(1.5)
+                                    .onAppear {
+                                        loadImage(for: imageAssets[index], targetSize: geometry.size)
+                                    }
                             } else {
                                 Image(systemName: "xmark.circle")
                                     .resizable()
@@ -61,8 +48,8 @@ struct FullscreenImageView: View {
                         }
                         .tag(index)
                         .onAppear {
-                            loadImage(for: imageAssets[index], targetSize: geometry.size)
-                            if index == imageAssets.count - 5 && !imageGridViewModel.isLoadingBatch { // Load 5 elements before the end
+                            preloadSurroundingImages(for: index, targetSize: geometry.size)
+                            if index == imageAssets.count - 5 && !imageGridViewModel.isLoadingBatch {
                                 imageGridViewModel.loadNextBatch()
                             }
                         }
@@ -92,23 +79,31 @@ struct FullscreenImageView: View {
     }
 
     private func loadImage(for asset: PHAsset, targetSize: CGSize) {
-        guard imageLoadStates[asset] != .loading else { return }
+        guard imageLoadStates[asset] != .loading, imageViewModel.images[asset] == nil else { return }
 
         imageLoadStates[asset] = .loading
 
         let manager = PHImageManager.default()
         let options = PHImageRequestOptions()
-        options.isSynchronous = false // Key for performance
+        options.isSynchronous = false
+        options.deliveryMode = .highQualityFormat
 
         manager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFit, options: options) { image, info in
             DispatchQueue.main.async {
                 if let image = image {
-                    self.imageViewModel.currentImage = image // Update the ViewModel
+                    self.imageViewModel.images[asset] = image
                     self.imageLoadStates[asset] = .success
                 } else {
                     self.imageLoadStates[asset] = .failure
                 }
             }
+        }
+    }
+
+    private func preloadSurroundingImages(for index: Int, targetSize: CGSize) {
+        let surroundingIndices = [index - 1, index, index + 1].filter { $0 >= 0 && $0 < imageAssets.count }
+        for i in surroundingIndices {
+            loadImage(for: imageAssets[i], targetSize: targetSize)
         }
     }
 }
