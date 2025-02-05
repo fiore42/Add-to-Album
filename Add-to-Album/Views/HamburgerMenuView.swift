@@ -52,14 +52,11 @@ struct HamburgerMenuView: View {
 
     // **Automatically Reset Deleted Albums to "No Album Selected"**
     private func updateSelectedAlbums() {
-        // 🔍 Log the current state of albums
         Logger.log("📂 Checking album state: \(photoObserver.albums.count) albums found")
-        
-        // ✅ If albums are empty, check if it's because they haven't loaded yet.
-        if photoObserver.albums.isEmpty {
-            let savedAlbumIDs = UserDefaultsManager.getSavedAlbumIDs()
-            let hasSavedAlbums = !savedAlbumIDs.allSatisfy { $0.isEmpty }
 
+        // ✅ If albums haven't loaded, defer the check
+        if photoObserver.albums.isEmpty {
+            let hasSavedAlbums = UserDefaultsManager.getSavedAlbumIDs().contains { !$0.isEmpty }
             if hasSavedAlbums {
                 Logger.log("⏳ Photo library may still be loading - Deferring updateSelectedAlbums")
                 return
@@ -68,31 +65,31 @@ struct HamburgerMenuView: View {
             }
         }
 
-        // ✅ Get the current list of valid album IDs
-        let currentAlbumIDs = Set(photoObserver.albums.map { $0.localIdentifier.trimmingCharacters(in: .whitespacesAndNewlines) })
+        // ✅ Retrieve ALL saved album IDs once
         let savedAlbumIDs = UserDefaultsManager.getSavedAlbumIDs().map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        let currentAlbumIDs = Set(photoObserver.albums.map { $0.localIdentifier.trimmingCharacters(in: .whitespacesAndNewlines) })
 
-//        Logger.log("📂 All Current Album IDs: \(currentAlbumIDs)")
-//        Logger.log("💾 All Saved Album IDs: \(savedAlbumIDs)")
+        Logger.log("📂 All Current Album IDs: \(currentAlbumIDs)")
+        Logger.log("💾 All Saved Album IDs: \(savedAlbumIDs)")
 
-        for i in 0..<selectedAlbums.count {
-            if let savedAlbumID = UserDefaultsManager.getAlbumID(at: i)?.trimmingCharacters(in: .whitespacesAndNewlines), !savedAlbumID.isEmpty {
-                let castedSavedAlbumID = String(savedAlbumID)
+        // ✅ Loop through selected albums efficiently
+        for (index, savedAlbumID) in savedAlbumIDs.enumerated() {
+            if savedAlbumID.isEmpty { continue }  // Skip empty entries
 
-//                Logger.log("🔎 Checking ID at index \(i): '\(castedSavedAlbumID)' VS Current Album IDs: \(currentAlbumIDs)")
+            Logger.log("🔎 Checking ID at index \(index): '\(savedAlbumID)' VS Current Album IDs: \(currentAlbumIDs)")
 
-                let albumStillExists = currentAlbumIDs.contains(castedSavedAlbumID)
+            let albumStillExists = currentAlbumIDs.contains(savedAlbumID)
 
-//                Logger.log("✅ Album at index \(i) exists in photo library: \(albumStillExists)")
+            Logger.log("✅ Album at index \(index) exists in photo library: \(albumStillExists)")
 
-                if !albumStillExists {
-                    selectedAlbums[i] = "No Album Selected"
-                    UserDefaultsManager.saveAlbum(selectedAlbums[i], at: i, albumID: "")
-                    Logger.log("⚠️ Album Deleted - Resetting Entry \(i) to No Album Selected")
-                }
+            if !albumStillExists {
+                selectedAlbums[index] = "No Album Selected"
+                UserDefaultsManager.saveAlbum(selectedAlbums[index], at: index, albumID: "")
+                Logger.log("⚠️ Album Deleted - Resetting Entry \(index) to No Album Selected")
             }
         }
     }
+
 
 
 
