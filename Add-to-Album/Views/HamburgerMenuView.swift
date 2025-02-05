@@ -32,11 +32,8 @@ struct HamburgerMenuView: View {
         }
         .sheet(isPresented: $isAlbumPickerPresented) {
             if let index = selectedMenuIndex, !albums.isEmpty {
-//                Logger.log("📂 Opening AlbumPickerView for index \(index). Passing Albums Count: \(albums.count)")
                 AlbumPickerView(selectedAlbum: $selectedAlbums[index], albums: albums)
                     .id(UUID()) // ✅ Force SwiftUI to create a new instance every time
-//            } else {
-//                Logger.log("⚠️ Prevented Opening AlbumPickerView - Albums Not Loaded!")
             }
         }
 
