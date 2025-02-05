@@ -52,28 +52,23 @@ struct HamburgerMenuView: View {
 
     // **Automatically Reset Deleted Albums to "No Album Selected"**
     private func updateSelectedAlbums() {
-        let currentAlbumIDs = Set(photoObserver.albums.map {
-            $0.localIdentifier.trimmingCharacters(in: .whitespacesAndNewlines)
-        })
+        let currentAlbumIDs = Set(photoObserver.albums.map { String($0.localIdentifier) })
 
-        let savedAlbumIDs = UserDefaultsManager.getSavedAlbumIDs().map {
-            $0.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
+        let savedAlbumIDs = UserDefaultsManager.getSavedAlbumIDs().map { String($0) }
 
         // ✅ Log all album IDs along with type and length
-        Logger.log("📂 All Current Album IDs: \(currentAlbumIDs.map { "\($0) (Type: \($0.debugDescription), Length: \($0.count))" })")
-
-        Logger.log("💾 All Saved Album IDs: \(savedAlbumIDs.map { "\($0) (Type: \($0.debugDescription), Length: \($0.count))" })")
+        Logger.log("📂 All Current Album IDs: \(currentAlbumIDs.map { "\($0) (Type: \(type(of: $0)), Length: \($0.count))" })")
+        
+        Logger.log("💾 All Saved Album IDs: \(savedAlbumIDs.map { "\($0) (Type: \(type(of: $0)), Length: \($0.count))" })")
 
         for i in 0..<selectedAlbums.count {
             Logger.log("🔍 Checking Album at index \(i)")
 
             if let savedAlbumID = UserDefaultsManager.getAlbumID(at: i)?.trimmingCharacters(in: .whitespacesAndNewlines) {
-                Logger.log("💾 Retrieved Album ID at index \(i): '\(savedAlbumID)' (Type: \(type(of: savedAlbumID)), Length: \(savedAlbumID.count))")
+                let castedSavedAlbumID = String(savedAlbumID) // ✅ Ensure it's a String
+                Logger.log("💾 Retrieved Album ID at index \(i): '\(castedSavedAlbumID)' (Type: \(type(of: castedSavedAlbumID)), Length: \(castedSavedAlbumID.count))")
 
-                let albumStillExists = currentAlbumIDs.contains(where: {
-                    $0.localizedStandardCompare(savedAlbumID) == .orderedSame
-                })
+                let albumStillExists = currentAlbumIDs.contains(castedSavedAlbumID)
 
                 Logger.log("✅ Album at index \(i) exists in photo library: \(albumStillExists)")
 
@@ -82,13 +77,14 @@ struct HamburgerMenuView: View {
                     UserDefaultsManager.saveAlbum(selectedAlbums[i], at: i, albumID: "")
                     Logger.log("⚠️ Album Deleted - Resetting Entry \(i) to No Album Selected")
                 } else {
-                    Logger.log("✅ Album ID Matched: \(savedAlbumID)")
+                    Logger.log("✅ Album ID Matched: \(castedSavedAlbumID)")
                 }
             } else {
                 Logger.log("⚠️ No saved Album ID at index \(i)")
             }
         }
     }
+
 
 
 
