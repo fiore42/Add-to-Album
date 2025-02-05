@@ -1,4 +1,4 @@
-05 Feb 2025 - 21:51 the menu entries work - save, retrive, follow
+05 Feb 2025 - 22:01 hamburger menu fixed - loads albums first time
 
 before trying this approach:
 https://stackoverflow.com/questions/64798211/swiftui-sheet-cannot-show-correct-values-in-first-time
