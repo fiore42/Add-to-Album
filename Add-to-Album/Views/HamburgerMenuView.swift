@@ -72,18 +72,18 @@ struct HamburgerMenuView: View {
         let currentAlbumIDs = Set(photoObserver.albums.map { $0.localIdentifier.trimmingCharacters(in: .whitespacesAndNewlines) })
         let savedAlbumIDs = UserDefaultsManager.getSavedAlbumIDs().map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
 
-        Logger.log("📂 All Current Album IDs: \(currentAlbumIDs)")
-        Logger.log("💾 All Saved Album IDs: \(savedAlbumIDs)")
+//        Logger.log("📂 All Current Album IDs: \(currentAlbumIDs)")
+//        Logger.log("💾 All Saved Album IDs: \(savedAlbumIDs)")
 
         for i in 0..<selectedAlbums.count {
             if let savedAlbumID = UserDefaultsManager.getAlbumID(at: i)?.trimmingCharacters(in: .whitespacesAndNewlines), !savedAlbumID.isEmpty {
                 let castedSavedAlbumID = String(savedAlbumID)
 
-                Logger.log("🔎 Checking ID at index \(i): '\(castedSavedAlbumID)' VS Current Album IDs: \(currentAlbumIDs)")
+//                Logger.log("🔎 Checking ID at index \(i): '\(castedSavedAlbumID)' VS Current Album IDs: \(currentAlbumIDs)")
 
                 let albumStillExists = currentAlbumIDs.contains(castedSavedAlbumID)
 
-                Logger.log("✅ Album at index \(i) exists in photo library: \(albumStillExists)")
+//                Logger.log("✅ Album at index \(i) exists in photo library: \(albumStillExists)")
 
                 if !albumStillExists {
                     selectedAlbums[i] = "No Album Selected"
