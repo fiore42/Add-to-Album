@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct FunctionBoxes: View {
-    @State private var positionTop: CGFloat = 0.3 // 20% from top and bottom
+    @State private var positionTop: CGFloat = 0.25 // 20% from top and bottom
     @State private var positionBottom: CGFloat = 0.2 // 20% from top and bottom
     @State private var positionLeftRight: CGFloat = 0.1 // 10% from left and right
 
