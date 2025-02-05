@@ -13,6 +13,7 @@ struct HamburgerMenuView: View {
         Menu {
             ForEach(0..<4, id: \.self) { index in
                 Button(action: {
+                    Logger.log("📂 Opening Album Picker for index \(index)")
                     selectedMenuIndex = index
                     isAlbumPickerPresented = true
                 }) {
@@ -32,6 +33,9 @@ struct HamburgerMenuView: View {
                 .foregroundColor(.white)
         }
         .onAppear {
+            Logger.log("📸 HamburgerMenuView onAppear triggered")
+            Logger.log("📂 Initial Selected Albums: \(selectedAlbums)")
+
 //            Logger.log("📸 HamburgerMenuView onAppear calling updateSelectedAlbums")
 //            AlbumUtilities.updateSelectedAlbums(photoObserverAlbums: photoObserver.albums)
             NotificationCenter.default.addObserver(
@@ -41,11 +45,13 @@ struct HamburgerMenuView: View {
             ) { _ in
                 Logger.log("🔄 UI Refresh: Reloading albums in Hamburger Menu")
                 self.selectedAlbums = UserDefaultsManager.getSavedAlbums()
+                Logger.log("📂 Updated Selected Albums: \(self.selectedAlbums)")
             }
         }
         .onChange(of: photoObserver.albums) { oldValue, newValue in
             Logger.log("🔄 Album List Changed - Checking Selections")
             Logger.log("📸 HamburgerMenuView onChange calling updateSelectedAlbums")
+            Logger.log("📂 Old Albums Count: \(oldValue.count), New Albums Count: \(newValue.count)")
             AlbumUtilities.updateSelectedAlbums(photoObserverAlbums: photoObserver.albums)
         }
 
@@ -54,10 +60,11 @@ struct HamburgerMenuView: View {
             if let index = selectedMenuIndex {
                 AlbumPickerView(selectedAlbum: $selectedAlbums[index], albums: photoObserver.albums, index: index)
                     .onDisappear {
+                        Logger.log("📂 Album Picker Closed. Selected Album: \(selectedAlbums[index]) at index \(index)")
                         if let index = selectedMenuIndex {
                             let albumID = UserDefaultsManager.getAlbumID(at: index) // Use the existing function!
                             UserDefaultsManager.saveAlbum(selectedAlbums[index], at: index, albumID: albumID ?? "")
-                            Logger.log("💾 Saved Album: \(selectedAlbums[index]) at index \(index)")
+                            Logger.log("💾 Saved Album: \(selectedAlbums[index]) at index \(index), ID: \(albumID ?? "nil")")
                         }
                     }
                     .id(UUID())
