@@ -9,26 +9,28 @@ struct AlbumPickerView: View {
 
     var body: some View {
         NavigationView {
-            if isLoading {
-                ProgressView() // Show progress while loading
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color.black.opacity(0.1)) // Optional UI improvement
-                
-            } else {
-                List(albums, id: \.localIdentifier) { album in
-                    Button(action: {
-                        selectedAlbum = formatAlbumName(album.localizedTitle ?? "Unknown")
-                        UserDefaultsManager.saveAlbums([selectedAlbum])
-                        dismiss()
-                    }) {
-                        Text(album.localizedTitle ?? "Unknown")
+            VStack {
+                if isLoading {
+                    ProgressView() // Show progress while loading
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Color.black.opacity(0.1)) // Optional UI improvement
+                    
+                } else {
+                    List(albums, id: \.localIdentifier) { album in
+                        Button(action: {
+                            selectedAlbum = formatAlbumName(album.localizedTitle ?? "Unknown")
+                            UserDefaultsManager.saveAlbums([selectedAlbum])
+                            dismiss()
+                        }) {
+                            Text(album.localizedTitle ?? "Unknown")
+                        }
                     }
+                    .navigationTitle("Select Album")
                 }
-                .navigationTitle("Select Album")
             }
         }
         .onAppear {
-//moved to task 
+//moved to task
         }
         .task { // Use task instead of onAppear + if condition
             if albums.isEmpty {
@@ -40,10 +42,16 @@ struct AlbumPickerView: View {
 
 
     private func fetchAlbums() {
-        isLoading = true // Set loading to true *before* fetching
+        DispatchQueue.main.async {
+            self.isLoading = true // ✅ Ensures UI shows progress before fetching starts
+        }
 
         let fetchOptions = PHFetchOptions()
-        let userAlbums = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: fetchOptions)
+        let userAlbums = PHAssetCollection.fetchAssetCollections(
+            with: .album,
+            subtype: .any,
+            options: fetchOptions
+        )
 
         var fetchedAlbums: [PHAssetCollection] = []
         userAlbums.enumerateObjects { collection, _, _ in
@@ -53,6 +61,7 @@ struct AlbumPickerView: View {
         DispatchQueue.main.async {
                 self.albums = fetchedAlbums
                 self.isLoading = false
+                print("📸 Albums Loaded: \(self.albums.count)") // Debugging
 
         }
     }
