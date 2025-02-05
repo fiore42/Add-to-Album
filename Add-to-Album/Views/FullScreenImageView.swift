@@ -115,6 +115,14 @@ struct FullscreenImageView: View {
 //                    .padding(.leading)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 }
+                .gesture(
+                    DragGesture()
+                        .onEnded { value in
+                            if value.translation.height < -100 { // Swipe up detected
+                                dismiss()
+                            }
+                        }
+                )
             }
         }
 
