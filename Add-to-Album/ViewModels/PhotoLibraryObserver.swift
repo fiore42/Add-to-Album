@@ -40,27 +40,37 @@ class PhotoLibraryObserver: NSObject, PHPhotoLibraryChangeObserver, ObservableOb
     
 //    https://stackoverflow.com/questions/42657266/phphotolibrary-photolibrarydidchange-called-multiple-times-in-swift
     
-    func photoLibraryDidChange(_ changeInstance: PHChange) {
-        guard let _fetchResult = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: nil) as? PHFetchResult<PHObject> else {
-            return
-        }
+       func photoLibraryDidChange(_ changeInstance: PHChange) {
+           let fetchOptions = PHFetchOptions()
+           let fetchResult = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: fetchOptions)
 
-        if let resultDetailChanges = changeInstance.changeDetails(for: _fetchResult) {
-            let insertedObjects = resultDetailChanges.insertedObjects
-            let removedObjects = resultDetailChanges.removedObjects
-            let changedObjects = resultDetailChanges.changedObjects.filter {
-                return changeInstance.changeDetails(for: $0)?.assetContentChanged == true
-            }
+           // Get change details specifically for albums
+           if let albumChanges = changeInstance.changeDetails(for: fetchResult) {
+               let insertedAlbums = albumChanges.insertedObjects
+               let removedAlbums = albumChanges.removedObjects
+               let changedAlbums = albumChanges.changedObjects.filter {
+                   return changeInstance.changeDetails(for: $0)?.assetContentChanged == true
+               }
 
-            if resultDetailChanges.hasIncrementalChanges && (!insertedObjects.isEmpty || !removedObjects.isEmpty || !changedObjects.isEmpty) {
-                DispatchQueue.main.async {
-                    Logger.log("🔄 Detected Changes in Photo Library - Refreshing Albums")
-                    self.fetchAlbums() // ✅ Refresh album list when a change is detected
-                }
-            }
-        }
-    }
+               if albumChanges.hasIncrementalChanges {
+                   Logger.log("🔄 Detected Changes in Photo Library:")
+                   
+                   if !insertedAlbums.isEmpty {
+                       Logger.log("➕ New Albums Added: \(insertedAlbums.map { $0.localizedTitle ?? "Unknown" })")
+                   }
+                   if !removedAlbums.isEmpty {
+                       Logger.log("❌ Albums Removed: \(removedAlbums.map { $0.localizedTitle ?? "Unknown" })")
+                   }
+                   if !changedAlbums.isEmpty {
+                       Logger.log("✏️ Albums Renamed/Updated: \(changedAlbums.map { $0.localizedTitle ?? "Unknown" })")
+                   }
 
+                   DispatchQueue.main.async {
+                       self.fetchAlbums() // ✅ Refresh only when albums are changed
+                   }
+               }
+           }
+       }
     
 }
 
