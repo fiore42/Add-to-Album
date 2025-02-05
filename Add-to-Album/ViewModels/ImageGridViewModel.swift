@@ -15,10 +15,15 @@ class ImageGridViewModel: ObservableObject {
 
     func checkPermissions() {
         let current = imageManager.getPhotoPermissionStatus()
-        status = current
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return } // Prevents memory leaks
 
-        if current == .granted || current == .limited {
-            fetchAssetsIfNeeded()
+            self.status = current
+            Logger.log("📊 Current Photo Library Status: \(self.status)")
+
+            if current == .granted || current == .limited {
+                self.fetchAssetsIfNeeded()
+            }
         }
     }
 

@@ -26,9 +26,9 @@ struct ImageGridView: View {
             }
             .navigationTitle("Photo Grid")
             .task {
-                Logger.log("🔍 Checking Permissions: \(viewModel.status)")
-
+                Logger.log("🔍 Before Checking Permissions: \(viewModel.status)")
                 viewModel.checkPermissions()
+                Logger.log("🔍 After Checking Permissions: \(viewModel.status)")
             }
         }
         .fullScreenCover(isPresented: $isPresented) {
