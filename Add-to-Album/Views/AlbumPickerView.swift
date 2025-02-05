@@ -8,7 +8,19 @@ struct AlbumPickerView: View {
 
     var body: some View {
         NavigationView {
-
+            VStack {
+                Text("Albums Count: \(albums.count)") // ✅ Debug UI
+                    .font(.headline)
+                    .foregroundColor(.red)
+                    .padding()
+                if albums.isEmpty {
+                    Text("⚠️ No Albums Available")
+                        .foregroundColor(.gray)
+                    ProgressView()
+                        .onAppear {
+                            Logger.log("⚠️ AlbumPickerView Opened with EMPTY albums list!")
+                        }
+                } else {
                     List(albums, id: \.localIdentifier) { album in
                         Button(action: {
                             selectedAlbum = formatAlbumName(album.localizedTitle ?? "Unknown")
@@ -19,8 +31,12 @@ struct AlbumPickerView: View {
                         }
                     }
                     .navigationTitle("Select Album")
+                    .onAppear {
+                        Logger.log("✅ AlbumPickerView Opened with Albums Count: \(albums.count)")
+                    }                }
+                
+            }
         }
-
     }
 
 
