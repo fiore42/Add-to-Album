@@ -10,7 +10,7 @@ class UserDefaultsManager {
     private static let key = "savedAlbumNames"
 
     static func getSavedAlbums() -> [String] {
-        let albums = UserDefaults.standard.array(forKey: key) as? [String] ?? Array(repeating: "", count: 4)
+        let albums = UserDefaults.standard.array(forKey: key) as? [String] ?? Array(repeating: "", count: Constants.numberOfAlbums)
         Logger.log("💾 [UserDefaults] Retrieved Albums: \(albums)") // Added Log
         return albums
     }
