@@ -194,13 +194,12 @@ struct FullscreenImageView: View {
             let adjustmentData = PHAdjustmentData(
                 formatIdentifier: "com.apple.photo-edit",
                 formatVersion: "1.0",
-                data: Data() // No need for actual data, Photos app will track this
+                data: Data()
             )
 
             let output = PHContentEditingOutput(contentEditingInput: editingInput)
             output.adjustmentData = adjustmentData
 
-            // ✅ Apply the rotation
             PHPhotoLibrary.shared().performChanges({
                 let request = PHAssetChangeRequest(for: asset)
                 request.contentEditingOutput = output
@@ -235,7 +234,5 @@ struct FullscreenImageView: View {
             }
         }
     }
-
-
 
 }
