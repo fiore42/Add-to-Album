@@ -25,6 +25,33 @@ struct FunctionBoxes: View {
     var body: some View {
         VStack {
  
+            HStack {
+                Button(action: { rotateLeft() }) {
+                    Image(systemName: "arrow.counterclockwise")
+                        .resizable()
+                        .frame(width: 30, height: 30)
+                        .foregroundColor(.white)
+                        .padding(15)
+                        .background(Color.black.opacity(0.5))
+                        .clipShape(Circle())
+                }
+                
+                Spacer()
+                
+                Button(action: { rotateRight() }) {
+                    Image(systemName: "arrow.clockwise")
+                        .resizable()
+                        .frame(width: 30, height: 30)
+                        .foregroundColor(.white)
+                        .padding(15)
+                        .background(Color.black.opacity(0.5))
+                        .clipShape(Circle())
+                }
+            }
+            .padding(.horizontal)
+            .padding(.top, 10)
+
+            
             Spacer()
             
             HStack {
@@ -61,55 +88,27 @@ struct FunctionBoxes: View {
             return AnyView(EmptyView()) // ✅ Makes it disappear when the album name is empty
         } else {
             return AnyView(
-                VStack {
-                    // ✅ Rotation Buttons (Applied to Actual Image)
-                    HStack {
-                        Button(action: { rotateLeft() }) {
-                            Image(systemName: "arrow.counterclockwise")
-                                .resizable()
-                                .frame(width: 30, height: 30)
-                                .foregroundColor(.white)
-                                .padding(15)
-                                .background(Color.black.opacity(0.5))
-                                .clipShape(Circle())
-                        }
-                        
-                        Spacer()
-                        
-                        Button(action: { rotateRight() }) {
-                            Image(systemName: "arrow.clockwise")
-                                .resizable()
-                                .frame(width: 30, height: 30)
-                                .foregroundColor(.white)
-                                .padding(15)
-                                .background(Color.black.opacity(0.5))
-                                .clipShape(Circle())
-                        }
-                    }
-                    .padding(.horizontal)
-                    .padding(.top, 10)
-                    
-                    FunctionBoxView(
-                        text: text,
-                        albumID: albumID,
-                        photoID: currentPhotoID,
-                        albumManager: albumManager,
-                        rotateLeft: rotateLeft, // ✅ Pass rotation functions
-                        rotateRight: rotateRight
+                
+                FunctionBoxView(
+                    text: text,
+                    albumID: albumID,
+                    photoID: currentPhotoID,
+                    albumManager: albumManager,
+                    rotateLeft: rotateLeft, // ✅ Pass rotation functions
+                    rotateRight: rotateRight
+                )
+                .frame(width: geometry.size.width * 0.35, height: geometry.size.height * 0.05)
+                .background(Color.black.opacity(0.5))
+                .cornerRadius(10)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
+                .padding(
+                    EdgeInsets(
+                        top: alignment == .topLeading || alignment == .topTrailing ? geometry.size.height * positionTop : 0,
+                        leading: alignment == .topLeading || alignment == .bottomLeading ? geometry.size.width * positionLeftRight : 0,
+                        bottom: alignment == .bottomLeading || alignment == .bottomTrailing ? geometry.size.height * positionBottom : 0,
+                        trailing: alignment == .topTrailing || alignment == .bottomTrailing ? geometry.size.width * positionLeftRight : 0
                     )
-                    .frame(width: geometry.size.width * 0.35, height: geometry.size.height * 0.05)
-                    .background(Color.black.opacity(0.5))
-                    .cornerRadius(10)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: alignment)
-                    .padding(
-                        EdgeInsets(
-                            top: alignment == .topLeading || alignment == .topTrailing ? geometry.size.height * positionTop : 0,
-                            leading: alignment == .topLeading || alignment == .bottomLeading ? geometry.size.width * positionLeftRight : 0,
-                            bottom: alignment == .bottomLeading || alignment == .bottomTrailing ? geometry.size.height * positionBottom : 0,
-                            trailing: alignment == .topTrailing || alignment == .bottomTrailing ? geometry.size.width * positionLeftRight : 0
-                        )
-                    )
-                }
+                )
             )
         }
     }
