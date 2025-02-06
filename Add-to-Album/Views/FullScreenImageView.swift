@@ -178,42 +178,33 @@ struct FullscreenImageView: View {
             imageViewModel.startCaching(assets: prefetchAssets, targetSize: targetSize)
         }
     
-    // ✅ Rotate the current image and update it in the Photos Library
     private func rotateImage(left: Bool) {
         let asset = imageAssets[selectedImageIndex]
 
         PHPhotoLibrary.shared().performChanges({
-            let request = PHAssetChangeRequest(for: asset) // ✅ No need for `guard let`
-            
-            // ✅ Get current orientation from asset metadata
-            let currentOrientationValue = asset.value(forKey: "orientation") as? Int ?? UIImage.Orientation.up.rawValue
-            let currentOrientation = UIImage.Orientation(rawValue: currentOrientationValue) ?? .up
-            
-            // ✅ Determine new orientation based on rotation direction
-            let newOrientation: UIImage.Orientation
-            switch currentOrientation {
+            let request = PHAssetChangeRequest(for: asset)
+
+            let newOrientation: CGImagePropertyOrientation
+            switch assetOrientation(asset) {
             case .up:    newOrientation = left ? .left : .right
             case .right: newOrientation = left ? .up : .down
             case .down:  newOrientation = left ? .right : .left
             case .left:  newOrientation = left ? .down : .up
             default:     newOrientation = left ? .left : .right
             }
-            
-            request.isFavorite = asset.isFavorite // ✅ Preserve favorite status
-            request.setValue(newOrientation.rawValue, forKey: "orientation") // ✅ Update orientation metadata
+
+            request.setValue(newOrientation.rawValue, forKey: "orientation")
 
         }) { success, error in
-            DispatchQueue.main.async {
-                if success {
-                    Logger.log("✅ Image rotation applied to original asset")
-                    self.refreshCurrentImage() // ✅ Refresh UI with updated rotation
-                } else {
-                    Logger.log("❌ Error updating image rotation: \(error?.localizedDescription ?? "Unknown error")")
-                }
-            }
+            if success { DispatchQueue.main.async { self.refreshCurrentImage() } }
         }
     }
 
+    private func assetOrientation(_ asset: PHAsset) -> CGImagePropertyOrientation {
+        guard let resource = PHAssetResource.assetResources(for: asset).first else { return .up }
+        let orientation = resource.value(forKey: "orientation") as? UInt32 ?? CGImagePropertyOrientation.up.rawValue
+        return CGImagePropertyOrientation(rawValue: orientation) ?? .up
+    }
     
     private func refreshCurrentImage() {
         let asset = imageAssets[selectedImageIndex]
