@@ -1,6 +1,7 @@
 import SwiftUI
 import Photos
 import Accelerate
+import CoreGraphics
 
 class ImageViewModel: ObservableObject {
     @Published var images: [PHAsset: UIImage] = [:]
@@ -183,7 +184,7 @@ struct FullscreenImageView: View {
         let asset = imageAssets[selectedImageIndex]
 
         let options = PHContentEditingInputRequestOptions()
-        options.isNetworkAccessAllowed = true  // ✅ Ensure access to iCloud assets
+        options.isNetworkAccessAllowed = true
         options.canHandleAdjustmentData = { _ in true }
 
         asset.requestContentEditingInput(with: options) { editingInput, _ in
@@ -192,51 +193,87 @@ struct FullscreenImageView: View {
                 return
             }
 
-            // ✅ Ensure the file URL has a valid extension
-            let adjustedURL = fullSizeImageURL.appendingPathExtension("jpg")
-
-            // ✅ Check if the asset has previous adjustments
-            if let existingAdjustmentData = editingInput.adjustmentData {
-                Logger.log("ℹ️ Existing adjustment data found: \(existingAdjustmentData.formatIdentifier)")
-            }
-
-            // ✅ Prepare adjustment metadata
-            let adjustmentData = PHAdjustmentData(
-                formatIdentifier: "com.apple.photo-edit",
-                formatVersion: "1.0",
-                data: Data() // No need for actual image processing data
-            )
-
-            let output = PHContentEditingOutput(contentEditingInput: editingInput)
-            output.adjustmentData = adjustmentData
-
-            // ✅ Ensure the output file exists before modifying it
-            do {
-                if FileManager.default.fileExists(atPath: adjustedURL.path) {
-                    try FileManager.default.removeItem(at: adjustedURL)
-                }
-                try FileManager.default.copyItem(at: fullSizeImageURL, to: adjustedURL)
-            } catch {
-                Logger.log("❌ Error handling temp file: \(error.localizedDescription)")
+            guard let image = UIImage(contentsOfFile: fullSizeImageURL.path) else {
+                Logger.log("❌ Error: Could not create UIImage from URL")
                 return
             }
 
+            let angle = left ? -90.0 : 90.0 // Determine rotation angle
+            guard let rotatedImage = self.rotateImage(image: image, by: CGFloat(angle)) else {
+                Logger.log("❌ Error rotating image using Core Graphics")
+                return
+            }
+
+
+            // Write the rotated image data to a temporary file
+            let tempURL = URL(fileURLWithPath: NSTemporaryDirectory())
+                .appendingPathComponent("rotated_image.jpg") // or .png, whatever your images are
+            guard let imageData = rotatedImage.jpegData(compressionQuality: 0.8) else { // Adjust compression as needed
+                Logger.log("❌ Error converting rotated image to data")
+                return
+            }
+
+            do {
+                try imageData.write(to: tempURL)
+            } catch {
+                Logger.log("❌ Error writing rotated image data to file: \(error)")
+                return
+            }
+
+            let adjustmentData = PHAdjustmentData(
+                formatIdentifier: "com.example.app.image-rotation", // Unique identifier
+                formatVersion: "1.0",
+                data: Data() // No other data needed for this example
+            )
+
+            let output = PHContentEditingOutput(contentEditingInput: editingInput)
+                output.adjustmentData = adjustmentData
+            
+            
             PHPhotoLibrary.shared().performChanges({
                 let request = PHAssetChangeRequest(for: asset)
                 request.contentEditingOutput = output
             }) { success, error in
                 DispatchQueue.main.async {
                     if success {
-                        Logger.log("✅ Image rotation applied like Photos app")
-                        self.refreshCurrentImage()
+                        Logger.log("✅ Image rotation applied")
+                        self.refreshCurrentImage() // Call refresh on the main thread
                     } else {
                         Logger.log("❌ Error applying rotation: \(error?.localizedDescription ?? "Unknown error")")
                     }
+                    // Clean up the temporary file, even on error.
+                    try? FileManager.default.removeItem(at: tempURL)
                 }
             }
         }
     }
 
+
+    private func rotateImage(image: UIImage, by angle: CGFloat) -> UIImage? {
+        guard let cgImage = image.cgImage else { // Get the CGImage
+            Logger.log("❌ Error: Could not get CGImage from UIImage")
+            return nil
+        }
+
+        let radians = angle * .pi / 180.0
+        let rotatedSize = CGRect(origin: .zero, size: image.size)
+            .applying(CGAffineTransform(rotationAngle: radians))
+            .size
+
+        UIGraphicsBeginImageContextWithOptions(rotatedSize, false, image.scale)
+        guard let context = UIGraphicsGetCurrentContext() else { return nil }
+
+        context.translateBy(x: rotatedSize.width / 2, y: rotatedSize.height / 2)
+        context.rotate(by: radians)
+
+        // Use CGImage for drawing
+        context.draw(cgImage, in: CGRect(x: -image.size.width / 2, y: -image.size.height / 2, width: image.size.width, height: image.size.height))
+
+        let rotatedImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+
+        return rotatedImage
+    }
 
 
     private func refreshCurrentImage() {
