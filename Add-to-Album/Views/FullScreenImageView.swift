@@ -1,7 +1,22 @@
 import SwiftUI
 import Photos
 import Accelerate
+import MobileCoreServices
 import ImageIO
+import CoreGraphics // For image rotation
+import UniformTypeIdentifiers
+
+extension UIImage {
+    func heicData(compressionQuality: CGFloat) -> Data? {
+        guard let cgImage = cgImage else { return nil }
+        let data = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(data, UTType.heic.identifier as CFString, 1, nil) else { return nil }
+        let options: [String: Any] = [kCGImageDestinationLossyCompressionQuality as String: compressionQuality]
+        CGImageDestinationAddImage(destination, cgImage, options as CFDictionary)
+        CGImageDestinationFinalize(destination)
+        return data as Data
+    }
+}
 
 class ImageViewModel: ObservableObject {
     @Published var images: [PHAsset: UIImage] = [:]
@@ -180,71 +195,163 @@ struct FullscreenImageView: View {
             imageViewModel.startCaching(assets: prefetchAssets, targetSize: targetSize)
         }
 
-        private func rotateImage(left: Bool) {
-            let asset = imageAssets[selectedImageIndex]
+    private func rotateImage(left: Bool) {
+        let asset = imageAssets[selectedImageIndex]
 
-            let options = PHContentEditingInputRequestOptions()
-            options.isNetworkAccessAllowed = true
-            options.canHandleAdjustmentData = { _ in true }
+        let options = PHContentEditingInputRequestOptions()
+        options.isNetworkAccessAllowed = true
+        options.canHandleAdjustmentData = { _ in true }
 
-            asset.requestContentEditingInput(with: options) { editingInput, _ in
-                guard let editingInput = editingInput, let fullSizeImageURL = editingInput.fullSizeImageURL else {
-                    Logger.log("❌ Error: Could not retrieve full-size image URL")
-                    return
-                }
+        asset.requestContentEditingInput(with: options) { editingInput, _ in
+            guard let editingInput = editingInput, let fullSizeImageURL = editingInput.fullSizeImageURL else {
+                Logger.log("❌ Error: Could not retrieve full-size image URL")
+                return
+            }
 
-                guard let imageSource = CGImageSourceCreateWithURL(fullSizeImageURL as CFURL, nil) else {
-                    Logger.log("❌ Error: Could not create image source from URL")
-                    return
-                }
+            guard let imageSource = CGImageSourceCreateWithURL(fullSizeImageURL as CFURL, nil) else {
+                Logger.log("❌ Error: Could not create image source from URL")
+                return
+            }
 
-                // 1. Log all metadata from CGImageSource:
-                if let properties = CGImageSourceCopyPropertiesAtIndex(imageSource, 0, nil) as? [String: Any] {
-                    Logger.log("ℹ️ Image Metadata (CGImageSource):")
-                    for (key, value) in properties {
-                        Logger.log("  \(key): \(value)")
-                    }
+            guard let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else {
+                Logger.log("❌ Error: Could not create CGImage from image source")
+                return
+            }
+
+            let image = UIImage(cgImage: cgImage)
+            let angle = left ? -90.0 : 90.0
+            guard let rotatedImage = self.rotateImage(image: image, by: CGFloat(angle)) else {
+                Logger.log("❌ Error rotating image using Core Graphics")
+                return
+            }
+
+            // --- Metadata Handling ---
+            let properties = CGImageSourceCopyPropertiesAtIndex(imageSource, 0, nil) as! NSMutableDictionary
+
+            // Try to find and modify Orientation (TIFF format)
+            if let tiffDictionary = properties.object(forKey: "{TIFF}") as? NSMutableDictionary {
+                if let orientation = tiffDictionary.object(forKey: "Orientation") as? Int {
+                    Logger.log("ℹ️ Original Orientation (TIFF): \(orientation)")
+                    tiffDictionary.setObject(NSNumber(value: 1), forKey: "Orientation" as NSString) // Reset to 1 after rotation
                 } else {
-                    Logger.log("❌ Error: Could not get image properties from CGImageSource")
+                    Logger.log("❌ Error: Could not find Orientation in TIFF dictionary")
                 }
+            } else if let orientation = properties.object(forKey: "Orientation") as? Int { // Check for root-level Orientation
+                Logger.log("ℹ️ Original Orientation (Root): \(orientation)")
+                properties.setObject(NSNumber(value: 1), forKey: "Orientation" as NSString) // Reset to 1
+            } else {
+                Logger.log("❌ Error: Could not find Orientation metadata")
+            }
 
-                // 2. Log ALL available metadata from PHAsset:
-                Logger.log("\nℹ️ PHAsset Metadata:")
-                let mirror = Mirror(reflecting: asset)
-                for child in mirror.children {
-                    if let label = child.label {
-                        var value = "N/A"
-                        if let displayValue = child.value as? CustomStringConvertible {
-                            value = displayValue.description
-                        } else if let object = child.value as? NSObject { // Handle NSObject
-                            value = object.description
-                        }
-                        Logger.log("  \(label): \(value)")
+
+            let destinationData = NSMutableData()
+            guard let destination = CGImageDestinationCreateWithData(destinationData, UTType.jpeg.identifier as CFString, 1, nil) else {
+                Logger.log("❌ Error: Could not create image destination")
+                return
+            }
+
+            CGImageDestinationAddImage(destination, rotatedImage.cgImage!, properties as CFDictionary) // Use rotated CGImage and modified metadata
+            CGImageDestinationFinalize(destination)
+
+            let fileExtension = self.getFileExtension(from: fullSizeImageURL)
+            let imageData: Data?
+
+            if fileExtension.lowercased() == "heic" {
+                imageData = destinationData as Data // HEIC Case
+            } else {
+                imageData = destinationData as Data // JPEG Case
+            }
+
+
+            guard let imageData = imageData else {
+                Logger.log("❌ Error converting rotated image to data (HEIC or JPEG)")
+                return
+            }
+
+            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("rotated_image.\(fileExtension)")
+            if FileManager.default.fileExists(atPath: tempURL.path) {
+                try? FileManager.default.removeItem(at: tempURL)
+                Logger.log("Removed existing temp file")
+            }
+
+            do {
+                try imageData.write(to: tempURL)
+                Logger.log("Wrote image data to tempURL: \(tempURL)")
+            } catch {
+                Logger.log("❌ Error writing image data: \(error), localizedDescription: \(error.localizedDescription)")
+                return
+            }
+
+            let adjustmentData = PHAdjustmentData(
+                formatIdentifier: "com.example.app.image-rotation", // Unique identifier!
+                formatVersion: "1.0",
+                data: Data() // Can be empty
+            )
+
+            let output = PHContentEditingOutput(contentEditingInput: editingInput)
+            output.adjustmentData = adjustmentData
+
+            PHPhotoLibrary.shared().performChanges({
+                let request = PHAssetChangeRequest(for: asset)
+                request.contentEditingOutput = output
+            }) { success, error in
+                DispatchQueue.main.async {
+                    if success {
+                        Logger.log("✅ Image rotation applied")
+                        self.refreshCurrentImage()
+                    } else {
+                        Logger.log("❌ Error applying rotation: \(error?.localizedDescription ?? "Unknown error")")
                     }
+                    try? FileManager.default.removeItem(at: tempURL) // Clean up
                 }
-
-                // ... (No image rotation or saving needed for this function)
             }
         }
+    }
 
-    // Helper function to get file extension (case-insensitive)
+    private func rotateImage(image: UIImage, by angle: CGFloat) -> UIImage? {
+        guard let cgImage = image.cgImage else {
+            Logger.log("❌ Error: Could not get CGImage from UIImage")
+            return nil
+        }
+
+        let radians = angle * .pi / 180.0
+        let rotatedSize = CGRect(origin: .zero, size: image.size)
+            .applying(CGAffineTransform(rotationAngle: radians))
+            .size
+
+        UIGraphicsBeginImageContextWithOptions(rotatedSize, false, image.scale)
+        guard let context = UIGraphicsGetCurrentContext() else { return nil }
+
+        context.translateBy(x: rotatedSize.width / 2, y: rotatedSize.height / 2)
+        context.rotate(by: radians)
+        context.draw(cgImage, in: CGRect(x: -image.size.width / 2, y: -image.size.height / 2, width: image.size.width, height: image.size.height))
+
+        let rotatedImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+
+        return rotatedImage
+    }
+
     private func getFileExtension(from url: URL) -> String {
         return url.pathExtension.lowercased()
     }
 
-
     private func refreshCurrentImage() {
         let asset = imageAssets[selectedImageIndex]
-        
-        let options = PHImageRequestOptions()
-        options.isSynchronous = false
-        options.deliveryMode = .highQualityFormat
 
-        PHImageManager.default().requestImage(for: asset, targetSize: CGSize(width: 1000, height: 1000), contentMode: .aspectFit, options: options) { image, _ in
+        let manager = PHImageManager.default()
+        let requestOptions = PHImageRequestOptions()
+        requestOptions.isSynchronous = false
+        requestOptions.deliveryMode = .highQualityFormat
+        requestOptions.resizeMode = .exact
+
+        let screenSize = UIScreen.main.bounds.size // ✅ Use screen size in SwiftUI
+
+        manager.requestImage(for: asset, targetSize: screenSize, contentMode: .aspectFit, options: requestOptions) { image, _ in
             DispatchQueue.main.async {
                 if let image = image {
-                    self.imageViewModel.images[asset] = image // ✅ Update the UI
-                    Logger.log("🔄 Image refreshed with new rotation")
+                    self.imageViewModel.images[asset] = image  // ✅ Update @Published dictionary
+                    Logger.log("🔄 UI updated after rotation")
                 }
             }
         }
