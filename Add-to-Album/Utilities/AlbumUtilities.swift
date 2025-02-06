@@ -63,7 +63,7 @@ struct AlbumUtilities {
                 let currentSavedName = UserDefaultsManager.getSavedAlbumName(at: index)
                 Logger.log("🔄 Analysing index: \(index) updatedName: \(updatedName) currentSavedName: \(currentSavedName)")
                 if currentSavedName != updatedName {
-                    Logger.log("🔄 Album Renamed - Updating Entry \(index) to \(updatedName)")
+                    Logger.log("🔄 Album Renamed - Updating Entry \(index) to \(updatedName) id \(savedAlbumID)")
                     UserDefaultsManager.saveAlbum(updatedName, at: index, albumID: savedAlbumID)
                     hasChanges = true // ✅ Track changes to trigger UI update
                     
