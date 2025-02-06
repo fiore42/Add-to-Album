@@ -14,11 +14,11 @@ struct AlbumPickerView: View {
                 
                 List(albums, id: \.localIdentifier) { album in // 'album' is available here
                     Button(action: {
-                        Logger.log("📂 [AlbumPickerView] Opening Album PickerView for index \(index), Album: \(album)")
-                        
                         let albumID = album.localIdentifier
                         selectedAlbum = AlbumUtilities.formatAlbumName(album.localizedTitle ?? "Unknown")
                         UserDefaultsManager.saveAlbum(selectedAlbum, at: index, albumID: albumID) // Save ID!
+                        Logger.log("📂 [AlbumPickerView] Selected name: \(selectedAlbum) id: \(albumID) for index: \(index)")
+
                         dismiss() // 'dismiss' is available here
                     }) {
                         Text(album.localizedTitle ?? "Unknown")
