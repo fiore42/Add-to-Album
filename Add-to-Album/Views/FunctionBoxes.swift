@@ -19,9 +19,37 @@ struct FunctionBoxes: View {
     
     @ObservedObject private var albumManager = AlbumManager() // ✅ Manage album logic
 
+    @State private var rotationAngle: Double = 0 // ✅ Rotation state
     
     var body: some View {
         VStack {
+            // ✅ Rotation buttons at the top
+            HStack {
+                Button(action: {
+                    rotationAngle -= 90 // Rotate left
+                    Logger.log("↩️ Rotated image left to \(rotationAngle) degrees")
+                }) {
+                    Image(systemName: "arrow.counterclockwise")
+                        .resizable()
+                        .frame(width: 30, height: 30)
+                        .foregroundColor(.white)
+                }
+                .padding()
+
+                Spacer()
+
+                Button(action: {
+                    rotationAngle += 90 // Rotate right
+                    Logger.log("↪️ Rotated image right to \(rotationAngle) degrees")
+                }) {
+                    Image(systemName: "arrow.clockwise")
+                        .resizable()
+                        .frame(width: 30, height: 30)
+                        .foregroundColor(.white)
+                }
+                .padding()
+            }
+            .padding(.horizontal)
             Spacer()
             
             HStack {
