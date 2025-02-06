@@ -13,16 +13,24 @@ class AlbumManager: NSObject, ObservableObject, PHPhotoLibraryChangeObserver {
     deinit {
         PHPhotoLibrary.shared().unregisterChangeObserver(self)
     }
+    
+    
 
     func photoLibraryDidChange(_ changeInstance: PHChange) {
         DispatchQueue.main.async {
             self.albumChanges = UUID()
         }
     }
-
     func isPhotoInAlbum(photoID: String, albumID: String) -> Bool {
+        // ✅ Check if it's the Favorites album
+        if let favoritesAlbum = fetchFavoritesAlbum(), albumID == favoritesAlbum.localIdentifier {
+            return isPhotoInFavorites(photoID: photoID) // ✅ Check favorite status
+        }
+        
+        // ✅ Otherwise, check normal albums
         guard let album = fetchAlbumByID(albumID) else { return false }
         let fetchResult = PHAsset.fetchAssets(in: album, options: nil)
+        
         for index in 0..<fetchResult.count {
             let asset = fetchResult[index]
             if asset.localIdentifier == photoID {
@@ -31,17 +39,22 @@ class AlbumManager: NSObject, ObservableObject, PHPhotoLibraryChangeObserver {
         }
         return false
     }
+
+    private func isPhotoInFavorites(photoID: String) -> Bool {
+        guard let photo = fetchAssetByID(photoID) else { return false }
+        return photo.isFavorite
+    }
     
     func togglePhotoInAlbum(photoID: String, albumID: String) {
         if let favoritesAlbum = fetchFavoritesAlbum(), albumID == favoritesAlbum.localIdentifier {
-            toggleFavorite(photoID: photoID)
+            togglePhotoInFavorites(photoID: photoID)
         } else {
             guard let album = fetchAlbumByID(albumID) else { return }
             togglePhotoInRegularAlbum(photoID: photoID, album: album)
         }
     }
     
-    private func toggleFavorite(photoID: String) {
+    private func togglePhotoInFavorites(photoID: String) {
         guard let photo = fetchAssetByID(photoID) else { return }
         PHPhotoLibrary.shared().performChanges {
             let request = PHAssetChangeRequest(for: photo)
