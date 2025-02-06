@@ -1,6 +1,6 @@
 import SwiftUI
 import Photos
-import UniformTypeIdentifiers // ✅ Required for UTType
+import Accelerate
 
 class ImageViewModel: ObservableObject {
     @Published var images: [PHAsset: UIImage] = [:]
@@ -179,7 +179,6 @@ struct FullscreenImageView: View {
             imageViewModel.startCaching(assets: prefetchAssets, targetSize: targetSize)
         }
 
-
     private func rotateImage(left: Bool) {
         let asset = imageAssets[selectedImageIndex]
 
@@ -187,39 +186,28 @@ struct FullscreenImageView: View {
         options.canHandleAdjustmentData = { _ in true }
 
         asset.requestContentEditingInput(with: options) { editingInput, _ in
-            guard let editingInput = editingInput,
-                  let fullSizeImageURL = editingInput.fullSizeImageURL else {
-                Logger.log("❌ Error: Could not retrieve full-size image URL")
+            guard let editingInput = editingInput else {
+                Logger.log("❌ Error: Could not retrieve editing input")
                 return
             }
 
-            // ✅ Determine new orientation
-            let newOrientation = left ? CGImagePropertyOrientation.left : CGImagePropertyOrientation.right
+            let adjustmentData = PHAdjustmentData(
+                formatIdentifier: "com.apple.photo-edit",
+                formatVersion: "1.0",
+                data: Data() // No need for actual data, Photos app will track this
+            )
 
-            // ✅ Prepare PHContentEditingOutput (Non-Destructive Edit)
             let output = PHContentEditingOutput(contentEditingInput: editingInput)
-            let adjustmentData = PHAdjustmentData(formatIdentifier: "com.apple.photo-edit",
-                                                  formatVersion: "1.0",
-                                                  data: Data())
-
             output.adjustmentData = adjustmentData
 
-            // ✅ Apply orientation metadata change
-            let tempURL = output.renderedContentURL
-            do {
-                try FileManager.default.copyItem(at: fullSizeImageURL, to: tempURL)
-            } catch {
-                Logger.log("❌ Failed to copy image for editing: \(error.localizedDescription)")
-                return
-            }
-
+            // ✅ Apply the rotation
             PHPhotoLibrary.shared().performChanges({
                 let request = PHAssetChangeRequest(for: asset)
                 request.contentEditingOutput = output
             }) { success, error in
                 DispatchQueue.main.async {
                     if success {
-                        Logger.log("✅ Image rotation applied non-destructively")
+                        Logger.log("✅ Image rotation applied like Photos app")
                         self.refreshCurrentImage()
                     } else {
                         Logger.log("❌ Error applying rotation: \(error?.localizedDescription ?? "Unknown error")")
@@ -228,6 +216,7 @@ struct FullscreenImageView: View {
             }
         }
     }
+
 
 
     private func refreshCurrentImage() {
