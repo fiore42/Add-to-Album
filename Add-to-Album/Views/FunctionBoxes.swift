@@ -110,6 +110,7 @@ struct FunctionBoxView: View {
         .onAppear {
             isInAlbum = albumManager.isPhotoInAlbum(photoID: photoID, albumID: albumID)
         }
+        // tried to remove this because it gets triggered a lot, but it breaks the updates
         .onReceive(albumManager.$albumChanges) { _ in
             isInAlbum = albumManager.isPhotoInAlbum(photoID: photoID, albumID: albumID)
             Logger.log("🔄 [FunctionBox] UI updated after album change")
