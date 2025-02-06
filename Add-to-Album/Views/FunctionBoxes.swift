@@ -26,7 +26,9 @@ struct FunctionBoxes: View {
             // ✅ Rotation buttons at the top
             HStack {
                 Button(action: {
-                    rotationAngle -= 90 // Rotate left
+                    withAnimation {
+                        rotationAngle -= 90 // Rotate left
+                    }
                     Logger.log("↩️ Rotated image left to \(rotationAngle) degrees")
                 }) {
                     Image(systemName: "arrow.counterclockwise")
@@ -39,7 +41,9 @@ struct FunctionBoxes: View {
                 Spacer()
 
                 Button(action: {
-                    rotationAngle += 90 // Rotate right
+                    withAnimation {
+                        rotationAngle += 90 // Rotate right
+                    }
                     Logger.log("↪️ Rotated image right to \(rotationAngle) degrees")
                 }) {
                     Image(systemName: "arrow.clockwise")
@@ -86,7 +90,13 @@ struct FunctionBoxes: View {
             return AnyView(EmptyView()) // ✅ Makes it disappear when the album name is empty
         } else {
             return AnyView(
-                FunctionBoxView(text: text, albumID: albumID, photoID: currentPhotoID, albumManager: albumManager)
+                FunctionBoxView(
+                    text: text,
+                    albumID: albumID,
+                    photoID: currentPhotoID,
+                    albumManager: albumManager,
+                    rotationAngle: $rotationAngle // ✅ Pass rotation binding
+                )
                     .frame(width: geometry.size.width * 0.35, height: geometry.size.height * 0.05)
                     .background(Color.black.opacity(0.5))
                     .cornerRadius(10)
@@ -109,24 +119,33 @@ struct FunctionBoxView: View {
     let albumID: String
     let photoID: String
     @ObservedObject var albumManager: AlbumManager // ✅ Inject AlbumManager
+    @Binding var rotationAngle: Double // ✅ Rotation binding
+
     
     @State private var isInAlbum: Bool = false
 
     var body: some View {
-        HStack {
-            Text(text)
-                .font(.headline)
-                .foregroundColor(.white)
+        VStack {
+            HStack {
+                Text(text)
+                    .font(.headline)
+                    .foregroundColor(.white)
 
-            Spacer()
+                Spacer()
 
-            // ✅ Shows green if photo is in album, red if not
-            Circle()
-                .fill(isInAlbum ? Color.green : Color.red)
+                // ✅ Show green if photo is in album, red if not
+                Circle()
+                    .fill(isInAlbum ? Color.green : Color.red)
+                    .frame(width: 12, height: 12)
+            }
 
-//                .fill(albumManager.isPhotoInAlbum(photoID: photoID, albumID: albumID) ? Color.green : Color.red)
-                .frame(width: 12, height: 12)
-
+            // ✅ Image with rotation applied
+            Image(systemName: "photo") // Replace with actual image loading logic
+                .resizable()
+                .scaledToFit()
+                .frame(width: 100, height: 100) // Adjust as needed
+                .rotationEffect(.degrees(rotationAngle)) // ✅ Apply rotation
+                .animation(.easeInOut(duration: 0.3), value: rotationAngle) // ✅ Smooth animation
         }
         .padding()
         .background(Color.black.opacity(0.5))
@@ -138,7 +157,6 @@ struct FunctionBoxView: View {
         .onAppear {
             isInAlbum = albumManager.isPhotoInAlbum(photoID: photoID, albumID: albumID)
         }
-        // tried to remove this because it gets triggered a lot, but it breaks the updates
         .onReceive(albumManager.$albumChanges) { _ in
             isInAlbum = albumManager.isPhotoInAlbum(photoID: photoID, albumID: albumID)
             Logger.log("🔄 [FunctionBox] UI updated after album change")
