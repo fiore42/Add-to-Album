@@ -22,7 +22,6 @@ struct AlbumPickerView: View {
                            dismiss() // Close the picker
                        }) {
                            Text(Constants.noAlbumSelected)
-                               .fontWeight(.bold)
                                .foregroundColor(.red)
                        }
 
@@ -37,7 +36,10 @@ struct AlbumPickerView: View {
                                dismiss() // Close the picker
                            }) {
                                Text(album.localizedTitle ?? "Unknown")
+                                   .foregroundColor(.white) // ✅ Make album names white
+
                            }
+                           .buttonStyle(PlainButtonStyle()) // ✅ Ensures color override works
                        }
                    }
                 .navigationTitle("Select Album")
