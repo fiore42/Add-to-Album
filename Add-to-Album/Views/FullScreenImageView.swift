@@ -181,29 +181,61 @@ struct FullscreenImageView: View {
     private func rotateImage(left: Bool) {
         let asset = imageAssets[selectedImageIndex]
 
-        PHPhotoLibrary.shared().performChanges({
-            let request = PHAssetChangeRequest(for: asset)
+        let options = PHImageRequestOptions()
+        options.isSynchronous = true
+        options.deliveryMode = .highQualityFormat
 
-            let newOrientation: CGImagePropertyOrientation
-            switch assetOrientation(asset) {
-            case .up:    newOrientation = left ? .left : .right
-            case .right: newOrientation = left ? .up : .down
-            case .down:  newOrientation = left ? .right : .left
-            case .left:  newOrientation = left ? .down : .up
-            default:     newOrientation = left ? .left : .right
+        PHImageManager.default().requestImageDataAndOrientation(for: asset, options: options) { imageData, _, _, _ in
+            guard let imageData = imageData, let originalImage = UIImage(data: imageData) else {
+                Logger.log("❌ Failed to load image data for rotation")
+                return
             }
 
-            request.setValue(newOrientation.rawValue, forKey: "orientation")
+            let rotationAngle = left ? -90.0 : 90.0
+            guard let rotatedImage = self.rotateUIImage(image: originalImage, degrees: rotationAngle) else { return }
 
-        }) { success, error in
-            if success { DispatchQueue.main.async { self.refreshCurrentImage() } }
+            PHPhotoLibrary.shared().performChanges({
+                let request = PHAssetChangeRequest(for: asset)
+                request.contentEditingOutput = self.createEditingOutput(from: asset, rotatedImage: rotatedImage)
+            }) { success, error in
+                if success { DispatchQueue.main.async { self.refreshCurrentImage() } }
+            }
         }
     }
 
-    private func assetOrientation(_ asset: PHAsset) -> CGImagePropertyOrientation {
-        guard let resource = PHAssetResource.assetResources(for: asset).first else { return .up }
-        let orientation = resource.value(forKey: "orientation") as? UInt32 ?? CGImagePropertyOrientation.up.rawValue
-        return CGImagePropertyOrientation(rawValue: orientation) ?? .up
+    private func rotateUIImage(image: UIImage, degrees: Double) -> UIImage? {
+        let radians = degrees * .pi / 180
+        var newSize = CGRect(origin: .zero, size: image.size)
+            .applying(CGAffineTransform(rotationAngle: CGFloat(radians)))
+            .integral.size
+
+        UIGraphicsBeginImageContextWithOptions(newSize, false, image.scale)
+        guard let context = UIGraphicsGetCurrentContext() else { return nil }
+
+        context.translateBy(x: newSize.width / 2, y: newSize.height / 2)
+        context.rotate(by: CGFloat(radians))
+        image.draw(in: CGRect(x: -image.size.width / 2, y: -image.size.height / 2, width: image.size.width, height: image.size.height))
+
+        let rotatedImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        return rotatedImage
+    }
+
+    private func createEditingOutput(from asset: PHAsset, rotatedImage: UIImage) -> PHContentEditingOutput {
+        let input = PHContentEditingInputRequestOptions()
+        input.canHandleAdjustmentData = { _ in true }
+
+        var output: PHContentEditingOutput?
+
+        asset.requestContentEditingInput(with: input) { editingInput, _ in
+            guard let editingInput = editingInput else { return }
+            output = PHContentEditingOutput(contentEditingInput: editingInput)
+
+            let outputURL = editingInput.fullSizeImageURL!.deletingPathExtension().appendingPathExtension("jpg")
+            try? rotatedImage.jpegData(compressionQuality: 1.0)?.write(to: outputURL)
+            output?.adjustmentData = PHAdjustmentData(formatIdentifier: "com.yourapp", formatVersion: "1.0", data: Data())
+        }
+        return output!
     }
     
     private func refreshCurrentImage() {
@@ -222,6 +254,7 @@ struct FullscreenImageView: View {
             }
         }
     }
+
 
 
 }

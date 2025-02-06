@@ -16,3 +16,4 @@ MUST HAVE:
 NICE TO HAVE:
 - make the grid view update when images change
 - review UI of rotate left / rotate right
+- QA the permission UI at start 
