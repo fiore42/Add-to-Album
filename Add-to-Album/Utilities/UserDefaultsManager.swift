@@ -1,5 +1,10 @@
 import Foundation
 
+
+extension Notification.Name {
+    static let albumSelectionUpdated = Notification.Name("albumSelectionUpdated")
+}
+
 class UserDefaultsManager {
     private static let idKey = "savedAlbumIDs" // ✅ Store album IDs
     private static let key = "savedAlbumNames"
@@ -33,10 +38,10 @@ class UserDefaultsManager {
     
     static func getSavedAlbumName(at index: Int) -> String {
 
-        let albums = UserDefaults.standard.array(forKey: key) as? [String] ?? Array(repeating: "", count: 4)
+//        let albums = UserDefaults.standard.array(forKey: key) as? [String] ?? Array(repeating: "", count: 4)
 
         let savedAlbumNames = UserDefaults.standard.array(forKey: key) as? [String] ?? []
-        Logger.log("❤️‍🔥 [UserDefaults] found name: \(savedAlbumNames[index]) for index: \(index)")
+        Logger.log("🔍 [UserDefaults] found name: \(savedAlbumNames[index]) for index: \(index)")
 
         return (index < savedAlbumNames.count) ? savedAlbumNames[index] : ""
     }
@@ -65,9 +70,10 @@ class UserDefaultsManager {
         UserDefaults.standard.set(savedAlbumNames, forKey: key)
 
         Logger.log("💾 [UserDefaults] Saved Album: \(name) at index \(index) with ID: \(albumID)")
+        
+        // ✅ Notify listeners that album selection has been updated
+        NotificationCenter.default.post(name: .albumSelectionUpdated, object: nil)
+
     }
-
-
-
 
 }
