@@ -35,8 +35,10 @@ struct FunctionBoxes: View {
                         .resizable()
                         .frame(width: 30, height: 30)
                         .foregroundColor(.white)
+                        .padding(15) // ✅ Makes the button larger & easier to tap
+                        .background(Color.black.opacity(0.5))
+                        .clipShape(Circle()) // ✅ Gives a round tappable area
                 }
-                .padding()
 
                 Spacer()
 
@@ -50,10 +52,14 @@ struct FunctionBoxes: View {
                         .resizable()
                         .frame(width: 30, height: 30)
                         .foregroundColor(.white)
+                        .padding(15) // ✅ Makes the button larger & easier to tap
+                        .background(Color.black.opacity(0.5))
+                        .clipShape(Circle()) // ✅ Gives a round tappable area
                 }
-                .padding()
             }
             .padding(.horizontal)
+            .padding(.top, 50) // ✅ Moves buttons further down for better clickability
+
             Spacer()
             
             HStack {
