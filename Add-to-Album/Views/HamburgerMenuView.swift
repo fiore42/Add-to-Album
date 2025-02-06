@@ -24,7 +24,7 @@ struct HamburgerMenuView: View {
                     Logger.log("📂 [HamburgerMenuView] Opening Album Picker overlay for index \(index) id \(selectedAlbumEntry)")
                 }) {
                     Label {
-                        Text(albumSelectionViewModel.selectedAlbums[index].isEmpty ? "⛔️ No Album Selected" : AlbumUtilities.formatAlbumName(albumSelectionViewModel.selectedAlbums[index]))
+                        Text(albumSelectionViewModel.selectedAlbums[index].isEmpty ? Constants.noAlbumSelected : AlbumUtilities.formatAlbumName(albumSelectionViewModel.selectedAlbums[index]))
 //                            .foregroundColor(albumSelectionViewModel.selectedAlbums[index].isEmpty ? .red : .primary)
                     } icon: {
                         Image(systemName: "photo") // Optional album icon
