@@ -1,7 +1,11 @@
 import Photos
+import SwiftUI
 
 class PhotoLibraryObserver: NSObject, PHPhotoLibraryChangeObserver, ObservableObject {
     @Published var albums: [PHAssetCollection] = [] // ✅ Store real-time albums
+    lazy var albumSelectionViewModel: AlbumSelectionViewModel = {
+        AlbumSelectionViewModel() // Initialize lazily
+    }()
 
     override init() {
         super.init()
@@ -27,7 +31,7 @@ class PhotoLibraryObserver: NSObject, PHPhotoLibraryChangeObserver, ObservableOb
              Logger.log("📸 Albums Updated: \(self.albums.count)")
              
              // ✅ Automatically update selected albums when fetching completes
-            AlbumUtilities.updateSelectedAlbums(photoObserverAlbums: self.albums)
+             self.albumSelectionViewModel.updateSelectedAlbums(photoObserverAlbums: self.albums)
          }
      }
     func photoLibraryDidChange(_ changeInstance: PHChange) {

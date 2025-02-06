@@ -15,6 +15,7 @@ struct HamburgerMenuView: View {
     @State private var selectedAlbumEntry: SelectedAlbumEntry? // ✅ Track selected album
 //    @State private var albums: [PHAssetCollection] = [] // ✅ Preloaded albums
     
+    
     var body: some View {
 
         Menu {
@@ -60,7 +61,7 @@ struct HamburgerMenuView: View {
             Logger.log("🔄 Album List Changed - Checking Selections")
             Logger.log("📸 HamburgerMenuView onChange calling updateSelectedAlbums")
             Logger.log("📂 Old Albums Count: \(oldValue.count), New Albums Count: \(newValue.count)")
-            AlbumUtilities.updateSelectedAlbums(photoObserverAlbums: photoObserver.albums)
+            self.albumSelectionViewModel.updateSelectedAlbums(photoObserverAlbums: photoObserver.albums)
 
         }
 
