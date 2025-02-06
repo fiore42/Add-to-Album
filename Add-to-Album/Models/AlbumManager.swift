@@ -26,7 +26,7 @@ class AlbumManager: NSObject, ObservableObject, PHPhotoLibraryChangeObserver {
         if let favoritesAlbum = fetchFavoritesAlbum(), albumID == favoritesAlbum.localIdentifier {
             return isPhotoInFavorites(photoID: photoID) // ✅ Check favorite status
         }
-        
+
         // ✅ Otherwise, check normal albums
         guard let album = fetchAlbumByID(albumID) else { return false }
         let fetchResult = PHAsset.fetchAssets(in: album, options: nil)

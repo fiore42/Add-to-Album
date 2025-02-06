@@ -1,3 +1,15 @@
-06 Feb 2025 - 18:20 it can toggle favorites
+06 Feb 2025 - 18:20 it can toggle and monitor favorites
 
-it toggles favorites album correctly, but cannot fetch if the image is a favorite or not 
+it toggles favorites album correctly, and check if the photo is present
+
+
+MUST HAVE:
+
+- make rotate change the current photo, not create a new copy
+- add 8 functions boxes
+- support non-dark mode
+- include videos (now only photos)
+
+NICE TO HAVE:
+- make the grid view update when images change
+- review UI of rotate left / rotate right
