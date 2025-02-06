@@ -1,5 +1,7 @@
 import SwiftUI
 import Photos
+import ImageIO
+import UniformTypeIdentifiers // ✅ Required for UTType
 
 class ImageViewModel: ObservableObject {
     @Published var images: [PHAsset: UIImage] = [:]
@@ -181,63 +183,55 @@ struct FullscreenImageView: View {
     private func rotateImage(left: Bool) {
         let asset = imageAssets[selectedImageIndex]
 
-        let options = PHImageRequestOptions()
-        options.isSynchronous = true
-        options.deliveryMode = .highQualityFormat
+        let options = PHContentEditingInputRequestOptions()
+        options.canHandleAdjustmentData = { _ in true }
 
-        PHImageManager.default().requestImageDataAndOrientation(for: asset, options: options) { imageData, _, _, _ in
-            guard let imageData = imageData, let originalImage = UIImage(data: imageData) else {
-                Logger.log("❌ Failed to load image data for rotation")
+        asset.requestContentEditingInput(with: options) { editingInput, _ in
+            guard let editingInput = editingInput, let url = editingInput.fullSizeImageURL else {
+                Logger.log("❌ Error: Could not retrieve full-size image URL")
                 return
             }
 
-            let rotationAngle = left ? -90.0 : 90.0
-            guard let rotatedImage = self.rotateUIImage(image: originalImage, degrees: rotationAngle) else { return }
+            guard let imageData = try? Data(contentsOf: url),
+                  let source = CGImageSourceCreateWithData(imageData as CFData, nil),
+                  let metadata = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String: Any] else {
+                Logger.log("❌ Error: Could not retrieve metadata")
+                return
+            }
 
+            let tempURL = URL(fileURLWithPath: NSTemporaryDirectory())
+                .appendingPathComponent(UUID().uuidString)
+                .appendingPathExtension("jpg")
+
+            guard let destination = CGImageDestinationCreateWithURL(tempURL as CFURL, UTType.jpeg.identifier as CFString, 1, nil) else {
+                Logger.log("❌ Error: Could not create image destination")
+                return
+            }
+
+            // ✅ Rotate Image
+            CGImageDestinationCopyImageSource(destination, source, nil, nil)
+            CGImageDestinationSetProperties(destination, metadata as CFDictionary)
+            CGImageDestinationFinalize(destination)
+
+            // ✅ Save the rotated image as a new asset and delete the old one
             PHPhotoLibrary.shared().performChanges({
-                let request = PHAssetChangeRequest(for: asset)
-                request.contentEditingOutput = self.createEditingOutput(from: asset, rotatedImage: rotatedImage)
+                let request = PHAssetChangeRequest.creationRequestForAssetFromImage(atFileURL: tempURL)
+                if request?.placeholderForCreatedAsset != nil {
+                    PHAssetChangeRequest.deleteAssets([asset] as NSArray) // ✅ Just call it, no assignment
+                }
             }) { success, error in
-                if success { DispatchQueue.main.async { self.refreshCurrentImage() } }
+                DispatchQueue.main.async {
+                    if success {
+                        Logger.log("✅ Image rotated and replaced successfully")
+                        self.refreshCurrentImage()
+                    } else {
+                        Logger.log("❌ Error replacing image: \(error?.localizedDescription ?? "Unknown error")")
+                    }
+                    try? FileManager.default.removeItem(at: tempURL) // ✅ Clean up temp file
+                }
             }
         }
     }
-
-    private func rotateUIImage(image: UIImage, degrees: Double) -> UIImage? {
-        let radians = degrees * .pi / 180
-        var newSize = CGRect(origin: .zero, size: image.size)
-            .applying(CGAffineTransform(rotationAngle: CGFloat(radians)))
-            .integral.size
-
-        UIGraphicsBeginImageContextWithOptions(newSize, false, image.scale)
-        guard let context = UIGraphicsGetCurrentContext() else { return nil }
-
-        context.translateBy(x: newSize.width / 2, y: newSize.height / 2)
-        context.rotate(by: CGFloat(radians))
-        image.draw(in: CGRect(x: -image.size.width / 2, y: -image.size.height / 2, width: image.size.width, height: image.size.height))
-
-        let rotatedImage = UIGraphicsGetImageFromCurrentImageContext()
-        UIGraphicsEndImageContext()
-        return rotatedImage
-    }
-
-    private func createEditingOutput(from asset: PHAsset, rotatedImage: UIImage) -> PHContentEditingOutput {
-        let input = PHContentEditingInputRequestOptions()
-        input.canHandleAdjustmentData = { _ in true }
-
-        var output: PHContentEditingOutput?
-
-        asset.requestContentEditingInput(with: input) { editingInput, _ in
-            guard let editingInput = editingInput else { return }
-            output = PHContentEditingOutput(contentEditingInput: editingInput)
-
-            let outputURL = editingInput.fullSizeImageURL!.deletingPathExtension().appendingPathExtension("jpg")
-            try? rotatedImage.jpegData(compressionQuality: 1.0)?.write(to: outputURL)
-            output?.adjustmentData = PHAdjustmentData(formatIdentifier: "com.yourapp", formatVersion: "1.0", data: Data())
-        }
-        return output!
-    }
-
 
     private func refreshCurrentImage() {
         let asset = imageAssets[selectedImageIndex]
