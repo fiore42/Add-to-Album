@@ -25,7 +25,7 @@ struct HamburgerMenuView: View {
                 }) {
                     Label {
                         Text(albumSelectionViewModel.selectedAlbums[index].isEmpty ? "⛔️ No Album Selected" : AlbumUtilities.formatAlbumName(albumSelectionViewModel.selectedAlbums[index]))
-                            .foregroundColor(albumSelectionViewModel.selectedAlbums[index].isEmpty ? .red : .primary)
+//                            .foregroundColor(albumSelectionViewModel.selectedAlbums[index].isEmpty ? .red : .primary)
                     } icon: {
                         Image(systemName: "photo") // Optional album icon
                     }
