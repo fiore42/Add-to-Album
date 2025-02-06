@@ -105,9 +105,9 @@ struct FullscreenImageView: View {
                         geometry: geometry,
                         currentPhotoID: imageAssets[selectedImageIndex].localIdentifier,
                         selectedAlbums: $albumSelectionViewModel.selectedAlbums,
-                        selectedAlbumIDs: $albumSelectionViewModel.selectedAlbumIDs,
-                        rotateLeft: { rotateImage(left: true) }, // ✅ Rotate and save
-                        rotateRight: { rotateImage(left: false) }
+                        selectedAlbumIDs: $albumSelectionViewModel.selectedAlbumIDs
+//                        rotateLeft: { rotateImage(left: true) }, // ✅ Rotate and save
+//                        rotateRight: { rotateImage(left: false) }
                     )
 
                     VStack {
