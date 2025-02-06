@@ -18,7 +18,7 @@ struct ImageGridView: View {
     var body: some View {
         NavigationStack {
             contentView
-            .navigationTitle("Photo Grid")
+            .navigationTitle("Easy Add to Album")
             .navigationBarTitleDisplayMode(.inline) // Ensures proper layout
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) { // Moves menu to top right
