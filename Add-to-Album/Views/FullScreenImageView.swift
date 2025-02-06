@@ -120,43 +120,42 @@ struct FullscreenImageView: View {
                                                 .foregroundColor(.white)
                                                 .padding()
                                         }
-                                        .frame(maxWidth: geometry.size.width * 0.2, alignment: .leading) // Back button on the left
+                                        .frame(maxWidth: geometry.size.width * 0.2, alignment: .leading) // Back button (e.g., 20% from left)
 
-                                        Spacer() // Centralizes the rotate buttons
+                                        Spacer() // Flexible space
 
-                                        HStack(spacing: 0) { // Contains the rotate buttons
-                                            Button(action: { rotateImage(left: true) }) {
-                                                Image(systemName: "arrow.counterclockwise")
-                                                    .resizable()
-                                                    .frame(width: 30, height: 30)
-                                                    .foregroundColor(.white)
-                                                    .padding(10)
-                                                    .background(Color.black.opacity(0.5))
-                                                    .clipShape(Circle())
-                                            }
-                                            .frame(width: geometry.size.width * 0.2, alignment: .trailing) // 20% from the right
-
-                                            Button(action: { rotateImage(left: false) }) {
-                                                Image(systemName: "arrow.clockwise")
-                                                    .resizable()
-                                                    .frame(width: 30, height: 30)
-                                                    .foregroundColor(.white)
-                                                    .padding(10)
-                                                    .background(Color.black.opacity(0.5))
-                                                    .clipShape(Circle())
-                                            }
-                                            .frame(width: geometry.size.width * 0.2, alignment: .leading) // 20% from the left
+                                        Button(action: { rotateImage(left: true) }) {
+                                            Image(systemName: "arrow.counterclockwise")
+                                                .resizable()
+                                                .frame(width: 30, height: 30)
+                                                .foregroundColor(.white)
+                                                .padding(10)
+                                                .background(Color.black.opacity(0.5))
+                                                .clipShape(Circle())
                                         }
-                                        .frame(maxWidth: .infinity, alignment: .center) // Center the HStack
+                                        .frame(width: geometry.size.width * 0.2, alignment: .trailing) // Rotate Left (e.g., 20% from right)
 
+                                        Button(action: { rotateImage(left: false) }) {
+                                            Image(systemName: "arrow.clockwise")
+                                                .resizable()
+                                                .frame(width: 30, height: 30)
+                                                .foregroundColor(.white)
+                                                .padding(10)
+                                                .background(Color.black.opacity(0.5))
+                                                .clipShape(Circle())
+                                        }
+                                        .frame(width: geometry.size.width * 0.2, alignment: .leading) // Rotate Right (e.g., 20% from left)
+
+                                        Spacer() // Flexible space
                                     }
                                     .padding(.horizontal)
                                     .padding(.top, 10)
 
-                                    Spacer() // Pushes the buttons to the top
+                                    Spacer()
                                 }
                                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                            }                }
+                            }
+                }
                 .gesture(
                     DragGesture()
                         .onEnded { value in
