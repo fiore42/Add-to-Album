@@ -26,7 +26,7 @@ struct HamburgerMenuView: View {
     var body: some View {
 
         Menu {
-            ForEach(0..<4, id: \.self) { index in
+            ForEach(0..<Constants.numberOfAlbums, id: \.self) { index in
                 Button(action: {
                     selectedAlbumEntry = SelectedAlbumEntry(index: index)
                     Logger.log("📂 [HamburgerMenuView] Opening Album Picker overlay for index \(index) id \(selectedAlbumEntry)")

@@ -123,8 +123,6 @@ struct FullscreenImageView: View {
                         currentPhotoID: imageAssets[selectedImageIndex].localIdentifier,
                         selectedAlbums: $albumSelectionViewModel.selectedAlbums,
                         selectedAlbumIDs: $albumSelectionViewModel.selectedAlbumIDs
-                        //                        rotateLeft: { rotateImage(left: true) }, // ✅ Rotate and save
-                        //                        rotateRight: { rotateImage(left: false) }
                     )
                     
                     GeometryReader { geometry in
@@ -138,7 +136,9 @@ struct FullscreenImageView: View {
                                                 .padding()
                                         }
                                         .frame(width: geometry.size.width * 0.2, alignment: .leading) // Back button (e.g., 20% from left)
-
+//
+//                                        HIDING ROTATE BUTTONS FOR NOW
+//
                                         Spacer() // Push the rotate buttons to the edges
 
                                         HStack(spacing: 0) { // Rotate buttons group (no internal spacing)

@@ -5,7 +5,6 @@ it toggles favorites album correctly, and check if the photo is present
 
 MUST HAVE:
 
-- make rotate change the current photo, not create a new copy
 - add 8 functions boxes
 - support non-dark mode
 - include videos (now only photos)
@@ -14,6 +13,7 @@ MUST HAVE:
 - extract handlePreloading, rotateImage, refreshCurrentImage from FullScreenImageView
 
 NICE TO HAVE:
+- make rotate change the current photo, not create a new copy
 - make the grid view update when images change
 - review UI of rotate left / rotate right
 - QA the permission UI at start 
