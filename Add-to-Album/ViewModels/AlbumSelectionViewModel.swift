@@ -1,7 +1,10 @@
 import Foundation
+import SwiftUI
 import Combine
 
 class AlbumSelectionViewModel: ObservableObject {
+    @ObservedObject var albumManager = AlbumManager()
+
     @Published var selectedAlbums: [String] = UserDefaultsManager.getSavedAlbums()
     @Published var selectedAlbumIDs: [String] = UserDefaultsManager.getSavedAlbumIDs()
 

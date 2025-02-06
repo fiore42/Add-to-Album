@@ -81,4 +81,3 @@ struct AlbumPickerView: View {
     }
 
 }
-
