@@ -44,15 +44,15 @@ struct HamburgerMenuView: View {
             // Remove existing observers before adding a new one to avoid duplicate triggers.
             NotificationCenter.default.removeObserver(self, name: .albumListUpdated, object: nil)
 
-            NotificationCenter.default.addObserver(
-                forName: .albumListUpdated,
-                object: nil,
-                queue: .main
-            ) { _ in
-                Logger.log("🔄 UI Refresh: Reloading albums in Hamburger Menu")
-                albumSelectionViewModel.selectedAlbums = UserDefaultsManager.getSavedAlbums()
-                Logger.log("📂 Updated Selected Albums: \(albumSelectionViewModel.selectedAlbums)")
-            }
+//            NotificationCenter.default.addObserver(
+//                forName: .albumListUpdated,
+//                object: nil,
+//                queue: .main
+//            ) { _ in
+//                Logger.log("🔄 UI Refresh: Reloading albums in Hamburger Menu")
+//                albumSelectionViewModel.selectedAlbums = UserDefaultsManager.getSavedAlbums()
+//                Logger.log("📂 Updated Selected Albums: \(albumSelectionViewModel.selectedAlbums)")
+//            }
         }
         .onChange(of: photoObserver.albums) { oldValue, newValue in
             // do not run if the value jumps from 0 to x, when x > 1
@@ -82,9 +82,8 @@ struct HamburgerMenuView: View {
             Logger.log("📂 Album Picker Closed. Selected Album: \(albumSelectionViewModel.selectedAlbums[index]) at index \(index) ID: \(albumSelectionViewModel.selectedAlbumIDs[index])")
             let albumID = UserDefaultsManager.getAlbumID(at: index) ?? ""
             UserDefaultsManager.saveAlbum(albumSelectionViewModel.selectedAlbums[index], at: index, albumID: albumID)
-            Logger.log("💾 Saved Album: \(albumSelectionViewModel.selectedAlbums[index]) at index \(index), ID: \(albumID) ID: \(albumSelectionViewModel.selectedAlbumIDs[index])")
+            Logger.log("💾 [onDisappear] Saved Album: \"\(albumSelectionViewModel.selectedAlbums[index])\" at index \(index) with ID: \(albumSelectionViewModel.selectedAlbumIDs[index])")
             
-            // fix here 
         }
     }
     

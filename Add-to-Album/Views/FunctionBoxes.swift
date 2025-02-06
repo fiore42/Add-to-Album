@@ -110,10 +110,10 @@ struct FunctionBoxView: View {
         .onAppear {
             isInAlbum = albumManager.isPhotoInAlbum(photoID: photoID, albumID: albumID)
         }
-        .onReceive(albumManager.$albumChanges) { _ in
-            isInAlbum = albumManager.isPhotoInAlbum(photoID: photoID, albumID: albumID)
-            Logger.log("🔄 [FunctionBox] UI updated after album change")
-        }
+//        .onReceive(albumManager.$albumChanges) { _ in
+//            isInAlbum = albumManager.isPhotoInAlbum(photoID: photoID, albumID: albumID)
+//            Logger.log("🔄 [FunctionBox] UI updated after album change")
+//        }
     }
 
 }
