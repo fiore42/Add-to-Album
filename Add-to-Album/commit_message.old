@@ -1,4 +1,4 @@
-06 Feb 2025 - 18:20 it can toggle and monitor favorites
+06 Feb 2025 - 18:20 it can toggle and monitor favorites w/ TODO)
 
 it toggles favorites album correctly, and check if the photo is present
 
@@ -9,6 +9,9 @@ MUST HAVE:
 - add 8 functions boxes
 - support non-dark mode
 - include videos (now only photos)
+- extract cellSize from ImageGridView (duplicated)
+- extract ImageViewModel from FullScreenImageView
+- extract handlePreloading, rotateImage, refreshCurrentImage from FullScreenImageView
 
 NICE TO HAVE:
 - make the grid view update when images change
