@@ -31,20 +31,42 @@ class AlbumManager: NSObject, ObservableObject, PHPhotoLibraryChangeObserver {
         }
         return false
     }
-
+    
     func togglePhotoInAlbum(photoID: String, albumID: String) {
-        guard let album = fetchAlbumByID(albumID) else { return }
-        let fetchResult = PHAsset.fetchAssets(withLocalIdentifiers: [photoID], options: nil)
-        guard let photo = fetchResult.firstObject else { return }
+        if let favoritesAlbum = fetchFavoritesAlbum(), albumID == favoritesAlbum.localIdentifier {
+            toggleFavorite(photoID: photoID)
+        } else {
+            guard let album = fetchAlbumByID(albumID) else { return }
+            togglePhotoInRegularAlbum(photoID: photoID, album: album)
+        }
+    }
+    
+    private func toggleFavorite(photoID: String) {
+        guard let photo = fetchAssetByID(photoID) else { return }
+        PHPhotoLibrary.shared().performChanges {
+            let request = PHAssetChangeRequest(for: photo)
+            request.isFavorite = !photo.isFavorite
+        } completionHandler: { success, error in
+            DispatchQueue.main.async {
+                self.albumChanges = UUID()
+                if let error = error {
+                    Logger.log("Error toggling favorite: \(error)")
+                }
+            }
+        }
+    }
+
+    private func togglePhotoInRegularAlbum(photoID: String, album: PHAssetCollection) {
+        guard let photo = fetchAssetByID(photoID) else { return }
 
         PHPhotoLibrary.shared().performChanges {
             let albumChangeRequest = PHAssetCollectionChangeRequest(for: album)
-            if self.isPhotoInAlbum(photoID: photoID, albumID: albumID) {
+            if self.isPhotoInAlbum(photoID: photoID, albumID: album.localIdentifier) {
                 albumChangeRequest?.removeAssets([photo] as NSFastEnumeration)
-                Logger.log("Removed \(photoID) from \(albumID)")
+                Logger.log("Removed \(photoID) from \(album.localIdentifier)")
             } else {
                 albumChangeRequest?.addAssets([photo] as NSFastEnumeration)
-                Logger.log("Added \(photoID) to \(albumID)")
+                Logger.log("Added \(photoID) to \(album.localIdentifier)")
             }
         } completionHandler: { success, error in
             DispatchQueue.main.async {
@@ -54,6 +76,17 @@ class AlbumManager: NSObject, ObservableObject, PHPhotoLibraryChangeObserver {
                 }
             }
         }
+    }
+    
+    private func fetchAssetByID(_ photoID: String) -> PHAsset? {
+        let fetchResult = PHAsset.fetchAssets(withLocalIdentifiers: [photoID], options: nil)
+        return fetchResult.firstObject
+    }
+
+    private func fetchFavoritesAlbum() -> PHAssetCollection? {
+        let fetchOptions = PHFetchOptions()
+        let albums = PHAssetCollection.fetchAssetCollections(with: .smartAlbum, subtype: .smartAlbumFavorites, options: fetchOptions)
+        return albums.firstObject
     }
 
     private func fetchAlbumByID(_ albumID: String) -> PHAssetCollection? {
