@@ -50,12 +50,12 @@ struct FullscreenImageView: View {
             GeometryReader { geometry in
                 ZStack {
                     Color.black.ignoresSafeArea()
-
+                    
                     TabView(selection: $selectedImageIndex) {
                         ForEach(imageAssets.indices, id: \.self) { index in
                             ZStack {
                                 Color.black.ignoresSafeArea()
-
+                                
                                 if let image = imageViewModel.images[imageAssets[index]] {
                                     Image(uiImage: image)
                                         .resizable()
@@ -70,21 +70,21 @@ struct FullscreenImageView: View {
                                             imageViewModel.loadImage(for: imageAssets[index], targetSize: geometry.size)
                                         }
                                 }
-
+                                
                                 // Left separator
                                 Rectangle()
                                     .fill(Color.black)
                                     .frame(width: 20) // Adjust thickness
                                     .edgesIgnoringSafeArea(.all)
                                     .offset(x: -geometry.size.width / 2 + 1) // Position at left edge
-
+                                
                                 // Right separator
                                 Rectangle()
                                     .fill(Color.black)
                                     .frame(width: 20) // Adjust thickness
                                     .edgesIgnoringSafeArea(.all)
                                     .offset(x: geometry.size.width / 2 - 1) // Position at right edge
-
+                                
                             }
                             .tag(index)
                             .onAppear {
@@ -106,50 +106,58 @@ struct FullscreenImageView: View {
                         currentPhotoID: imageAssets[selectedImageIndex].localIdentifier,
                         selectedAlbums: $albumSelectionViewModel.selectedAlbums,
                         selectedAlbumIDs: $albumSelectionViewModel.selectedAlbumIDs
-//                        rotateLeft: { rotateImage(left: true) }, // ✅ Rotate and save
-//                        rotateRight: { rotateImage(left: false) }
+                        //                        rotateLeft: { rotateImage(left: true) }, // ✅ Rotate and save
+                        //                        rotateRight: { rotateImage(left: false) }
                     )
-
+                    
                     VStack {
-                        HStack {
-                            Button(action: { dismiss() }) { //cross back button
-                                Image(systemName: "xmark.circle.fill")
-                                    .resizable()
-                                    .frame(width: 30, height: 30)
-                                    .foregroundColor(.white)
-                                    .padding()
+                        GeometryReader { geometry in
+                            HStack {
+                                // ✅ Back Button (❌) on the Left
+                                Button(action: { dismiss() }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .resizable()
+                                        .frame(width: 30, height: 30)
+                                        .foregroundColor(.white)
+                                        .padding()
+                                }
+                                .frame(width: geometry.size.width * 0.1, alignment: .leading) // Keep it small & left
+                                
+                                Spacer() // Push Rotate Buttons
+                                
+                                // ✅ Rotate Left Button (↩️) at 40% width
+                                Button(action: { rotateImage(left: true) }) {
+                                    Image(systemName: "arrow.counterclockwise")
+                                        .resizable()
+                                        .frame(width: 30, height: 30)
+                                        .foregroundColor(.white)
+                                        .padding(10)
+                                        .background(Color.black.opacity(0.5))
+                                        .clipShape(Circle())
+                                }
+                                .frame(width: geometry.size.width * 0.1, alignment: .center)
+                                .position(x: geometry.size.width * 0.4, y: 0) // ✅ 40% from left
+                                
+                                // ✅ Rotate Right Button (↪️) at 60% width
+                                Button(action: { rotateImage(left: false) }) {
+                                    Image(systemName: "arrow.clockwise")
+                                        .resizable()
+                                        .frame(width: 30, height: 30)
+                                        .foregroundColor(.white)
+                                        .padding(10)
+                                        .background(Color.black.opacity(0.5))
+                                        .clipShape(Circle())
+                                }
+                                .frame(width: geometry.size.width * 0.1, alignment: .center)
+                                .position(x: geometry.size.width * 0.6, y: 0) // ✅ 40% from right
+                                
+                                Spacer() // Keep spacing balanced
                             }
-                            Spacer()
-
-                             Button(action: { rotateImage(left: true) }) {
-                                 Image(systemName: "arrow.counterclockwise")
-                                     .resizable()
-                                     .frame(width: 30, height: 30)
-                                     .foregroundColor(.white)
-                                     .padding(10)
-                                     .background(Color.black.opacity(0.5))
-                                     .clipShape(Circle())
-                             }
-
-                             Spacer()
-
-                             Button(action: { rotateImage(left: false) }) {
-                                 Image(systemName: "arrow.clockwise")
-                                     .resizable()
-                                     .frame(width: 30, height: 30)
-                                     .foregroundColor(.white)
-                                     .padding(10)
-                                     .background(Color.black.opacity(0.5))
-                                     .clipShape(Circle())
-                             }
-                         }
-                         .padding(.horizontal)
-                         .padding(.top, 10)
+                        }
+                        .frame(height: 60) // Fix height to prevent stretching
                         
                         Spacer()
                     }
-//                    .padding(.top, 50)
-//                    .padding(.leading)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 }
                 .gesture(
