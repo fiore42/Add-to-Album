@@ -129,7 +129,7 @@ struct FullscreenImageView: View {
                                      .resizable()
                                      .frame(width: 30, height: 30)
                                      .foregroundColor(.white)
-                                     .padding(15)
+                                     .padding(10)
                                      .background(Color.black.opacity(0.5))
                                      .clipShape(Circle())
                              }
@@ -141,7 +141,7 @@ struct FullscreenImageView: View {
                                      .resizable()
                                      .frame(width: 30, height: 30)
                                      .foregroundColor(.white)
-                                     .padding(15)
+                                     .padding(10)
                                      .background(Color.black.opacity(0.5))
                                      .clipShape(Circle())
                              }
