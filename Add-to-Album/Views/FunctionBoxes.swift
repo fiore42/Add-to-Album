@@ -17,49 +17,14 @@ struct FunctionBoxes: View {
     @Binding var selectedAlbums: [String] // ✅ Connected to the menu
     @Binding var selectedAlbumIDs: [String] // ✅ Store Album IDs for further logic
     
+    let rotateLeft: () -> Void
+    let rotateRight: () -> Void
+    
     @ObservedObject private var albumManager = AlbumManager() // ✅ Manage album logic
-
-    @State private var rotationAngle: Double = 0 // ✅ Rotation state
     
     var body: some View {
         VStack {
-            // ✅ Rotation buttons at the top
-            HStack {
-                Button(action: {
-                    withAnimation {
-                        rotationAngle -= 90 // Rotate left
-                    }
-                    Logger.log("↩️ Rotated image left to \(rotationAngle) degrees")
-                }) {
-                    Image(systemName: "arrow.counterclockwise")
-                        .resizable()
-                        .frame(width: 30, height: 30)
-                        .foregroundColor(.white)
-                        .padding(15) // ✅ Makes the button larger & easier to tap
-                        .background(Color.black.opacity(0.5))
-                        .clipShape(Circle()) // ✅ Gives a round tappable area
-                }
-
-                Spacer()
-
-                Button(action: {
-                    withAnimation {
-                        rotationAngle += 90 // Rotate right
-                    }
-                    Logger.log("↪️ Rotated image right to \(rotationAngle) degrees")
-                }) {
-                    Image(systemName: "arrow.clockwise")
-                        .resizable()
-                        .frame(width: 30, height: 30)
-                        .foregroundColor(.white)
-                        .padding(15) // ✅ Makes the button larger & easier to tap
-                        .background(Color.black.opacity(0.5))
-                        .clipShape(Circle()) // ✅ Gives a round tappable area
-                }
-            }
-            .padding(.horizontal)
-            .padding(.top, 50) // ✅ Moves buttons further down for better clickability
-
+ 
             Spacer()
             
             HStack {
@@ -101,7 +66,8 @@ struct FunctionBoxes: View {
                     albumID: albumID,
                     photoID: currentPhotoID,
                     albumManager: albumManager,
-                    rotationAngle: $rotationAngle // ✅ Pass rotation binding
+                    rotateLeft: rotateLeft, // ✅ Pass rotation functions
+                    rotateRight: rotateRight
                 )
                     .frame(width: geometry.size.width * 0.35, height: geometry.size.height * 0.05)
                     .background(Color.black.opacity(0.5))
@@ -125,11 +91,12 @@ struct FunctionBoxView: View {
     let albumID: String
     let photoID: String
     @ObservedObject var albumManager: AlbumManager // ✅ Inject AlbumManager
-    @Binding var rotationAngle: Double // ✅ Rotation binding
 
+    let rotateLeft: () -> Void // ✅ Function for rotating left
+    let rotateRight: () -> Void // ✅ Function for rotating right
     
     @State private var isInAlbum: Bool = false
-
+    
     var body: some View {
         VStack {
             HStack {
@@ -145,13 +112,34 @@ struct FunctionBoxView: View {
                     .frame(width: 12, height: 12)
             }
 
-            // ✅ Image with rotation applied
-            Image(systemName: "photo") // Replace with actual image loading logic
-                .resizable()
-                .scaledToFit()
-                .frame(width: 100, height: 100) // Adjust as needed
-                .rotationEffect(.degrees(rotationAngle)) // ✅ Apply rotation
-                .animation(.easeInOut(duration: 0.3), value: rotationAngle) // ✅ Smooth animation
+
+            // ✅ Rotation Buttons (Applied to Actual Image)
+            HStack {
+                Button(action: { rotateLeft() }) {
+                    Image(systemName: "arrow.counterclockwise")
+                        .resizable()
+                        .frame(width: 30, height: 30)
+                        .foregroundColor(.white)
+                        .padding(15)
+                        .background(Color.black.opacity(0.5))
+                        .clipShape(Circle())
+                }
+
+                Spacer()
+
+                Button(action: { rotateRight() }) {
+                    Image(systemName: "arrow.clockwise")
+                        .resizable()
+                        .frame(width: 30, height: 30)
+                        .foregroundColor(.white)
+                        .padding(15)
+                        .background(Color.black.opacity(0.5))
+                        .clipShape(Circle())
+                }
+            }
+            .padding(.horizontal)
+            .padding(.top, 10)
+
         }
         .padding()
         .background(Color.black.opacity(0.5))

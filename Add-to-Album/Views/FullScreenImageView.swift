@@ -40,10 +40,11 @@ struct FullscreenImageView: View {
 
     @ObservedObject var imageGridViewModel: ImageGridViewModel
     @EnvironmentObject var albumSelectionViewModel: AlbumSelectionViewModel // ✅ Get ViewModel from environment
-
     
     @State private var positionTopBottom: CGFloat = 0.2 // 20% from top and bottom
     @State private var positionLeftRight: CGFloat = 0.1 // 10% from left and right
+
+    @State private var rotationAngles: [String: Double] = [:] // ✅ Store rotation per image
     
     var body: some View {
             GeometryReader { geometry in
@@ -59,6 +60,8 @@ struct FullscreenImageView: View {
                                     Image(uiImage: image)
                                         .resizable()
                                         .scaledToFit()
+                                        .rotationEffect(.degrees(rotationAngles[imageAssets[index].localIdentifier] ?? 0))
+                                        .animation(.easeInOut(duration: 0.3), value: rotationAngles[imageAssets[index].localIdentifier] ?? 0)
                                         .transition(.opacity)
                                 } else {
                                     ProgressView()
@@ -102,7 +105,9 @@ struct FullscreenImageView: View {
                         geometry: geometry,
                         currentPhotoID: imageAssets[selectedImageIndex].localIdentifier,
                         selectedAlbums: $albumSelectionViewModel.selectedAlbums,
-                        selectedAlbumIDs: $albumSelectionViewModel.selectedAlbumIDs
+                        selectedAlbumIDs: $albumSelectionViewModel.selectedAlbumIDs,
+                        rotateLeft: { rotateImage(left: true) }, // ✅ Rotate and save
+                        rotateRight: { rotateImage(left: false) }
                     )
 
                     VStack {
@@ -141,5 +146,59 @@ struct FullscreenImageView: View {
 
             imageViewModel.startCaching(assets: prefetchAssets, targetSize: targetSize)
         }
+    
+    // ✅ Rotate the current image and save it to the Photos Library
+        private func rotateImage(left: Bool) {
+            let asset = imageAssets[selectedImageIndex]
+
+            let options = PHImageRequestOptions()
+            options.isSynchronous = true
+            options.deliveryMode = .highQualityFormat
+
+            PHImageManager.default().requestImageDataAndOrientation(for: asset, options: options) { imageData, _, _, _ in
+                guard let imageData = imageData, let originalImage = UIImage(data: imageData) else {
+                    Logger.log("❌ Failed to load image data for rotation")
+                    return
+                }
+
+                let rotationAngle = left ? -90.0 : 90.0
+                if let rotatedImage = self.rotateUIImage(image: originalImage, degrees: rotationAngle) {
+                    PHPhotoLibrary.shared().performChanges({
+                        let creationRequest = PHAssetChangeRequest.creationRequestForAsset(from: rotatedImage)
+                        let newAssetPlaceholder = creationRequest.placeholderForCreatedAsset
+                        if let assetCollection = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: nil).firstObject {
+                            let addRequest = PHAssetCollectionChangeRequest(for: assetCollection)
+                            addRequest?.addAssets([newAssetPlaceholder] as NSArray)
+                        }
+                    }) { success, error in
+                        if success {
+                            Logger.log("✅ Image rotation saved successfully")
+                        } else {
+                            Logger.log("❌ Error saving rotated image: \(error?.localizedDescription ?? "Unknown error")")
+                        }
+                    }
+                }
+            }
+        }
+
+        // ✅ Rotate UIImage using Core Graphics
+        private func rotateUIImage(image: UIImage, degrees: Double) -> UIImage? {
+            let radians = degrees * .pi / 180
+            var newSize = CGRect(origin: CGPoint.zero, size: image.size)
+                .applying(CGAffineTransform(rotationAngle: CGFloat(radians)))
+                .integral.size
+
+            UIGraphicsBeginImageContextWithOptions(newSize, false, image.scale)
+            guard let context = UIGraphicsGetCurrentContext() else { return nil }
+
+            context.translateBy(x: newSize.width / 2, y: newSize.height / 2)
+            context.rotate(by: CGFloat(radians))
+            image.draw(in: CGRect(x: -image.size.width / 2, y: -image.size.height / 2, width: image.size.width, height: image.size.height))
+
+            let rotatedImage = UIGraphicsGetImageFromCurrentImageContext()
+            UIGraphicsEndImageContext()
+            return rotatedImage
+        }
+
 
 }
