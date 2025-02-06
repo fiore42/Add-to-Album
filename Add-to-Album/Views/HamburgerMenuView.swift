@@ -20,8 +20,8 @@ struct HamburgerMenuView: View {
         Menu {
             ForEach(0..<4, id: \.self) { index in
                 Button(action: {
-                    Logger.log("📂 [HamburgerMenuView] Opening Album Picker for index \(index)")
                     selectedAlbumEntry = SelectedAlbumEntry(index: index)
+                    Logger.log("📂 [HamburgerMenuView] Opening Album Picker overlay for index \(index) id \(selectedAlbumEntry)")
                 }) {
                     Label {
                         Text(albumSelectionViewModel.selectedAlbums[index].isEmpty ? "⛔️ No Album Selected" : AlbumUtilities.formatAlbumName(albumSelectionViewModel.selectedAlbums[index]))

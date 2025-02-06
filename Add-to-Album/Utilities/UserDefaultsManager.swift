@@ -36,7 +36,7 @@ class UserDefaultsManager {
         let albums = UserDefaults.standard.array(forKey: key) as? [String] ?? Array(repeating: "", count: 4)
 
         let savedAlbumNames = UserDefaults.standard.array(forKey: key) as? [String] ?? []
-        Logger.log("❤️‍🔥 [UserDefaults] albums: \(albums) savedAlbumNames: \(savedAlbumNames)")
+        Logger.log("❤️‍🔥 [UserDefaults] found name: \(savedAlbumNames[index]) for index: \(index)")
 
         return (index < savedAlbumNames.count) ? savedAlbumNames[index] : ""
     }

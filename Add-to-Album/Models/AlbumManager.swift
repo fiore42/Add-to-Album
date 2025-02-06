@@ -41,16 +41,16 @@ class AlbumManager: NSObject, ObservableObject, PHPhotoLibraryChangeObserver {
             let albumChangeRequest = PHAssetCollectionChangeRequest(for: album)
             if self.isPhotoInAlbum(photoID: photoID, albumID: albumID) {
                 albumChangeRequest?.removeAssets([photo] as NSFastEnumeration)
-                print("Removed \(photoID) from \(albumID)")
+                Logger.log("Removed \(photoID) from \(albumID)")
             } else {
                 albumChangeRequest?.addAssets([photo] as NSFastEnumeration)
-                print("Added \(photoID) to \(albumID)")
+                Logger.log("Added \(photoID) to \(albumID)")
             }
         } completionHandler: { success, error in
             DispatchQueue.main.async {
                 self.albumChanges = UUID()
                 if let error = error {
-                    print("Error toggling photo in album: \(error)")
+                    Logger.log("Error toggling photo in album: \(error)")
                 }
             }
         }
