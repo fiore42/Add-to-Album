@@ -3,8 +3,9 @@ import SwiftUI
 
 class PhotoLibraryObserver: NSObject, PHPhotoLibraryChangeObserver, ObservableObject {
     @Published var albums: [PHAssetCollection] = [] // ✅ Store real-time albums
-    @EnvironmentObject var albumSelectionViewModel: AlbumSelectionViewModel // ✅ Get shared ViewModel
-
+    lazy var albumSelectionViewModel: AlbumSelectionViewModel = {
+        AlbumSelectionViewModel() // Initialize lazily
+    }()
 
     override init() {
         super.init()
