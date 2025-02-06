@@ -36,11 +36,18 @@ class AlbumSelectionViewModel: ObservableObject {
         
         let savedAlbumIDs = UserDefaultsManager.getSavedAlbumIDs().map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
         
-        // Create a mapping of album ID to current album name
+        // Create album map including Favorites
+        var allAlbums: [PHAssetCollection] = photoObserverAlbums // Start with regular albums
+
+        if let favoritesAlbum = self.albumManager.fetchFavoritesAlbum() {  // Use self.albumManager!
+            allAlbums.append(favoritesAlbum)
+        }
+
         let currentAlbumMap: [String: String] = Dictionary(uniqueKeysWithValues:
-                                                            photoObserverAlbums.map { ($0.localIdentifier.trimmingCharacters(in: .whitespacesAndNewlines), $0.localizedTitle ?? "Unknown Album") }
+                                                            allAlbums.map { ($0.localIdentifier.trimmingCharacters(in: .whitespacesAndNewlines), $0.localizedTitle ?? "Unknown Album") }
         )
         
+
         var hasChanges = false // ✅ Track changes to trigger UI update
         
         

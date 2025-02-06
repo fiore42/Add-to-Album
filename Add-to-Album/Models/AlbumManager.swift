@@ -83,7 +83,7 @@ class AlbumManager: NSObject, ObservableObject, PHPhotoLibraryChangeObserver {
         return fetchResult.firstObject
     }
 
-    private func fetchFavoritesAlbum() -> PHAssetCollection? {
+    func fetchFavoritesAlbum() -> PHAssetCollection? {
         let fetchOptions = PHFetchOptions()
         let albums = PHAssetCollection.fetchAssetCollections(with: .smartAlbum, subtype: .smartAlbumFavorites, options: fetchOptions)
         return albums.firstObject

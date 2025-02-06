@@ -9,13 +9,20 @@ struct SelectedAlbumEntry: Identifiable {
 struct HamburgerMenuView: View {
     @EnvironmentObject var albumSelectionViewModel: AlbumSelectionViewModel // ✅ Get shared ViewModel
 
-    @StateObject private var photoObserver = PhotoLibraryObserver() // ✅ Use album observer
+//    @StateObject private var photoObserver = PhotoLibraryObserver() // ✅ Use album observer
+    
+    @StateObject var photoObserver: PhotoLibraryObserver // Initialize PhotoLibraryObserver
+
 
 //    @State private var selectedAlbums: [String] = UserDefaultsManager.getSavedAlbums()
     @State private var selectedAlbumEntry: SelectedAlbumEntry? // ✅ Track selected album
 //    @State private var albums: [PHAssetCollection] = [] // ✅ Preloaded albums
     
-    
+    // Use a dedicated init() to initialize photoObserver
+    init() {
+        _photoObserver = StateObject(wrappedValue: PhotoLibraryObserver()) // Initialize PhotoLibraryObserver WITHOUT albumSelectionViewModel
+    }
+
     var body: some View {
 
         Menu {
@@ -41,9 +48,14 @@ struct HamburgerMenuView: View {
         }
         .onAppear {
             Logger.log("📸 HamburgerMenuView onAppear triggered")
+            // ✅ Initialize `photoObserver` once `albumSelectionViewModel` is available
+            if photoObserver.albumSelectionViewModel == nil {
+                photoObserver.setAlbumSelectionViewModel(albumSelectionViewModel)
+            }
             Logger.log("📂 Initial Selected Albums: \(albumSelectionViewModel.selectedAlbums)")
             // Remove existing observers before adding a new one to avoid duplicate triggers.
             NotificationCenter.default.removeObserver(self, name: .albumListUpdated, object: nil)
+            
 
 //            NotificationCenter.default.addObserver(
 //                forName: .albumListUpdated,
@@ -74,10 +86,13 @@ struct HamburgerMenuView: View {
 
     private func albumPickerSheet(for selectedEntry: SelectedAlbumEntry) -> some View {
         let index = selectedEntry.index
+        let albumManager = AlbumManager()
+        
         return AlbumPickerView(
             selectedAlbum: $albumSelectionViewModel.selectedAlbums[index],
             albums: photoObserver.albums,
-            index: index
+            index: index,
+            albumManager: albumManager
         )
         .onDisappear {
             Logger.log("📂 Album Picker Closed. Selected Album: \(albumSelectionViewModel.selectedAlbums[index]) at index \(index) ID: \(albumSelectionViewModel.selectedAlbumIDs[index])")

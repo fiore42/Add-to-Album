@@ -3,19 +3,37 @@ import SwiftUI
 
 class PhotoLibraryObserver: NSObject, PHPhotoLibraryChangeObserver, ObservableObject {
     @Published var albums: [PHAssetCollection] = [] // ✅ Store real-time albums
-    lazy var albumSelectionViewModel: AlbumSelectionViewModel = {
-        AlbumSelectionViewModel() // Initialize lazily
-    }()
-
+//    let albumSelectionViewModel: AlbumSelectionViewModel
+    
+    
+    var albumSelectionViewModel: AlbumSelectionViewModel? // ✅ Make it mutable (not `let`)
+    
+    //    init(albumSelectionViewModel: AlbumSelectionViewModel) {
+    //        self.albumSelectionViewModel = albumSelectionViewModel
+    //        super.init()
+    //        PHPhotoLibrary.shared().register(self)
+    //        fetchAlbums()
+    //    }
+    
     override init() {
         super.init()
         PHPhotoLibrary.shared().register(self) // ✅ Register for album changes
         fetchAlbums() // ✅ Fetch initial albums
     }
-
+    
     deinit {
         PHPhotoLibrary.shared().unregisterChangeObserver(self) // ✅ Clean up when not needed
     }
+    
+    // ✅ Set `albumSelectionViewModel` when it becomes available
+    func setAlbumSelectionViewModel(_ viewModel: AlbumSelectionViewModel) {
+        self.albumSelectionViewModel = viewModel
+        Logger.log("🔄 [PhotoLibraryObserver] AlbumSelectionViewModel Injected")
+        
+        // ✅ Update selected albums after setting ViewModel
+        self.albumSelectionViewModel?.updateSelectedAlbums(photoObserverAlbums: self.albums)
+    }
+
 
     func fetchAlbums() {
          let fetchOptions = PHFetchOptions()
@@ -31,7 +49,8 @@ class PhotoLibraryObserver: NSObject, PHPhotoLibraryChangeObserver, ObservableOb
              Logger.log("📸 Albums Updated: \(self.albums.count)")
              
              // ✅ Automatically update selected albums when fetching completes
-             self.albumSelectionViewModel.updateSelectedAlbums(photoObserverAlbums: self.albums)
+             self.albumSelectionViewModel?.updateSelectedAlbums(photoObserverAlbums: self.albums)
+                          
          }
      }
     func photoLibraryDidChange(_ changeInstance: PHChange) {

@@ -6,6 +6,7 @@ struct AlbumPickerView: View {
     @Environment(\.dismiss) var dismiss
     let albums: [PHAssetCollection] // ✅ Receive preloaded albums
     let index: Int
+    let albumManager: AlbumManager
 //    @State private var refreshTrigger = UUID() // Force refresh
 
     var body: some View {
@@ -25,7 +26,8 @@ struct AlbumPickerView: View {
                                .foregroundColor(.red)
                        }
 
-                    if let favoritesAlbum = fetchFavoritesAlbum() {
+//                    if let favoritesAlbum = fetchFavoritesAlbum() {
+                    if let favoritesAlbum = albumManager.fetchFavoritesAlbum() {
                         Button(action: {
                             let albumID = favoritesAlbum.localIdentifier
                             selectedAlbum = AlbumUtilities.formatAlbumName(favoritesAlbum.localizedTitle ?? "Favorites")
@@ -74,10 +76,13 @@ struct AlbumPickerView: View {
 
     }
     
-    private func fetchFavoritesAlbum() -> PHAssetCollection? {
-        let fetchOptions = PHFetchOptions()
-        let albums = PHAssetCollection.fetchAssetCollections(with: .smartAlbum, subtype: .smartAlbumFavorites, options: fetchOptions)
-        return albums.firstObject
-    }
+//    // there are two fetchFavoritesAlbum
+//    
+//    private func fetchFavoritesAlbum() -> PHAssetCollection? {
+//        let fetchOptions = PHFetchOptions()
+//        let albums = PHAssetCollection.fetchAssetCollections(with: .smartAlbum, subtype: .smartAlbumFavorites, options: fetchOptions)
+//        return albums.firstObject
+//    }
 
 }
+
