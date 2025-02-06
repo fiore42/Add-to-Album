@@ -15,7 +15,7 @@ struct AlbumPickerView: View {
                 List {
                        // ✅ Add "No Album Selected" at the top
                        Button(action: {
-                           selectedAlbum = Constants.noAlbumSelected
+                           selectedAlbum = ""
                            UserDefaultsManager.saveAlbum(selectedAlbum, at: index, albumID: "") // Save empty ID
                            Logger.log("📂 [AlbumPickerView] Selected name: \(selectedAlbum) (No ID) for index: \(index)")
 
