@@ -50,7 +50,7 @@ struct FunctionBoxes: View {
 //            }
 //            .padding(.horizontal)
 //            .padding(.top, 10)
-//
+
 //            
             Spacer()
             

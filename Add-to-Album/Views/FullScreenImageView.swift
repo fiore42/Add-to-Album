@@ -40,11 +40,11 @@ struct FullscreenImageView: View {
 
     @ObservedObject var imageGridViewModel: ImageGridViewModel
     @EnvironmentObject var albumSelectionViewModel: AlbumSelectionViewModel // ✅ Get ViewModel from environment
+
+    @State private var rotationAngles: [String: Double] = [:] // ✅ Store rotation per image
     
     @State private var positionTopBottom: CGFloat = 0.2 // 20% from top and bottom
     @State private var positionLeftRight: CGFloat = 0.1 // 10% from left and right
-
-    @State private var rotationAngles: [String: Double] = [:] // ✅ Store rotation per image
     
     var body: some View {
             GeometryReader { geometry in
@@ -112,7 +112,7 @@ struct FullscreenImageView: View {
 
                     VStack {
                         HStack {
-                            Button(action: { dismiss() }) {
+                            Button(action: { dismiss() }) { //cross back button
                                 Image(systemName: "xmark.circle.fill")
                                     .resizable()
                                     .frame(width: 30, height: 30)
@@ -121,6 +121,34 @@ struct FullscreenImageView: View {
                             }
                             Spacer()
                         }
+                        
+                        // ✅ Rotation Buttons Below Close Button
+                         HStack {
+                             Button(action: { rotateImage(left: true) }) {
+                                 Image(systemName: "arrow.counterclockwise")
+                                     .resizable()
+                                     .frame(width: 30, height: 30)
+                                     .foregroundColor(.white)
+                                     .padding(15)
+                                     .background(Color.black.opacity(0.5))
+                                     .clipShape(Circle())
+                             }
+
+                             Spacer()
+
+                             Button(action: { rotateImage(left: false) }) {
+                                 Image(systemName: "arrow.clockwise")
+                                     .resizable()
+                                     .frame(width: 30, height: 30)
+                                     .foregroundColor(.white)
+                                     .padding(15)
+                                     .background(Color.black.opacity(0.5))
+                                     .clipShape(Circle())
+                             }
+                         }
+                         .padding(.horizontal)
+                         .padding(.top, 10)
+                        
                         Spacer()
                     }
 //                    .padding(.top, 50)
