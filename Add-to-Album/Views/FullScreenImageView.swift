@@ -183,22 +183,43 @@ struct FullscreenImageView: View {
         let asset = imageAssets[selectedImageIndex]
 
         let options = PHContentEditingInputRequestOptions()
+        options.isNetworkAccessAllowed = true  // ✅ Ensure access to iCloud assets
         options.canHandleAdjustmentData = { _ in true }
 
         asset.requestContentEditingInput(with: options) { editingInput, _ in
-            guard let editingInput = editingInput else {
-                Logger.log("❌ Error: Could not retrieve editing input")
+            guard let editingInput = editingInput, let fullSizeImageURL = editingInput.fullSizeImageURL else {
+                Logger.log("❌ Error: Could not retrieve full-size image URL")
                 return
             }
 
+            // ✅ Ensure the file URL has a valid extension
+            let adjustedURL = fullSizeImageURL.appendingPathExtension("jpg")
+
+            // ✅ Check if the asset has previous adjustments
+            if let existingAdjustmentData = editingInput.adjustmentData {
+                Logger.log("ℹ️ Existing adjustment data found: \(existingAdjustmentData.formatIdentifier)")
+            }
+
+            // ✅ Prepare adjustment metadata
             let adjustmentData = PHAdjustmentData(
                 formatIdentifier: "com.apple.photo-edit",
                 formatVersion: "1.0",
-                data: Data()
+                data: Data() // No need for actual image processing data
             )
 
             let output = PHContentEditingOutput(contentEditingInput: editingInput)
             output.adjustmentData = adjustmentData
+
+            // ✅ Ensure the output file exists before modifying it
+            do {
+                if FileManager.default.fileExists(atPath: adjustedURL.path) {
+                    try FileManager.default.removeItem(at: adjustedURL)
+                }
+                try FileManager.default.copyItem(at: fullSizeImageURL, to: adjustedURL)
+            } catch {
+                Logger.log("❌ Error handling temp file: \(error.localizedDescription)")
+                return
+            }
 
             PHPhotoLibrary.shared().performChanges({
                 let request = PHAssetChangeRequest(for: asset)
