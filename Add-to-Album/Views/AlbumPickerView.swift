@@ -12,18 +12,34 @@ struct AlbumPickerView: View {
         NavigationView {
             VStack {
                 
-                List(albums, id: \.localIdentifier) { album in // 'album' is available here
-                    Button(action: {
-                        let albumID = album.localIdentifier
-                        selectedAlbum = AlbumUtilities.formatAlbumName(album.localizedTitle ?? "Unknown")
-                        UserDefaultsManager.saveAlbum(selectedAlbum, at: index, albumID: albumID) // Save ID!
-                        Logger.log("📂 [AlbumPickerView] Selected name: \(selectedAlbum) id: \(albumID) for index: \(index)")
+                List {
+                       // ✅ Add "No Album Selected" at the top
+                       Button(action: {
+                           selectedAlbum = Constants.noAlbumSelected
+                           UserDefaultsManager.saveAlbum(selectedAlbum, at: index, albumID: "") // Save empty ID
+                           Logger.log("📂 [AlbumPickerView] Selected name: \(selectedAlbum) (No ID) for index: \(index)")
 
-                        dismiss() // 'dismiss' is available here
-                    }) {
-                        Text(album.localizedTitle ?? "Unknown")
-                    }
-                }
+                           dismiss() // Close the picker
+                       }) {
+                           Text(Constants.noAlbumSelected)
+                               .fontWeight(.bold)
+                               .foregroundColor(.red)
+                       }
+
+                       // ✅ Show real albums below
+                       ForEach(albums, id: \.localIdentifier) { album in
+                           Button(action: {
+                               let albumID = album.localIdentifier
+                               selectedAlbum = AlbumUtilities.formatAlbumName(album.localizedTitle ?? "Unknown")
+                               UserDefaultsManager.saveAlbum(selectedAlbum, at: index, albumID: albumID) // Save ID!
+                               Logger.log("📂 [AlbumPickerView] Selected name: \(selectedAlbum) id: \(albumID) for index: \(index)")
+
+                               dismiss() // Close the picker
+                           }) {
+                               Text(album.localizedTitle ?? "Unknown")
+                           }
+                       }
+                   }
                 .navigationTitle("Select Album")
             }
             .onAppear {
