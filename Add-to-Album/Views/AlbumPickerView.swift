@@ -25,6 +25,23 @@ struct AlbumPickerView: View {
                                .foregroundColor(.red)
                        }
 
+                    if let favoritesAlbum = fetchFavoritesAlbum() {
+                        Button(action: {
+                            let albumID = favoritesAlbum.localIdentifier
+                            selectedAlbum = AlbumUtilities.formatAlbumName(favoritesAlbum.localizedTitle ?? "Favorites")
+                            UserDefaultsManager.saveAlbum(selectedAlbum, at: index, albumID: albumID)
+                            Logger.log("📂 [AlbumPickerView] Selected name: \(selectedAlbum) id: \(albumID) (System Favorites) for index: \(index)")
+                            dismiss()
+                        }) {
+                            Text(favoritesAlbum.localizedTitle ?? "Favorites")
+                                .foregroundColor(.white)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    } else {
+                        Text("Favorites album not found.") // In the list, no section header
+                            .foregroundColor(.white)
+                    }
+                    
                        // ✅ Show real albums below
                        ForEach(albums, id: \.localIdentifier) { album in
                            Button(action: {
@@ -49,11 +66,18 @@ struct AlbumPickerView: View {
             }
             
         }
+        
 //        .onChange(of: albums) { oldValue, newValue in // When albums change
 //            refreshTrigger = UUID() // Trigger a refresh
 //        }
 //        .id(refreshTrigger) // Apply the ID to the root view
 
+    }
+    
+    private func fetchFavoritesAlbum() -> PHAssetCollection? {
+        let fetchOptions = PHFetchOptions()
+        let albums = PHAssetCollection.fetchAssetCollections(with: .smartAlbum, subtype: .smartAlbumFavorites, options: fetchOptions)
+        return albums.firstObject
     }
 
 }
