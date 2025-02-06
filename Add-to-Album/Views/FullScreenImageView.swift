@@ -120,10 +120,7 @@ struct FullscreenImageView: View {
                                     .padding()
                             }
                             Spacer()
-                        }
-                        
-                        // ✅ Rotation Buttons Below Close Button
-                         HStack {
+
                              Button(action: { rotateImage(left: true) }) {
                                  Image(systemName: "arrow.counterclockwise")
                                      .resizable()
