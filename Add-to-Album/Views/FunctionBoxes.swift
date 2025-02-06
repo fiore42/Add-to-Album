@@ -61,14 +61,42 @@ struct FunctionBoxes: View {
             return AnyView(EmptyView()) // ✅ Makes it disappear when the album name is empty
         } else {
             return AnyView(
-                FunctionBoxView(
-                    text: text,
-                    albumID: albumID,
-                    photoID: currentPhotoID,
-                    albumManager: albumManager,
-                    rotateLeft: rotateLeft, // ✅ Pass rotation functions
-                    rotateRight: rotateRight
-                )
+                VStack {
+                    // ✅ Rotation Buttons (Applied to Actual Image)
+                    HStack {
+                        Button(action: { rotateLeft() }) {
+                            Image(systemName: "arrow.counterclockwise")
+                                .resizable()
+                                .frame(width: 30, height: 30)
+                                .foregroundColor(.white)
+                                .padding(15)
+                                .background(Color.black.opacity(0.5))
+                                .clipShape(Circle())
+                        }
+                        
+                        Spacer()
+                        
+                        Button(action: { rotateRight() }) {
+                            Image(systemName: "arrow.clockwise")
+                                .resizable()
+                                .frame(width: 30, height: 30)
+                                .foregroundColor(.white)
+                                .padding(15)
+                                .background(Color.black.opacity(0.5))
+                                .clipShape(Circle())
+                        }
+                    }
+                    .padding(.horizontal)
+                    .padding(.top, 10)
+                    
+                    FunctionBoxView(
+                        text: text,
+                        albumID: albumID,
+                        photoID: currentPhotoID,
+                        albumManager: albumManager,
+                        rotateLeft: rotateLeft, // ✅ Pass rotation functions
+                        rotateRight: rotateRight
+                    )
                     .frame(width: geometry.size.width * 0.35, height: geometry.size.height * 0.05)
                     .background(Color.black.opacity(0.5))
                     .cornerRadius(10)
@@ -81,6 +109,7 @@ struct FunctionBoxes: View {
                             trailing: alignment == .topTrailing || alignment == .bottomTrailing ? geometry.size.width * positionLeftRight : 0
                         )
                     )
+                }
             )
         }
     }
@@ -111,34 +140,6 @@ struct FunctionBoxView: View {
                     .fill(isInAlbum ? Color.green : Color.red)
                     .frame(width: 12, height: 12)
             }
-
-
-            // ✅ Rotation Buttons (Applied to Actual Image)
-            HStack {
-                Button(action: { rotateLeft() }) {
-                    Image(systemName: "arrow.counterclockwise")
-                        .resizable()
-                        .frame(width: 30, height: 30)
-                        .foregroundColor(.white)
-                        .padding(15)
-                        .background(Color.black.opacity(0.5))
-                        .clipShape(Circle())
-                }
-
-                Spacer()
-
-                Button(action: { rotateRight() }) {
-                    Image(systemName: "arrow.clockwise")
-                        .resizable()
-                        .frame(width: 30, height: 30)
-                        .foregroundColor(.white)
-                        .padding(15)
-                        .background(Color.black.opacity(0.5))
-                        .clipShape(Circle())
-                }
-            }
-            .padding(.horizontal)
-            .padding(.top, 10)
 
         }
         .padding()
