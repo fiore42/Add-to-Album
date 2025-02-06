@@ -112,20 +112,19 @@ struct FullscreenImageView: View {
                     
                     GeometryReader { geometry in
                                 VStack {
-                                    HStack(alignment: .center) { // Center the content vertically
-                                        HStack { // Back Button Group
-                                            Button(action: { dismiss() }) {
-                                                Image(systemName: "xmark.circle.fill")
-                                                    .resizable()
-                                                    .frame(width: 30, height: 30)
-                                                    .foregroundColor(.white)
-                                                    .padding()
-                                            }
+                                    HStack {
+                                        Button(action: { dismiss() }) {
+                                            Image(systemName: "xmark.circle.fill")
+                                                .resizable()
+                                                .frame(width: 30, height: 30)
+                                                .foregroundColor(.white)
+                                                .padding()
                                         }
                                         .frame(width: geometry.size.width * 0.2, alignment: .leading) // Back button (e.g., 20% from left)
 
+                                        Spacer() // Push the rotate buttons to the edges
 
-                                        HStack { // Rotate Buttons Group
+                                        HStack(spacing: 0) { // Rotate buttons group (no internal spacing)
                                             Button(action: { rotateImage(left: true) }) {
                                                 Image(systemName: "arrow.counterclockwise")
                                                     .resizable()
@@ -148,10 +147,8 @@ struct FullscreenImageView: View {
                                             }
                                             .frame(width: geometry.size.width * 0.2, alignment: .leading) // Rotate Right (e.g., 20% from left)
                                         }
-                                        .frame(maxWidth: .infinity, alignment: .center) // Center the rotate buttons
 
-
-
+                                        Spacer() // Push the rotate buttons to the edges
                                     }
                                     .padding(.horizontal)
                                     .padding(.top, 10)
