@@ -1,6 +1,5 @@
 import SwiftUI
 import Photos
-import ImageIO
 import UniformTypeIdentifiers // ✅ Required for UTType
 
 class ImageViewModel: ObservableObject {
@@ -179,7 +178,8 @@ struct FullscreenImageView: View {
 
             imageViewModel.startCaching(assets: prefetchAssets, targetSize: targetSize)
         }
-    
+
+
     private func rotateImage(left: Bool) {
         let asset = imageAssets[selectedImageIndex]
 
@@ -187,51 +187,48 @@ struct FullscreenImageView: View {
         options.canHandleAdjustmentData = { _ in true }
 
         asset.requestContentEditingInput(with: options) { editingInput, _ in
-            guard let editingInput = editingInput, let url = editingInput.fullSizeImageURL else {
+            guard let editingInput = editingInput,
+                  let fullSizeImageURL = editingInput.fullSizeImageURL else {
                 Logger.log("❌ Error: Could not retrieve full-size image URL")
                 return
             }
 
-            guard let imageData = try? Data(contentsOf: url),
-                  let source = CGImageSourceCreateWithData(imageData as CFData, nil),
-                  let metadata = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String: Any] else {
-                Logger.log("❌ Error: Could not retrieve metadata")
+            // ✅ Determine new orientation
+            let newOrientation = left ? CGImagePropertyOrientation.left : CGImagePropertyOrientation.right
+
+            // ✅ Prepare PHContentEditingOutput (Non-Destructive Edit)
+            let output = PHContentEditingOutput(contentEditingInput: editingInput)
+            let adjustmentData = PHAdjustmentData(formatIdentifier: "com.apple.photo-edit",
+                                                  formatVersion: "1.0",
+                                                  data: Data())
+
+            output.adjustmentData = adjustmentData
+
+            // ✅ Apply orientation metadata change
+            let tempURL = output.renderedContentURL
+            do {
+                try FileManager.default.copyItem(at: fullSizeImageURL, to: tempURL)
+            } catch {
+                Logger.log("❌ Failed to copy image for editing: \(error.localizedDescription)")
                 return
             }
 
-            let tempURL = URL(fileURLWithPath: NSTemporaryDirectory())
-                .appendingPathComponent(UUID().uuidString)
-                .appendingPathExtension("jpg")
-
-            guard let destination = CGImageDestinationCreateWithURL(tempURL as CFURL, UTType.jpeg.identifier as CFString, 1, nil) else {
-                Logger.log("❌ Error: Could not create image destination")
-                return
-            }
-
-            // ✅ Rotate Image
-            CGImageDestinationCopyImageSource(destination, source, nil, nil)
-            CGImageDestinationSetProperties(destination, metadata as CFDictionary)
-            CGImageDestinationFinalize(destination)
-
-            // ✅ Save the rotated image as a new asset and delete the old one
             PHPhotoLibrary.shared().performChanges({
-                let request = PHAssetChangeRequest.creationRequestForAssetFromImage(atFileURL: tempURL)
-                if request?.placeholderForCreatedAsset != nil {
-                    PHAssetChangeRequest.deleteAssets([asset] as NSArray) // ✅ Just call it, no assignment
-                }
+                let request = PHAssetChangeRequest(for: asset)
+                request.contentEditingOutput = output
             }) { success, error in
                 DispatchQueue.main.async {
                     if success {
-                        Logger.log("✅ Image rotated and replaced successfully")
+                        Logger.log("✅ Image rotation applied non-destructively")
                         self.refreshCurrentImage()
                     } else {
-                        Logger.log("❌ Error replacing image: \(error?.localizedDescription ?? "Unknown error")")
+                        Logger.log("❌ Error applying rotation: \(error?.localizedDescription ?? "Unknown error")")
                     }
-                    try? FileManager.default.removeItem(at: tempURL) // ✅ Clean up temp file
                 }
             }
         }
     }
+
 
     private func refreshCurrentImage() {
         let asset = imageAssets[selectedImageIndex]
