@@ -181,37 +181,63 @@ struct FullscreenImageView: View {
     private func rotateImage(left: Bool) {
         let asset = imageAssets[selectedImageIndex]
 
-        asset.requestContentEditingInput(with: PHContentEditingInputRequestOptions()) { editingInput, _ in
-            guard let editingInput = editingInput,
-                  let url = editingInput.fullSizeImageURL else {
-                Logger.log("❌ Failed to get editing input")
+        let options = PHImageRequestOptions()
+        options.isSynchronous = true
+        options.deliveryMode = .highQualityFormat
+
+        PHImageManager.default().requestImageDataAndOrientation(for: asset, options: options) { imageData, _, _, _ in
+            guard let imageData = imageData, let originalImage = UIImage(data: imageData) else {
+                Logger.log("❌ Failed to load image data for rotation")
                 return
             }
 
+            let rotationAngle = left ? -90.0 : 90.0
+            guard let rotatedImage = self.rotateUIImage(image: originalImage, degrees: rotationAngle) else { return }
+
             PHPhotoLibrary.shared().performChanges({
-                let editingOutput = PHContentEditingOutput(contentEditingInput: editingInput)
-                let adjustmentData = PHAdjustmentData(formatIdentifier: "com.apple.photo-edit", formatVersion: "1.0", data: Data())
-
-                // ✅ Just update the orientation metadata
-                editingOutput.adjustmentData = adjustmentData
-
-                try? FileManager.default.copyItem(at: url, to: editingOutput.renderedContentURL)
-                
                 let request = PHAssetChangeRequest(for: asset)
-                request.contentEditingOutput = editingOutput
-
+                request.contentEditingOutput = self.createEditingOutput(from: asset, rotatedImage: rotatedImage)
             }) { success, error in
-                if success {
-                    DispatchQueue.main.async {
-                        Logger.log("✅ Image rotated successfully using OS metadata")
-                        self.refreshCurrentImage()
-                    }
-                } else {
-                    Logger.log("❌ Error rotating image: \(error?.localizedDescription ?? "Unknown error")")
-                }
+                if success { DispatchQueue.main.async { self.refreshCurrentImage() } }
             }
         }
     }
+
+    private func rotateUIImage(image: UIImage, degrees: Double) -> UIImage? {
+        let radians = degrees * .pi / 180
+        var newSize = CGRect(origin: .zero, size: image.size)
+            .applying(CGAffineTransform(rotationAngle: CGFloat(radians)))
+            .integral.size
+
+        UIGraphicsBeginImageContextWithOptions(newSize, false, image.scale)
+        guard let context = UIGraphicsGetCurrentContext() else { return nil }
+
+        context.translateBy(x: newSize.width / 2, y: newSize.height / 2)
+        context.rotate(by: CGFloat(radians))
+        image.draw(in: CGRect(x: -image.size.width / 2, y: -image.size.height / 2, width: image.size.width, height: image.size.height))
+
+        let rotatedImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        return rotatedImage
+    }
+
+    private func createEditingOutput(from asset: PHAsset, rotatedImage: UIImage) -> PHContentEditingOutput {
+        let input = PHContentEditingInputRequestOptions()
+        input.canHandleAdjustmentData = { _ in true }
+
+        var output: PHContentEditingOutput?
+
+        asset.requestContentEditingInput(with: input) { editingInput, _ in
+            guard let editingInput = editingInput else { return }
+            output = PHContentEditingOutput(contentEditingInput: editingInput)
+
+            let outputURL = editingInput.fullSizeImageURL!.deletingPathExtension().appendingPathExtension("jpg")
+            try? rotatedImage.jpegData(compressionQuality: 1.0)?.write(to: outputURL)
+            output?.adjustmentData = PHAdjustmentData(formatIdentifier: "com.yourapp", formatVersion: "1.0", data: Data())
+        }
+        return output!
+    }
+
 
     private func refreshCurrentImage() {
         let asset = imageAssets[selectedImageIndex]
