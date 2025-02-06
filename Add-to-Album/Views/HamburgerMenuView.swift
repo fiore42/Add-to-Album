@@ -79,10 +79,12 @@ struct HamburgerMenuView: View {
             index: index
         )
         .onDisappear {
-            Logger.log("📂 Album Picker Closed. Selected Album: \(albumSelectionViewModel.selectedAlbums[index]) at index \(index)")
+            Logger.log("📂 Album Picker Closed. Selected Album: \(albumSelectionViewModel.selectedAlbums[index]) at index \(index) ID: \(albumSelectionViewModel.selectedAlbumIDs[index])")
             let albumID = UserDefaultsManager.getAlbumID(at: index) ?? ""
             UserDefaultsManager.saveAlbum(albumSelectionViewModel.selectedAlbums[index], at: index, albumID: albumID)
-            Logger.log("💾 Saved Album: \(albumSelectionViewModel.selectedAlbums[index]) at index \(index), ID: \(albumID)")
+            Logger.log("💾 Saved Album: \(albumSelectionViewModel.selectedAlbums[index]) at index \(index), ID: \(albumID) ID: \(albumSelectionViewModel.selectedAlbumIDs[index])")
+            
+            // fix here 
         }
     }
     
